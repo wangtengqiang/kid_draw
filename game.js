@@ -1,0 +1,1 @@
+require('./minigame/main.js')
