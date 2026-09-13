@@ -1,0 +1,150 @@
+/**
+ * 房间同步层：房号、主题、在场名单。
+ * 小游戏单机用 wx 存储；真机多端靠 cloudfunctions/rooms。
+ * 贴图写入看 child-creation/；列表与预览看 world-exhibition/。
+ */
+const { LOCAL_CREATOR_KEY, LOCAL_ROOMS_KEY } = require('./keys.js')
+const { ROOM_CAP } = require('../types.js')
+
+function store() {
+  return typeof wx !== 'undefined' && wx.getStorageSync ? wx : null
+}
+
+function loadRooms() {
+  try {
+    const raw = store() ? wx.getStorageSync(LOCAL_ROOMS_KEY) : ''
+    return raw ? JSON.parse(raw) : {}
+  } catch (e) {
+    return {}
+  }
+}
+
+function saveRooms(rooms) {
+  if (store()) wx.setStorageSync(LOCAL_ROOMS_KEY, JSON.stringify(rooms))
+}
+
+function creatorId() {
+  let id = store() ? wx.getStorageSync(LOCAL_CREATOR_KEY) : ''
+  if (!id) {
+    id = `c-${Math.random().toString(36).slice(2, 10)}`
+    if (store()) wx.setStorageSync(LOCAL_CREATOR_KEY, id)
+  }
+  return id
+}
+
+function newRoomCode() {
+  const rooms = loadRooms()
+  for (let i = 0; i < 40; i++) {
+    const code = String(1000 + Math.floor(Math.random() * 9000))
+    const existing = rooms[code]
+    if (!existing || existing.ended) return code
+  }
+  return String(1000 + Math.floor(Math.random() * 9000))
+}
+
+function createRoom(id) {
+  const rooms = loadRooms()
+  const room = {
+    id,
+    theme: 'forest',
+    paused: false,
+    ended: false,
+    hostAliveAt: Date.now(),
+    animals: [],
+    emotes: [],
+  }
+  rooms[id] = room
+  saveRooms(rooms)
+  return room
+}
+
+function getRoom(id) {
+  const room = loadRooms()[id]
+  if (!room || room.ended) return null
+  return room
+}
+
+function patchRoom(id, patch) {
+  const rooms = loadRooms()
+  const room = rooms[id]
+  if (!room || room.ended) return null
+  const next = Object.assign({}, room, patch, { id: id })
+  rooms[id] = next
+  saveRooms(rooms)
+  return next
+}
+
+function touchHost(id) {
+  const rooms = loadRooms()
+  if (rooms[id] && !rooms[id].ended) {
+    rooms[id].hostAliveAt = Date.now()
+    saveRooms(rooms)
+  }
+}
+
+function setTheme(id, theme) {
+  return patchRoom(id, { theme: theme })
+}
+
+function endRoom(id) {
+  patchRoom(id, { ended: true, animals: [] })
+}
+
+function clearAnimals(id) {
+  return patchRoom(id, { animals: [], emotes: [] })
+}
+
+function submitAnimal(roomId, animal) {
+  const rooms = loadRooms()
+  const room = rooms[roomId]
+  if (!room || room.ended) return { ok: false, reason: 'missing' }
+  if (room.paused) return { ok: false, reason: 'paused' }
+  if (room.animals.length >= ROOM_CAP) return { ok: false, reason: 'full' }
+  const placed = Object.assign({}, animal, {
+    id: `a-${Date.now().toString(36)}`,
+    createdAt: Date.now(),
+  })
+  room.animals = room.animals.concat([placed])
+  rooms[roomId] = room
+  saveRooms(rooms)
+  return { ok: true, placed: placed }
+}
+
+function joinQuery() {
+  try {
+    const q = wx.getLaunchOptionsSync().query || {}
+    return q.join || null
+  } catch (e) {
+    return null
+  }
+}
+
+function isHostQuery() {
+  try {
+    const q = wx.getLaunchOptionsSync().query || {}
+    return q.host === '1' || q.role === 'host'
+  } catch (e) {
+    return false
+  }
+}
+
+function animalLabel(animalId) {
+  const names = { deer: '小鹿', tiger: '小老虎', lion: '小狮子' }
+  return `小朋友的${names[animalId] || animalId}`
+}
+
+module.exports = {
+  animalLabel,
+  clearAnimals,
+  createRoom,
+  creatorId,
+  endRoom,
+  getRoom,
+  isHostQuery,
+  joinQuery,
+  newRoomCode,
+  patchRoom,
+  setTheme,
+  submitAnimal,
+  touchHost,
+}

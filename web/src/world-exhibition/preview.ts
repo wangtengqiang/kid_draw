@@ -1,5 +1,8 @@
+/**
+ * 世界观展：单角色 3D 转台。只读，不涂色、不送画。
+ */
 import * as THREE from 'three'
-import type { AnimalId } from './types'
+import type { AnimalId } from '../types'
 import { createAnimalModel, tickWalk } from './models'
 
 export class PreviewStage {

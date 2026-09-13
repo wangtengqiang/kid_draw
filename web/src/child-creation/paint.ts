@@ -1,5 +1,9 @@
-import type { AnimalId, ToolId } from './types'
-import { drawLineArt, drawRegions, regionName } from './animals2d'
+/**
+ * 儿童创作：只负责在画布上涂。不进主机森林、不写云。
+ * 线稿锁在上层；点色块填充分区，拖动是大蜡笔。
+ */
+import type { AnimalId, ToolId } from '../types'
+import { drawLineArt, drawRegions, regionName } from './lineart'
 
 export class PaintSurface {
   readonly wrap: HTMLElement

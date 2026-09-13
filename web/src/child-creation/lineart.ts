@@ -1,5 +1,8 @@
-import type { AnimalId } from './types'
-import { ANIMAL_META } from './types'
+/**
+ * 儿童创作：官方线稿 + 填色分区。不是主机 3D 世界。
+ */
+import type { AnimalId } from '../types'
+import { ANIMAL_META } from '../types'
 
 type Ctx = CanvasRenderingContext2D
 

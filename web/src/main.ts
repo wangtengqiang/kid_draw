@@ -1,2 +1,6 @@
+import { App } from './boot.ts'
 import './style.css'
-import './app.ts'
+
+const root = document.querySelector<HTMLDivElement>('#app')
+if (!root) throw new Error('找不到页面根节点')
+new App(root).start()

@@ -1,7 +1,13 @@
 {
   "description": "彩绘动物进森林",
   "packOptions": {
-    "ignore": []
+    "ignore": [
+      { "type": "folder", "value": "web" },
+      { "type": "folder", "value": "docs" },
+      { "type": "folder", "value": "cloudfunctions" },
+      { "type": "folder", "value": "node_modules" },
+      { "type": "folder", "value": ".git" }
+    ]
   },
   "setting": {
     "urlCheck": true,

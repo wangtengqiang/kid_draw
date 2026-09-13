@@ -1,5 +1,9 @@
+/**
+ * 世界观展：共享 3D 场景（森林 / 雪原 / 海底）。
+ * 只展示已经送进来的动物，不涂色、不送画。
+ */
 import * as THREE from 'three'
-import type { AnimalId, EmoteId, PlacedAnimal, ThemeId } from './types'
+import type { AnimalId, EmoteId, PlacedAnimal, ThemeId } from '../types'
 import { createAnimalModel, tickWalk } from './models'
 
 interface Actor {

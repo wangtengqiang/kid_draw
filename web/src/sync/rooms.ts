@@ -1,32 +1,32 @@
-import type { AnimalId, EmoteId, GalleryItem, PlacedAnimal, RoomState, ThemeId } from './types'
-import { ROOM_CAP } from './types'
-
-const ROOM_KEY = 'kid-draw-rooms-v1'
-const GALLERY_KEY = 'kid-draw-gallery-v1'
-const CREATOR_KEY = 'kid-draw-creator-id'
-const CHANNEL = 'kid-draw-sync-v1'
+/**
+ * 房间同步层：房号、主题、在场名单、本机 BroadcastChannel。
+ * 不导出贴图、不渲染 3D。贴图写入看 child-creation/；列表与预览看 world-exhibition/。
+ */
+import type { AnimalId, EmoteId, PlacedAnimal, RoomState, ThemeId } from '../types'
+import { ROOM_CAP } from '../types'
+import { LOCAL_CREATOR_KEY, LOCAL_ROOMS_KEY, ROOM_CHANNEL } from './keys'
 
 const channel =
-  typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(CHANNEL) : null
+  typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(ROOM_CHANNEL) : null
 
 function loadRooms(): Record<string, RoomState> {
   try {
-    return JSON.parse(localStorage.getItem(ROOM_KEY) || '{}') as Record<string, RoomState>
+    return JSON.parse(localStorage.getItem(LOCAL_ROOMS_KEY) || '{}') as Record<string, RoomState>
   } catch {
     return {}
   }
 }
 
 function saveRooms(rooms: Record<string, RoomState>): void {
-  localStorage.setItem(ROOM_KEY, JSON.stringify(rooms))
+  localStorage.setItem(LOCAL_ROOMS_KEY, JSON.stringify(rooms))
   channel?.postMessage({ kind: 'rooms' })
 }
 
 export function creatorId(): string {
-  let id = localStorage.getItem(CREATOR_KEY)
+  let id = localStorage.getItem(LOCAL_CREATOR_KEY)
   if (!id) {
     id = `c-${Math.random().toString(36).slice(2, 10)}`
-    localStorage.setItem(CREATOR_KEY, id)
+    localStorage.setItem(LOCAL_CREATOR_KEY, id)
   }
   return id
 }
@@ -126,24 +126,9 @@ export function sendEmote(roomId: string, animalId: string, emote: EmoteId): voi
   saveRooms(rooms)
 }
 
-export function loadGallery(): GalleryItem[] {
-  try {
-    const all = JSON.parse(localStorage.getItem(GALLERY_KEY) || '[]') as GalleryItem[]
-    return all.filter((g) => g && g.thumb)
-  } catch {
-    return []
-  }
-}
-
-export function saveGalleryItem(item: GalleryItem): void {
-  const all = loadGallery()
-  localStorage.setItem(GALLERY_KEY, JSON.stringify([item, ...all].slice(0, 60)))
-  channel?.postMessage({ kind: 'gallery' })
-}
-
 export function onSync(handler: () => void): () => void {
   const onStorage = (e: StorageEvent) => {
-    if (e.key === ROOM_KEY || e.key === GALLERY_KEY) handler()
+    if (e.key === LOCAL_ROOMS_KEY) handler()
   }
   const onMsg = () => handler()
   window.addEventListener('storage', onStorage)
@@ -154,9 +139,9 @@ export function onSync(handler: () => void): () => void {
   }
 }
 
+/** 扫码 / 分享卡片带 join=房号。主机自己的 URL 用 host=1，不要走这里。 */
 export function joinQuery(): string | null {
-  const q = new URLSearchParams(window.location.search)
-  return q.get('join') || q.get('room')
+  return new URLSearchParams(window.location.search).get('join')
 }
 
 export function isHostQuery(): boolean {

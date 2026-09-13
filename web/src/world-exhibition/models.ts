@@ -1,6 +1,9 @@
+/**
+ * 世界观展：低模。颜色来自孩子已送出的分区色。不读画布。
+ */
 import * as THREE from 'three'
-import type { AnimalId } from './types'
-import { ANIMAL_META } from './types'
+import type { AnimalId } from '../types'
+import { ANIMAL_META } from '../types'
 
 function mesh(geo: THREE.BufferGeometry, color: string): THREE.Mesh {
   const mat = new THREE.MeshLambertMaterial({ color })

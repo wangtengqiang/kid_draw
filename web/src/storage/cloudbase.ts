@@ -33,50 +33,48 @@ export class CloudBaseStore implements StorageBackend {
     wx.cloud.init({ env: this.envId })
   }
 
-  async putTexture(_dataUrl: string, _hint: string): Promise<TextureRef> {
+  async putTexture(dataUrl: string, hint: string): Promise<TextureRef> {
     this.ensureCloud()
-    // wx.cloud.uploadFile({ cloudPath: `textures/${hint}.png`, filePath })
-    throw new Error('CloudBaseStore.putTexture: wire wx.cloud.uploadFile when env is provided')
+    throw new Error(`CloudBaseStore.putTexture(${hint}, ${dataUrl.slice(0, 8)}…): wire wx.cloud.uploadFile when env is provided`)
   }
 
-  async createRoom(_meta: RoomMetaRecord): Promise<RoomMetaRecord> {
+  async createRoom(meta: RoomMetaRecord): Promise<RoomMetaRecord> {
     this.ensureCloud()
-    // db.collection('rooms').add({ data: meta })
-    throw new Error('CloudBaseStore.createRoom: wire db.collection(rooms)')
+    throw new Error(`CloudBaseStore.createRoom(${meta.code}): wire db.collection(rooms)`)
   }
 
-  async getRoom(_code: string): Promise<RoomMetaRecord | null> {
+  async getRoom(code: string): Promise<RoomMetaRecord | null> {
     this.ensureCloud()
-    throw new Error('CloudBaseStore.getRoom: wire db.collection(rooms).where({ code })')
+    throw new Error(`CloudBaseStore.getRoom(${code}): wire db.collection(rooms).where({ code })`)
   }
 
-  async updateRoomMeta(_code: string, _patch: Partial<RoomMetaRecord>): Promise<RoomMetaRecord | null> {
+  async updateRoomMeta(code: string, patch: Partial<RoomMetaRecord>): Promise<RoomMetaRecord | null> {
     this.ensureCloud()
-    throw new Error('CloudBaseStore.updateRoomMeta: wire db.collection(rooms).doc().update')
+    throw new Error(`CloudBaseStore.updateRoomMeta(${code}, ${Object.keys(patch).join(',')}): wire db.collection(rooms).doc().update`)
   }
 
-  async listRoomAnimals(_code: string): Promise<RoomAnimalRecord[]> {
+  async listRoomAnimals(code: string): Promise<RoomAnimalRecord[]> {
     this.ensureCloud()
-    throw new Error('CloudBaseStore.listRoomAnimals: wire db.collection(room_animals)')
+    throw new Error(`CloudBaseStore.listRoomAnimals(${code}): wire db.collection(room_animals)`)
   }
 
-  async addRoomAnimal(_record: RoomAnimalRecord): Promise<void> {
+  async addRoomAnimal(record: RoomAnimalRecord): Promise<void> {
     this.ensureCloud()
-    throw new Error('CloudBaseStore.addRoomAnimal: wire db.collection(room_animals).add')
+    throw new Error(`CloudBaseStore.addRoomAnimal(${record.id}): wire db.collection(room_animals).add`)
   }
 
-  async clearRoomAnimals(_code: string): Promise<void> {
+  async clearRoomAnimals(code: string): Promise<void> {
     this.ensureCloud()
-    throw new Error('CloudBaseStore.clearRoomAnimals: wire db.collection(room_animals).where.remove')
+    throw new Error(`CloudBaseStore.clearRoomAnimals(${code}): wire db.collection(room_animals).where.remove`)
   }
 
-  async listGallery(_creatorId: string): Promise<GalleryRecord[]> {
+  async listGallery(creatorId: string): Promise<GalleryRecord[]> {
     this.ensureCloud()
-    throw new Error('CloudBaseStore.listGallery: wire db.collection(gallery)')
+    throw new Error(`CloudBaseStore.listGallery(${creatorId}): wire db.collection(gallery)`)
   }
 
-  async saveGalleryItem(_record: GalleryRecord): Promise<void> {
+  async saveGalleryItem(record: GalleryRecord): Promise<void> {
     this.ensureCloud()
-    throw new Error('CloudBaseStore.saveGalleryItem: wire db.collection(gallery).add')
+    throw new Error(`CloudBaseStore.saveGalleryItem(${record.id}): wire db.collection(gallery).add`)
   }
 }

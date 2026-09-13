@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from 'vite'
 
 export default defineConfig({
@@ -12,7 +13,7 @@ export default defineConfig({
     strictPort: true,
   },
   test: {
-    environment: 'node',
+    environment: 'jsdom',
     include: ['src/**/*.test.ts'],
   },
 })
