@@ -2,7 +2,7 @@
  * 世界观展：单角色转台（2D 占位）。只读，不涂色、不送画。
  * 网页预览才是 Three.js 3D。
  */
-const { drawAnimal } = require('../child-creation/lineart.js')
+const { drawAnimal } = require('./models.js')
 
 function PreviewStage() {
   this.rot = 0

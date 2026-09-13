@@ -9,7 +9,7 @@ const sync = require('../sync/index.js')
 const { getWork, listWorks } = require('./gallery.js')
 const { HostWorld } = require('./host-world.js')
 const { PreviewStage } = require('./preview.js')
-const { drawAnimal } = require('../child-creation/lineart.js')
+const { drawAnimal } = require('./models.js')
 
 function WorldExhibition(api) {
   this.api = api

@@ -3,7 +3,7 @@
  * 只展示已经送进来的动物，不涂色、不送画。
  * 完整 3D 在网页 web/src/world-exhibition/。
  */
-const { drawAnimal } = require('../child-creation/lineart.js')
+const { drawAnimal } = require('./models.js')
 
 function HostWorld() {
   this.theme = 'forest'
