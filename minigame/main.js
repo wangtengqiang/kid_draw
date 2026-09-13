@@ -70,9 +70,9 @@ function renderHome() {
   const host = { id: 'open-world', x: 28, y: H * 0.42, w: W - 56, h: 76 }
   const draw = { id: 'start-draw', x: 28, y: H * 0.42 + 92, w: W - 56, h: 76 }
   const gal = { id: 'my-art', x: 28, y: H * 0.42 + 184, w: W - 56, h: 56 }
-  fillBtn(ctx, host, '#f2c14e', '我是主机', 30)
-  fillBtn(ctx, draw, '#2f9e5f', '我是小朋友', 30)
-  fillBtn(ctx, gal, '#efe4d2', '我的全部作品', 24)
+  fillBtn(ctx, host, '#f2c14e', '打开世界', 30)
+  fillBtn(ctx, draw, '#2f9e5f', '开始画画', 30)
+  fillBtn(ctx, gal, '#efe4d2', '我的画', 24)
   return [host, draw, gal]
 }
 

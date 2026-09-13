@@ -1,6 +1,7 @@
 /**
- * 首页分流：我是主机 / 我是小朋友 / 我的全部作品。
+ * 首页分流：打开世界 / 开始画画 / 我的画。
  * 儿童创作界面在 child-creation/，观展界面在 world-exhibition/。
+ * 本文件不涂色、不渲染森林。
  */
 import { ChildCreation } from './child-creation'
 import type { ChildGo } from './child-creation'
@@ -37,7 +38,7 @@ export class App {
       return
     }
     if (join) {
-      this.go({ name: 'join', error: '找不到这场展览，问问主持人身边的号码吧。' })
+      this.go({ name: 'ended' })
       return
     }
     this.go({ name: 'home' })
@@ -56,7 +57,7 @@ export class App {
     else if (s.name === 'host') this.exhibition.showHost(s.roomId)
     else if (s.name === 'gallery') this.exhibition.showGallery()
     else if (s.name === 'preview') this.exhibition.showPreview(s.item)
-    else if (s.name === 'join') this.child.join(s.error)
+    else if (s.name === 'need-scan') this.child.needScan()
     else if (s.name === 'ended') this.child.ended()
     else if (s.name === 'pick') this.child.pick(s.roomId)
     else if (s.name === 'paint') this.child.paintScreen(s.roomId, s.animalId)
@@ -68,10 +69,10 @@ export class App {
       <main class="page home">
         <div class="hero-mark" aria-hidden="true">🦌</div>
         <h1>彩绘动物进森林</h1>
-        <p class="lead">一台主机打开世界。小朋友只涂色、把画送进去——不用走进大森林，但可以转一转自己的立体模型。</p>
-        <button class="hit host-hit" data-act="host" type="button">我是主机</button>
-        <button class="hit kid-hit" data-act="draw" type="button">我是小朋友</button>
-        <button class="text-link" data-act="gallery" type="button">看看我的全部作品</button>
+        <p class="lead">一台主机打开世界。小朋友只涂色、把画送进去。</p>
+        <button class="hit host-hit" data-act="host" type="button">打开世界</button>
+        <button class="hit kid-hit" data-act="draw" type="button">开始画画</button>
+        <button class="text-link" data-act="gallery" type="button">我的画</button>
       </main>`
     this.root.querySelector('[data-act="host"]')?.addEventListener('click', () => {
       const id = newRoomCode()
@@ -90,7 +91,7 @@ export class App {
     this.root.querySelector('[data-act="draw"]')?.addEventListener('click', () => {
       const join = joinQuery()
       if (join && getRoom(join)) this.go({ name: 'pick', roomId: join })
-      else this.go({ name: 'join' })
+      else this.go({ name: 'need-scan' })
     })
     this.root.querySelector('[data-act="gallery"]')?.addEventListener('click', () => this.go({ name: 'gallery' }))
   }
