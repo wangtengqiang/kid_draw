@@ -4,7 +4,7 @@
  */
 import type { AnimalId, ToolId } from '../types'
 import { ANIMAL_META } from '../types'
-import { drawLineArt, drawRegions, regionName } from './lineart'
+import { drawLineArt, drawRegions, loadOfficialArt, officialLineArtSrc, regionName } from './lineart'
 
 export const BRUSH_SIZES = [
   { id: 12, name: '细' },
@@ -62,6 +62,15 @@ export class PaintSurface {
     drawRegions(this.animal, rctx, w, h)
     this.regionData = rctx.getImageData(0, 0, w, h)
     drawLineArt(this.animal, lctx, w, h)
+    const src = officialLineArtSrc(this.animal)
+    if (src) {
+      void loadOfficialArt(src).then(() => {
+        const next = this.lines.getContext('2d')
+        if (!next) return
+        drawLineArt(this.animal, next, w, h)
+        this.onChange()
+      })
+    }
     this.undoStack = []
     this.snapshot()
     this.onChange()

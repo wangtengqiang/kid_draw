@@ -45,4 +45,24 @@ function lead(ctx, text, x, y) {
   ctx.fillText(text, x, y)
 }
 
-module.exports = { roundRect, fillBtn, hit, title, lead }
+function leadWrap(ctx, text, x, y, maxW) {
+  ctx.fillStyle = 'rgba(26,18,12,0.75)'
+  ctx.font = '20px sans-serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'top'
+  const chars = String(text || '').split('')
+  const lines = []
+  let row = ''
+  chars.forEach((ch) => {
+    const next = row + ch
+    if (row && ctx.measureText(next).width > maxW) {
+      lines.push(row)
+      row = ch
+    } else row = next
+  })
+  if (row) lines.push(row)
+  lines.forEach((line, i) => ctx.fillText(line, x, y + i * 28))
+  return lines.length
+}
+
+module.exports = { roundRect, fillBtn, hit, title, lead, leadWrap }

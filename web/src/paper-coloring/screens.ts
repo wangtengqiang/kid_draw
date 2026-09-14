@@ -2,15 +2,17 @@
  * 纸上涂色界面：老师下载线稿；孩子选一只、拍照、送进世界。
  * 字要少。不猜未知动物。送到后可去看大世界。
  */
-import { drawPreview } from '../child-creation/lineart'
-import { getRoom } from '../sync'
+import { officialLineArtSrc, pickCardSrc, drawLineArtReady } from '../child-creation/lineart'
+import { decodeQrFromFile, parseJoinFromQr } from '../child-creation/scan-qr'
+import { createRoom, getRoom } from '../sync'
+import { storage } from '../storage'
 import type { AnimalId, PlacedAnimal } from '../types'
-import { ANIMAL_IDS, ANIMAL_META, LAND_IDS, MARINE_IDS } from '../types'
+import { ANIMAL_IDS, ANIMAL_META, LAND_IDS, MARINE_IDS, ROOM_CAP } from '../types'
 import { mountPetImage } from '../world-exhibition/pet-snapshot'
 import { PreviewStage } from '../world-exhibition/preview'
 import { imageDataFrom, mapPhotoToTemplate } from './map'
 import { sendColoredAnimal } from './send-to-world'
-import { downloadTemplate, lastPaper, rememberLastPaper } from './template'
+import { downloadTemplateReady, lastPaper, rememberLastPaper } from './template'
 
 export type PaperGo =
   | { name: 'home' }
@@ -57,34 +59,95 @@ export class PaperColoring {
       const btn = document.createElement('button')
       btn.type = 'button'
       btn.className = 'pick-card'
-      const c = document.createElement('canvas')
-      c.width = 240
-      c.height = 260
-      const ctx = c.getContext('2d')
-      if (ctx) drawPreview(id, ctx, c.width, c.height)
+      const src = officialLineArtSrc(id) || pickCardSrc(id)
+      const img = document.createElement('img')
+      img.alt = ANIMAL_META[id].name
+      img.width = 240
+      img.height = 260
+      if (src) {
+        img.src = src
+      } else {
+        const c = document.createElement('canvas')
+        c.width = 240
+        c.height = 260
+        const ctx = c.getContext('2d')
+        if (ctx) {
+          ctx.fillStyle = '#fffaf1'
+          ctx.fillRect(0, 0, 240, 260)
+          void drawLineArtReady(id, ctx, 240, 260).then(() => {
+            img.src = c.toDataURL('image/png')
+          })
+        }
+      }
       const label = document.createElement('strong')
       label.textContent = `下载${ANIMAL_META[id].name}`
-      btn.append(c, label)
-      btn.addEventListener('click', () => downloadTemplate(id, false))
+      btn.append(img, label)
+      btn.addEventListener('click', () => {
+        void downloadTemplateReady(id, false)
+      })
       prints?.append(btn)
 
       const sample = document.createElement('button')
       sample.type = 'button'
       sample.className = 'text-link'
       sample.textContent = `样张：涂好的${ANIMAL_META[id].name}`
-      sample.addEventListener('click', () => downloadTemplate(id, true))
+      sample.addEventListener('click', () => {
+        void downloadTemplateReady(id, true)
+      })
       samples?.append(sample)
     }
   }
 
   needScan(): void {
     this.root.innerHTML = `
-      <main class="page kid">
+      <main class="page kid scan-page">
         <button class="back" data-act="home" type="button">返回</button>
-        <h1>请扫老师的码</h1>
-        <p class="lead">扫完就能拍纸上的画。</p>
+        <h1>扫码进入</h1>
+        <p class="lead">对准老师主机上的二维码，或选一张二维码图片。不用输入数字。</p>
+        <button class="hit scan-file-hit" data-act="file" type="button">选一张二维码图片</button>
+        <input id="scan-file" type="file" accept="image/*" hidden />
+        <p class="paint-msg" id="scan-msg">云桌面常常没有摄像头，选图片就能进房间。</p>
       </main>`
     this.root.querySelector('[data-act="home"]')?.addEventListener('click', () => this.go({ name: 'home' }))
+    const file = this.root.querySelector<HTMLInputElement>('#scan-file')
+    this.root.querySelector('[data-act="file"]')?.addEventListener('click', () => file?.click())
+    file?.addEventListener('change', () => {
+      const picked = file.files?.[0]
+      if (picked) void this.joinFromFile(picked)
+    })
+  }
+
+  private async joinFromFile(file: File): Promise<void> {
+    const msg = this.root.querySelector('#scan-msg')
+    if (msg) msg.textContent = '正在认这张图…'
+    try {
+      const text = await decodeQrFromFile(file)
+      const roomId = text ? parseJoinFromQr(text) : null
+      if (!roomId) {
+        if (msg) {
+          msg.textContent = '没认出房间码。换一张更清楚的图。'
+          msg.classList.add('is-error')
+        }
+        return
+      }
+      if (!getRoom(roomId)) {
+        createRoom(roomId)
+        void storage.createRoom({
+          code: roomId,
+          theme: 'forest',
+          paused: false,
+          ended: false,
+          hostAliveAt: Date.now(),
+          cap: ROOM_CAP,
+        })
+      }
+      this.go({ name: 'paper-pick', roomId })
+    } catch {
+      if (msg) {
+        msg.textContent = '图片打不开。再选一次。'
+        msg.classList.add('is-error')
+      }
+    }
   }
 
   pick(roomId: string): void {
@@ -110,7 +173,12 @@ export class PaperColoring {
         const img = document.createElement('img')
         img.width = 320
         img.height = 360
-        mountPetImage(img, id)
+        const cardSrc = pickCardSrc(id)
+        if (cardSrc) {
+          img.src = cardSrc
+          img.alt = ANIMAL_META[id].name
+          img.classList.add('pet-shot')
+        } else mountPetImage(img, id)
         const label = document.createElement('strong')
         label.textContent = ANIMAL_META[id].name
         card.append(img, label)

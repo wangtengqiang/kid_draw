@@ -126,6 +126,6 @@
 - 海豚 / 海龟 ← Gobkit Whale / Seal（CC0）。
 - 运行时：`GLTFLoader` + `AnimationMixer`。孩子涂色是画板原图像素，贴在皮毛 UV 上。
 - 网页：选动物 / 画廊 / 送到啦 / 涂色旁预览 / 主机森林，都是同一份 glTF。
-- 微信小游戏：成功页、选卡片、画廊、2D 主机用 `minigame/models/snapshots/*.png`（网页 Three.js 烘出来的正面）。涂色纸仍是 2D 线样子 + 自由蜡笔。完整 3D 森林仍在网页。不移植整包 Three.js，也不改写成 Cocos。
+- 微信小游戏：选一只用 `minigame/picks/*.png`，涂色 / 打印线稿用 `minigame/lineart/*.png`（官方涂色本，不是椭圆雪人）。成功页、画廊、2D 主机用 `minigame/models/snapshots/*.png`（网页 Three.js 烘出来的正面）。完整 3D 森林仍在网页。不移植整包 Three.js，也不改写成 Cocos。
 
 许可证：`web/public/models/NOTICE.md`。无千图网、无 CloudBase 密钥。效果图 `preview-shots/effect-lion-*.png` 是目标对照，不当游戏贴图。

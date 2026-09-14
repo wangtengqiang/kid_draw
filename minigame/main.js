@@ -4,7 +4,8 @@
  * 纸上涂色 → paper-coloring/
  * 世界观展 → world-exhibition/
  */
-const { fillBtn, hit, lead, title } = require('./draw.js')
+const { fillBtn, hit, leadWrap, roundRect, title } = require('./draw.js')
+const { drawPickCard, preloadArt } = require('./art.js')
 const { preloadSnapshots } = require('./world-exhibition/snapshots.js')
 const { ChildCreation } = require('./child-creation/index.js')
 const { PaperColoring } = require('./paper-coloring/index.js')
@@ -44,6 +45,7 @@ function go(next) {
 }
 
 function start() {
+  preloadArt()
   preloadSnapshots()
   const join = sync.joinQuery()
   if (sync.isHostQuery()) {
@@ -63,23 +65,35 @@ function start() {
 function renderHome() {
   ctx.fillStyle = '#fff6e8'
   ctx.fillRect(0, 0, W, H)
-  ctx.fillStyle = '#2f9e5f'
-  ctx.beginPath()
-  ctx.arc(W / 2, 88, 36, 0, Math.PI * 2)
+  const mark = { x: W / 2 - 56, y: 28, w: 112, h: 88 }
+  ctx.fillStyle = '#fffaf1'
+  roundRect(ctx, mark.x, mark.y, mark.w, mark.h, 24)
   ctx.fill()
-  title(ctx, '彩绘动物进森林', W / 2, 160, 32)
-  lead(ctx, '一台主机打开世界。小朋友只涂色、把画送进去。', W / 2, 196)
-  const host = { id: 'open-world', x: 28, y: H * 0.34, w: W - 56, h: 64 }
-  const draw = { id: 'start-draw', x: 28, y: H * 0.34 + 76, w: W - 56, h: 64 }
-  const cam = { id: 'paper', x: 28, y: H * 0.34 + 152, w: W - 56, h: 80 }
-  const gal = { id: 'my-art', x: 28, y: H * 0.34 + 244, w: W - 56, h: 48 }
-  const print = { id: 'print', x: 28, y: H * 0.34 + 300, w: W - 56, h: 44 }
+  drawPickCard(ctx, 'lion', mark)
+  title(ctx, '彩绘动物进森林', W / 2, 148, 30)
+  leadWrap(ctx, '一台主机打开世界。小朋友只涂色、把画送进去。', W / 2, 160, W - 56)
+  const top = 228
+  const gap = 10
+  const hBtn = Math.min(68, Math.max(52, (H - top - 36) / 6 - gap))
+  const host = { id: 'open-world', x: 28, y: top, w: W - 56, h: hBtn }
+  const draw = { id: 'start-draw', x: 28, y: top + (hBtn + gap), w: W - 56, h: hBtn }
+  const cam = { id: 'paper', x: 28, y: top + (hBtn + gap) * 2, w: W - 56, h: hBtn }
+  const scan = { id: 'scan', x: 28, y: top + (hBtn + gap) * 3, w: W - 56, h: hBtn }
+  const gal = { id: 'my-art', x: 28, y: top + (hBtn + gap) * 4, w: W - 56, h: Math.max(44, hBtn - 8) }
+  const print = {
+    id: 'print',
+    x: 28,
+    y: top + (hBtn + gap) * 4 + gal.h + gap,
+    w: W - 56,
+    h: Math.max(40, hBtn - 12),
+  }
   fillBtn(ctx, host, '#f2c14e', '打开世界', 28)
   fillBtn(ctx, draw, '#2f9e5f', '开始画画', 28)
-  fillBtn(ctx, cam, '#1a120c', '拍纸上的画', 30)
+  fillBtn(ctx, cam, '#1a120c', '拍纸上的画', 28)
+  fillBtn(ctx, scan, '#efe4d2', '扫码进入', 26)
   fillBtn(ctx, gal, '#efe4d2', '我的画', 22)
   fillBtn(ctx, print, '#fff6e8', '老师打印线稿', 18)
-  return [host, draw, cam, gal, print]
+  return [host, draw, cam, scan, gal, print]
 }
 
 function render() {
@@ -90,7 +104,8 @@ function render() {
   else if (s.name === 'host') buttons = exhibition.renderHost(ctx, s.roomId)
   else if (s.name === 'gallery') buttons = exhibition.renderGallery(ctx)
   else if (s.name === 'preview') buttons = exhibition.renderPreview(ctx, s.item)
-  else if (s.name === 'need-scan') buttons = child.needScan(ctx)
+  else if (s.name === 'need-scan') buttons = child.needScan(ctx, 'pick')
+  else if (s.name === 'scan') buttons = child.needScan(ctx, 'pick')
   else if (s.name === 'ended') buttons = child.ended(ctx)
   else if (s.name === 'pick') buttons = child.pick(ctx, s.roomId)
   else if (s.name === 'paint') buttons = child.paintScreen(ctx, s.roomId, s.animalId)
@@ -138,6 +153,8 @@ function onHome(btn) {
     const join = sync.joinQuery()
     if (join && sync.getRoom(join)) go({ name: 'paper-pick', roomId: join })
     else go({ name: 'paper-need-scan' })
+  } else if (btn.id === 'scan') {
+    go({ name: 'scan' })
   } else if (btn.id === 'my-art') {
     go({ name: 'gallery' })
   } else if (btn.id === 'print') {

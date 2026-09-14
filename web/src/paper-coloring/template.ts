@@ -1,9 +1,9 @@
 /**
  * 纸上涂色：可打印的官方线稿。四角对准标记，不是 AI 认动物。
  */
-import { drawLineArt, drawPreview, drawRegions } from '../child-creation/lineart'
+import { drawLineArtReady, loadOfficialArt, officialLineArtSrc, pickCardSrc } from '../child-creation/lineart'
 import type { AnimalId } from '../types'
-import { ANIMAL_META, PALETTE } from '../types'
+import { ANIMAL_META } from '../types'
 
 export const TEMPLATE_W = 900
 export const TEMPLATE_H = 1272
@@ -53,18 +53,12 @@ function paintCanvas(animal: AnimalId, filled: boolean): HTMLCanvasElement {
   inner.height = 860
   const ictx = inner.getContext('2d')
   if (ictx) {
-    if (filled) {
-      drawPreview(animal, ictx, inner.width, inner.height)
-      recolorBody(ictx, animal, inner.width, inner.height)
-    } else {
-      ictx.fillStyle = '#fffaf1'
-      ictx.fillRect(0, 0, inner.width, inner.height)
-      drawLineArt(animal, ictx, inner.width, inner.height)
-    }
+    ictx.fillStyle = '#fffaf1'
+    ictx.fillRect(0, 0, inner.width, inner.height)
   }
   const ox = (TEMPLATE_W - inner.width) / 2
   const oy = 88
-  ctx.drawImage(inner, ox, oy)
+  if (ictx) ctx.drawImage(inner, ox, oy)
 
   ctx.fillStyle = '#1a120c'
   ctx.font = '800 36px "PingFang SC", "Noto Sans SC", sans-serif'
@@ -78,44 +72,53 @@ function paintCanvas(animal: AnimalId, filled: boolean): HTMLCanvasElement {
   drawMark(ctx, m.tr.x, m.tr.y)
   drawMark(ctx, m.bl.x, m.bl.y)
   drawMark(ctx, m.br.x, m.br.y)
+  canvas.dataset.animal = animal
+  canvas.dataset.filled = filled ? '1' : '0'
   return canvas
 }
 
-/** 示范样张：身子涂成红色，方便网页预览看出「纸上的颜色进了世界」。 */
-function recolorBody(ctx: CanvasRenderingContext2D, animal: AnimalId, w: number, h: number): void {
-  const region = document.createElement('canvas')
-  region.width = w
-  region.height = h
-  const rctx = region.getContext('2d')
-  if (!rctx) return
-  drawRegions(animal, rctx, w, h)
-  const map = rctx.getImageData(0, 0, w, h)
-  const color = ctx.getImageData(0, 0, w, h)
-  const bodyId = animal === 'lion' ? 6 : animal === 'deer' || animal === 'tiger' ? 7 : 1
-  const rgb = hexToRgb(PALETTE[3]!.hex)
-  for (let i = 0; i < map.data.length; i += 4) {
-    if (map.data[i] === bodyId && map.data[i + 3] > 10) {
-      color.data[i] = rgb[0]
-      color.data[i + 1] = rgb[1]
-      color.data[i + 2] = rgb[2]
-      color.data[i + 3] = 255
-    }
+async function paintOfficialInner(canvas: HTMLCanvasElement, animal: AnimalId, filled: boolean): Promise<void> {
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+  const inner = document.createElement('canvas')
+  inner.width = 720
+  inner.height = 860
+  const ictx = inner.getContext('2d')
+  if (!ictx) return
+  ictx.fillStyle = '#fffaf1'
+  ictx.fillRect(0, 0, inner.width, inner.height)
+  if (filled && pickCardSrc(animal)) {
+    const img = await loadOfficialArt(pickCardSrc(animal)!)
+    const pad = 24
+    const scale = Math.min((inner.width - pad * 2) / img.naturalWidth, (inner.height - pad * 2) / img.naturalHeight)
+    const dw = img.naturalWidth * scale
+    const dh = img.naturalHeight * scale
+    ictx.drawImage(img, (inner.width - dw) / 2, (inner.height - dh) / 2, dw, dh)
+  } else {
+    await drawLineArtReady(animal, ictx, inner.width, inner.height)
   }
-  ctx.putImageData(color, 0, 0)
-  drawLineArt(animal, ctx, w, h)
-}
-
-function hexToRgb(hex: string): [number, number, number] {
-  const h = hex.replace('#', '')
-  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]
+  const ox = (TEMPLATE_W - inner.width) / 2
+  const oy = 88
+  ctx.drawImage(inner, ox, oy)
 }
 
 export function renderTemplate(animal: AnimalId, filled = false): HTMLCanvasElement {
   return paintCanvas(animal, filled)
 }
 
+export async function renderTemplateReady(animal: AnimalId, filled = false): Promise<HTMLCanvasElement> {
+  const canvas = paintCanvas(animal, filled)
+  if (officialLineArtSrc(animal) || pickCardSrc(animal)) await paintOfficialInner(canvas, animal, filled)
+  return canvas
+}
+
 export function templateDataUrl(animal: AnimalId, filled = false): string {
   return renderTemplate(animal, filled).toDataURL('image/png')
+}
+
+export async function templateDataUrlReady(animal: AnimalId, filled = false): Promise<string> {
+  const canvas = await renderTemplateReady(animal, filled)
+  return canvas.toDataURL('image/png')
 }
 
 export function rememberLastPaper(dataUrl: string, animalId: AnimalId): void {
@@ -134,6 +137,16 @@ export function lastPaper(): { dataUrl: string; animalId: AnimalId } | null {
 
 export function downloadTemplate(animal: AnimalId, filled = false): string {
   const url = templateDataUrl(animal, filled)
+  rememberLastPaper(url, animal)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filled ? `样张-涂好的${ANIMAL_META[animal].name}.png` : `线稿-${ANIMAL_META[animal].name}.png`
+  a.click()
+  return url
+}
+
+export async function downloadTemplateReady(animal: AnimalId, filled = false): Promise<string> {
+  const url = await templateDataUrlReady(animal, filled)
   rememberLastPaper(url, animal)
   const a = document.createElement('a')
   a.href = url

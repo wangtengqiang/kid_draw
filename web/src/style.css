@@ -47,10 +47,20 @@ button { font: inherit; color: inherit; }
 
 .home { justify-content: center; text-align: center; gap: 12px; }
 .home-hero { display: flex; flex-direction: column; gap: 10px; margin-bottom: 8px; }
+.home h1 {
+  line-height: 1.15;
+  padding-inline: 8px;
+  overflow: visible;
+}
+.home .lead {
+  max-width: 22em;
+  margin-inline: auto;
+  padding-inline: 12px;
+}
 .home-kicker {
   margin: 10px 0 0;
   font-size: 14px;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.08em;
   opacity: 0.55;
   font-weight: 700;
 }
@@ -190,10 +200,10 @@ h1 {
 .pick-card img, .pet-shot {
   width: 100%;
   height: auto;
-  aspect-ratio: 320 / 360;
-  object-fit: cover;
+  aspect-ratio: 780 / 348;
+  object-fit: contain;
   border-radius: 22px;
-  background: #e8f2d2;
+  background: #fffaf1;
   display: block;
 }
 .pick-card strong { font-size: 32px; }
@@ -244,7 +254,7 @@ h1 {
   height: 100%;
   touch-action: none;
 }
-.paint-lines { pointer-events: none; }
+.paint-lines { pointer-events: none; mix-blend-mode: multiply; }
 
 .brush-row {
   display: flex;
@@ -325,6 +335,10 @@ h1 {
 
 .text-link.quiet { opacity: 0.5; font-size: 20px; font-weight: 800; }
 .print-grid { display: grid; gap: 14px; }
+.print-grid .pick-card img {
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+}
 .print-samples { display: flex; flex-direction: column; gap: 4px; }
 
 .preview-frame {
@@ -442,16 +456,14 @@ h1 {
 }
 
 .hero-mark {
-  width: 92px;
-  height: 92px;
+  width: 132px;
+  height: 132px;
   margin: 0 auto;
-  border-radius: 999px;
-  background: var(--leaf);
-  color: var(--leaf-ink);
-  display: grid;
-  place-items: center;
-  font-size: 44px;
-  box-shadow: 0 8px 0 var(--leaf-shadow);
+  border-radius: 32px;
+  object-fit: contain;
+  background: #fffaf1;
+  box-shadow: 0 8px 0 #d7c4a4;
+  display: block;
 }
 .code-input {
   width: 100%;

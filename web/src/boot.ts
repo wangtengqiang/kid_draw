@@ -90,7 +90,7 @@ export class App {
     this.root.innerHTML = `
       <main class="page home">
         <div class="home-hero">
-          <div class="hero-mark" aria-hidden="true">🦌</div>
+          <img class="hero-mark" src="/picks/lion.png" alt="" />
           <h1>彩绘动物进森林</h1>
           <p class="lead">一台主机打开世界。小朋友只涂色、把画送进去。</p>
         </div>

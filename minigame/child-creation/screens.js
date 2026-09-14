@@ -2,11 +2,14 @@
  * 儿童创作用例界面：选一只 → 自由蜡笔涂色 → 送进世界。
  * 送到后可进主机世界。不打开网页 Three.js。
  */
-const { fillBtn, hit, lead, title } = require('../draw.js')
+const { fillBtn, hit, leadWrap, title } = require('../draw.js')
 const { ANIMAL_IDS, ANIMAL_NAMES, PALETTE } = require('../types.js')
-const { drawAnimal, drawLineGuide } = require('./lineart.js')
+const { drawPickCard } = require('../art.js')
+const { drawLineGuide } = require('./lineart.js')
+const { drawAnimal } = require('../world-exhibition/models.js')
 const { PaintSurface } = require('./paint.js')
 const { sendToWorld } = require('./send-to-world.js')
+const sync = require('../sync/index.js')
 
 const BRUSH_SIZES = [
   { name: '细', size: 12 },
@@ -30,14 +33,16 @@ ChildCreation.prototype.dispose = function () {
   this.stageBox = null
 }
 
-ChildCreation.prototype.needScan = function (ctx) {
+ChildCreation.prototype.needScan = function (ctx, next) {
   const W = this.api.W
   const H = this.api.H
-  title(ctx, '请扫老师的码', W / 2, H * 0.32, 40)
-  lead(ctx, '扫完就能画画。不用输入数字。', W / 2, H * 0.4)
+  title(ctx, '扫码进入', W / 2, H * 0.26, 40)
+  leadWrap(ctx, '对准老师主机上的二维码。也可以从相册选一张。', W / 2, H * 0.32, W - 48)
+  const scan = { id: 'scan-code', next: next || 'pick', x: 28, y: H * 0.46, w: W - 56, h: 88 }
+  fillBtn(ctx, scan, '#1a120c', '扫一扫 / 选相册', 28)
   const back = { id: 'home', x: 24, y: 24, w: 120, h: 52 }
   fillBtn(ctx, back, '#efe4d2', '返回', 22)
-  return [back]
+  return [back, scan]
 }
 
 ChildCreation.prototype.ended = function (ctx) {
@@ -58,11 +63,11 @@ ChildCreation.prototype.pick = function (ctx, roomId) {
   ANIMAL_IDS.forEach((id, i) => {
     const y = 130 + i * (cardH + 12)
     const b = { id: 'animal:' + id, x: 28, y: y, w: W - 56, h: cardH, animalId: id, roomId: roomId }
-    ctx.fillStyle = '#fff'
+    ctx.fillStyle = '#fffaf1'
     ctx.beginPath()
     ctx.rect(b.x, b.y, b.w, b.h)
     ctx.fill()
-    drawAnimal(ctx, id, null, { x: b.x, y: b.y, w: b.w, h: b.h - 36 })
+    drawPickCard(ctx, id, { x: b.x + 8, y: b.y + 8, w: b.w - 16, h: b.h - 44 })
     ctx.fillStyle = '#1a120c'
     ctx.font = '800 28px sans-serif'
     ctx.textAlign = 'center'
@@ -147,6 +152,7 @@ ChildCreation.prototype.touch = function (screen, btn, x, y) {
   const go = this.api.go
   if (!btn) return
   if (btn.id === 'home') go({ name: 'home' })
+  else if (btn.id === 'scan-code') this.scanJoin(btn.next || 'pick')
   else if (btn.id === 'pick') go({ name: 'pick', roomId: btn.roomId || screen.roomId })
   else if (btn.id === 'open-world') go({ name: 'host', roomId: btn.roomId || screen.roomId })
   else if (btn.id.indexOf('animal:') === 0) go({ name: 'paint', roomId: btn.roomId, animalId: btn.animalId })
@@ -176,6 +182,34 @@ ChildCreation.prototype.paintEnd = function () {
   this.painting = false
   this.stageBox = null
   if (this.paint) this.paint.endStroke()
+}
+
+ChildCreation.prototype.scanJoin = function (next) {
+  const go = this.api.go
+  const dest = next || 'pick'
+  const open = function (roomId) {
+    if (!sync.getRoom(roomId)) sync.createRoom(roomId)
+    if (dest === 'paper-pick') go({ name: 'paper-pick', roomId: roomId })
+    else go({ name: 'pick', roomId: roomId })
+  }
+  if (typeof wx === 'undefined' || !wx.scanCode) {
+    open(sync.ensurePreviewRoom())
+    return
+  }
+  wx.scanCode({
+    onlyFromCamera: false,
+    success: function (res) {
+      const roomId = sync.parseJoinFromQr(res.result || '')
+      if (!roomId) {
+        wx.showToast({ title: '没认出房间码', icon: 'none' })
+        return
+      }
+      open(roomId)
+    },
+    fail: function () {
+      wx.showToast({ title: '没有扫到', icon: 'none' })
+    },
+  })
 }
 
 ChildCreation.prototype.send = function (roomId, animalId) {

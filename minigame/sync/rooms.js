@@ -203,6 +203,15 @@ function isHostQuery() {
   }
 }
 
+function parseJoinFromQr(text) {
+  const raw = String(text || '').trim()
+  if (!raw) return null
+  const fromUrl = raw.match(/[?&](?:join|room)=([0-9A-Za-z]{3,12})/i)
+  if (fromUrl && fromUrl[1]) return fromUrl[1]
+  if (/^\d{4}$/.test(raw)) return raw
+  return null
+}
+
 function animalLabel(animalId) {
   const names = { deer: '小鹿', tiger: '小老虎', lion: '小狮子' }
   return `小朋友的${names[animalId] || animalId}`
@@ -219,6 +228,7 @@ module.exports = {
   getRoom,
   isHostQuery,
   joinQuery,
+  parseJoinFromQr,
   newRoomCode,
   patchRoom,
   setTheme,

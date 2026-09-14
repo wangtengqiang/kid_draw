@@ -1,10 +1,11 @@
 /**
- * 纸上涂色：可打印线稿的 2D 占位。四角黑块。完整打印 PNG 在网页 paper-coloring。
+ * 纸上涂色：可打印官方线稿。四角黑块。完整打印 PNG 在网页 paper-coloring。
+ * 陆地三只用仓库里的涂色本 PNG，不再画椭圆雪人。
  */
 const { ANIMAL_NAMES } = require('../types.js')
-const { drawAnimal } = require('../world-exhibition/models.js')
+const { drawLineArt } = require('../art.js')
 
-function drawSheet(ctx, animalId, box, filled) {
+function drawSheet(ctx, animalId, box) {
   ctx.fillStyle = '#fffaf1'
   ctx.fillRect(box.x, box.y, box.w, box.h)
   const mark = Math.max(16, box.w * 0.08)
@@ -13,8 +14,7 @@ function drawSheet(ctx, animalId, box, filled) {
   ctx.fillRect(box.x + box.w - mark - 8, box.y + 8, mark, mark)
   ctx.fillRect(box.x + 8, box.y + box.h - mark - 8, mark, mark)
   ctx.fillRect(box.x + box.w - mark - 8, box.y + box.h - mark - 8, mark, mark)
-  const painted = filled ? { body: '#e24b4b' } : null
-  drawAnimal(ctx, animalId, painted, {
+  drawLineArt(ctx, animalId, {
     x: box.x + 20,
     y: box.y + 28,
     w: box.w - 40,

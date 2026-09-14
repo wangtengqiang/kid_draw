@@ -97,14 +97,68 @@ export function regionIdColor(id: number): string {
   return `rgb(${id},0,0)`
 }
 
+/** 陆地狮/鹿/虎用官方涂色本 PNG，不再画椭圆雪人。 */
+export function officialLineArtSrc(animal: AnimalId): string | null {
+  if (animal === 'lion' || animal === 'deer' || animal === 'tiger') return `/lineart/${animal}.png`
+  return null
+}
+
+export function pickCardSrc(animal: AnimalId): string | null {
+  if (animal === 'lion' || animal === 'deer' || animal === 'tiger') return `/picks/${animal}.png`
+  return null
+}
+
+const artCache = new Map<string, HTMLImageElement>()
+
+export function loadOfficialArt(src: string): Promise<HTMLImageElement> {
+  const hit = artCache.get(src)
+  if (hit && hit.complete && hit.naturalWidth > 0) return Promise.resolve(hit)
+  return new Promise((resolve, reject) => {
+    const img = hit || new Image()
+    img.onload = () => {
+      artCache.set(src, img)
+      resolve(img)
+    }
+    img.onerror = () => reject(new Error('线稿打不开'))
+    if (!hit) {
+      artCache.set(src, img)
+      img.src = src
+    } else if (hit.complete && hit.naturalWidth > 0) resolve(hit)
+  })
+}
+
+function fitImage(ctx: Ctx, img: CanvasImageSource, w: number, h: number): void {
+  const iw = 'naturalWidth' in img && img.naturalWidth ? img.naturalWidth : (img as HTMLImageElement).width
+  const ih = 'naturalHeight' in img && img.naturalHeight ? img.naturalHeight : (img as HTMLImageElement).height
+  if (!iw || !ih) return
+  const pad = Math.min(w, h) * 0.04
+  const scale = Math.min((w - pad * 2) / iw, (h - pad * 2) / ih)
+  const dw = iw * scale
+  const dh = ih * scale
+  ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh)
+}
+
 export function drawRegions(animal: AnimalId, ctx: Ctx, w: number, h: number): void {
   ctx.clearRect(0, 0, w, h)
+  if (officialLineArtSrc(animal)) return
   bookFrame(ctx, w, h, animal, () => drawBookRegions(animal, ctx))
 }
 
 export function drawLineArt(animal: AnimalId, ctx: Ctx, w: number, h: number): void {
   ctx.clearRect(0, 0, w, h)
+  const src = officialLineArtSrc(animal)
+  if (src) {
+    const img = artCache.get(src)
+    if (img && img.complete && img.naturalWidth > 0) fitImage(ctx, img, w, h)
+    return
+  }
   bookFrame(ctx, w, h, animal, () => drawBookLines(animal, ctx))
+}
+
+export async function drawLineArtReady(animal: AnimalId, ctx: Ctx, w: number, h: number): Promise<void> {
+  const src = officialLineArtSrc(animal)
+  if (src) await loadOfficialArt(src).catch(() => undefined)
+  drawLineArt(animal, ctx, w, h)
 }
 
 export function drawPreview(
@@ -117,6 +171,17 @@ export function drawPreview(
   ctx.clearRect(0, 0, w, h)
   ctx.fillStyle = '#fffaf1'
   ctx.fillRect(0, 0, w, h)
+  const pick = pickCardSrc(animal)
+  if (pick) {
+    const img = artCache.get(pick)
+    if (img && img.complete && img.naturalWidth > 0) fitImage(ctx, img, w, h)
+    else {
+      const src = officialLineArtSrc(animal)
+      const line = src ? artCache.get(src) : undefined
+      if (line && line.complete && line.naturalWidth > 0) fitImage(ctx, line, w, h)
+    }
+    return
+  }
   const tmp = document.createElement('canvas')
   tmp.width = w
   tmp.height = h

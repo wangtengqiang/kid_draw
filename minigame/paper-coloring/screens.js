@@ -1,8 +1,9 @@
 /**
  * 纸上涂色界面：老师下载线稿；孩子选一只、拍照、送进世界。
  */
-const { fillBtn, lead, title } = require('../draw.js')
+const { fillBtn, lead, leadWrap, title } = require('../draw.js')
 const { ANIMAL_IDS, ANIMAL_NAMES } = require('../types.js')
+const { drawPickCard } = require('../art.js')
 const { drawAnimal } = require('../world-exhibition/models.js')
 const { colorsFromPhoto } = require('./map.js')
 const { sendColoredAnimal } = require('./send-to-world.js')
@@ -29,7 +30,7 @@ PaperColoring.prototype.print = function (ctx) {
   ANIMAL_IDS.forEach((id, i) => {
     const y = 150 + i * ((H - 180) / 3)
     const b = { id: 'save-sheet', animalId: id, x: 28, y: y, w: W - 56, h: (H - 200) / 3 - 10 }
-    drawSheet(ctx, id, b, false)
+    drawSheet(ctx, id, b)
     buttons.push(b)
   })
   return buttons
@@ -38,11 +39,13 @@ PaperColoring.prototype.print = function (ctx) {
 PaperColoring.prototype.needScan = function (ctx) {
   const W = this.api.W
   const H = this.api.H
-  title(ctx, '请扫老师的码', W / 2, H * 0.32, 40)
-  lead(ctx, '扫完就能拍纸上的画。', W / 2, H * 0.4)
+  title(ctx, '扫码进入', W / 2, H * 0.26, 40)
+  leadWrap(ctx, '对准老师主机上的二维码。也可以从相册选一张。', W / 2, H * 0.32, W - 48)
+  const scan = { id: 'scan-code', x: 28, y: H * 0.46, w: W - 56, h: 88 }
+  fillBtn(ctx, scan, '#1a120c', '扫一扫 / 选相册', 28)
   const back = { id: 'home', x: 24, y: 24, w: 120, h: 52 }
   fillBtn(ctx, back, '#efe4d2', '返回', 22)
-  return [back]
+  return [back, scan]
 }
 
 PaperColoring.prototype.pick = function (ctx, roomId) {
@@ -54,9 +57,9 @@ PaperColoring.prototype.pick = function (ctx, roomId) {
   ANIMAL_IDS.forEach((id, i) => {
     const y = 130 + i * (cardH + 12)
     const b = { id: 'paper-animal', animalId: id, roomId: roomId, x: 28, y: y, w: W - 56, h: cardH }
-    ctx.fillStyle = '#fff'
+    ctx.fillStyle = '#fffaf1'
     ctx.fillRect(b.x, b.y, b.w, b.h)
-    drawAnimal(ctx, id, null, { x: b.x, y: b.y, w: b.w, h: b.h - 36 })
+    drawPickCard(ctx, id, { x: b.x + 8, y: b.y + 8, w: b.w - 16, h: b.h - 44 })
     ctx.fillStyle = '#1a120c'
     ctx.font = '800 28px sans-serif'
     ctx.textAlign = 'center'
@@ -109,6 +112,7 @@ PaperColoring.prototype.touch = function (screen, btn) {
   const self = this
   if (!btn) return
   if (btn.id === 'home') go({ name: 'home' })
+  else if (btn.id === 'scan-code') this.scanJoin()
   else if (btn.id === 'open-world') go({ name: 'host', roomId: btn.roomId || screen.roomId })
   else if (btn.id === 'paper-pick') go({ name: 'paper-pick', roomId: btn.roomId || screen.roomId })
   else if (btn.id === 'paper-animal') go({ name: 'paper-camera', roomId: btn.roomId, animalId: btn.animalId })
@@ -154,6 +158,33 @@ PaperColoring.prototype.choose = function (roomId, animalId) {
     },
   })
   void roomId
+}
+
+PaperColoring.prototype.scanJoin = function () {
+  const go = this.api.go
+  const sync = require('../sync/index.js')
+  const open = function (roomId) {
+    if (!sync.getRoom(roomId)) sync.createRoom(roomId)
+    go({ name: 'paper-pick', roomId: roomId })
+  }
+  if (typeof wx === 'undefined' || !wx.scanCode) {
+    open(sync.ensurePreviewRoom())
+    return
+  }
+  wx.scanCode({
+    onlyFromCamera: false,
+    success: function (res) {
+      const roomId = sync.parseJoinFromQr(res.result || '')
+      if (!roomId) {
+        wx.showToast({ title: '没认出房间码', icon: 'none' })
+        return
+      }
+      open(roomId)
+    },
+    fail: function () {
+      wx.showToast({ title: '没有扫到', icon: 'none' })
+    },
+  })
 }
 
 function saveSheet(animalId) {

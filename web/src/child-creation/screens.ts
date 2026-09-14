@@ -18,6 +18,7 @@ import {
   type PaintDraft,
 } from './drafts'
 import { inferAnimalId, needsAnimalPicker } from './infer-animal'
+import { pickCardSrc } from './lineart'
 import { BRUSH_SIZES, PaintSurface } from './paint'
 import { decodeQrFromFile, decodeQrFromImageData, parseJoinFromQr } from './scan-qr'
 import { sendToWorld } from './send-to-world'
@@ -72,15 +73,7 @@ export class ChildCreation {
   }
 
   needScan(): void {
-    this.root.innerHTML = `
-      <main class="page kid">
-        <button class="back" data-act="home" type="button">返回</button>
-        <h1>请扫老师的码</h1>
-        <p class="lead">用摄像头扫，或选一张二维码图片。不用输入数字。</p>
-        <button class="hit kid-hit" data-act="scan" type="button">扫码进入</button>
-      </main>`
-    this.root.querySelector('[data-act="home"]')?.addEventListener('click', () => this.go({ name: 'home' }))
-    this.root.querySelector('[data-act="scan"]')?.addEventListener('click', () => this.go({ name: 'scan' }))
+    this.scan()
   }
 
   scan(): void {
@@ -146,7 +139,12 @@ export class ChildCreation {
       const img = document.createElement('img')
       img.width = 320
       img.height = 360
-      mountPetImage(img, id)
+      const cardSrc = pickCardSrc(id)
+      if (cardSrc) {
+        img.src = cardSrc
+        img.alt = ANIMAL_META[id].name
+        img.classList.add('pet-shot')
+      } else mountPetImage(img, id)
       const label = document.createElement('strong')
       label.textContent = ANIMAL_META[id].name
       card.append(img, label)

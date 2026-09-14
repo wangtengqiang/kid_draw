@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { ANIMAL_IDS } from '../types'
-import { COLOR_FRAME, TIGER_EAR_TIP_Y, TIGER_HEAD_CIRCLE, TIGER_OUTLINE } from './coloring-book'
+import { ANIMAL_IDS, LAND_IDS, MARINE_IDS } from '../types'
+import { COLOR_FRAME } from './coloring-book'
+import { officialLineArtSrc, pickCardSrc } from './lineart'
 import { parseJoinFromQr } from './scan-qr'
 import { listDrafts, MAX_DRAFTS, replaceDraft, saveDraft, DRAFT_KEY } from './drafts'
 
@@ -53,8 +54,24 @@ describe('paint drafts', () => {
   })
 })
 
+describe('official land coloring pages', () => {
+  for (const id of LAND_IDS) {
+    it(`${id} uses the shipped PNG lineart, not a canvas oval`, () => {
+      expect(officialLineArtSrc(id)).toBe(`/lineart/${id}.png`)
+      expect(pickCardSrc(id)).toBe(`/picks/${id}.png`)
+    })
+  }
+
+  it('marine animals keep the canvas coloring book', () => {
+    for (const id of MARINE_IDS) {
+      expect(officialLineArtSrc(id)).toBeNull()
+      expect(pickCardSrc(id)).toBeNull()
+    }
+  })
+})
+
 describe('coloring-book frame', () => {
-  for (const id of ANIMAL_IDS) {
+  for (const id of MARINE_IDS) {
     it(`${id} fits a 320×360 pick card with padding`, () => {
       const b = COLOR_FRAME[id]
       const w = 320
@@ -70,20 +87,12 @@ describe('coloring-book frame', () => {
     })
   }
 
-  it('deer is standing (taller than a sideways blob)', () => {
-    const b = COLOR_FRAME.deer
-    const height = b.maxY - b.minY
-    const width = b.maxX - b.minX
-    expect(height).toBeGreaterThan(width * 0.7)
-    expect(b.maxY).toBeGreaterThan(2)
-  })
-
-  it('tiger is a round cat head with short ears, not a rabbit', () => {
-    expect(TIGER_HEAD_CIRCLE.r).toBeGreaterThan(0.35)
-    expect(TIGER_EAR_TIP_Y - (TIGER_HEAD_CIRCLE.cy + TIGER_HEAD_CIRCLE.r)).toBeLessThan(0.22)
-    const earTips = TIGER_OUTLINE.filter((p) => p[1] > TIGER_HEAD_CIRCLE.cy + TIGER_HEAD_CIRCLE.r)
-    expect(earTips.length).toBeGreaterThan(0)
-    expect(Math.max(...earTips.map((p) => p[1]))).toBeLessThan(1.7)
+  it('every animal still has a frame box for marine fallback math', () => {
+    for (const id of ANIMAL_IDS) {
+      const b = COLOR_FRAME[id]
+      expect(b.maxX).toBeGreaterThan(b.minX)
+      expect(b.maxY).toBeGreaterThan(b.minY)
+    }
   })
 })
 

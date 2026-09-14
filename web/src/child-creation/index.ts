@@ -4,7 +4,7 @@
  */
 export { exportTexture } from './export-texture'
 export { emptySlotCount, listDrafts, MAX_DRAFTS, saveDraft } from './drafts'
-export { drawLineArt, drawPreview, drawRegions } from './lineart'
+export { drawLineArt, drawPreview, drawRegions, officialLineArtSrc, pickCardSrc } from './lineart'
 export { inferAnimalId } from './infer-animal'
 export { BRUSH_SIZES, PaintSurface } from './paint'
 export { parseJoinFromQr } from './scan-qr'

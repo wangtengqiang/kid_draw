@@ -1,9 +1,9 @@
 /**
- * 儿童创作：线稿样子。不是主机世界。
- * 分区表只用来从自由涂色里采样皮毛色，不再用椭圆点选填色。
+ * 儿童创作：官方线稿样子。不是主机世界，也不是椭圆雪人。
+ * 分区表只用来从自由涂色里采样皮毛色。
  */
 const { DEFAULTS } = require('../types.js')
-const { drawAnimal } = require('../world-exhibition/models.js')
+const { drawLineArt } = require('../art.js')
 
 function regionsOf(animalId) {
   if (animalId === 'deer') return ['antler', 'head', 'body', 'belly', 'leg']
@@ -21,7 +21,7 @@ function colorsOf(animalId, painted) {
 }
 
 function drawLineGuide(ctx, animalId, box) {
-  drawAnimal(ctx, animalId, null, box, { outlineOnly: true })
+  drawLineArt(ctx, animalId, box, { multiply: true })
 }
 
-module.exports = { drawAnimal, drawLineGuide, regionsOf, colorsOf }
+module.exports = { drawLineGuide, regionsOf, colorsOf }
