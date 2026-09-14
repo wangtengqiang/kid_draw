@@ -12,7 +12,7 @@ export class PreviewStage {
   private scene = new THREE.Scene()
   private camera: THREE.PerspectiveCamera
   private model: THREE.Group | null = null
-  private rot = -0.85
+  private rot = 0
   private raf = 0
   private running = true
   private clock = new THREE.Clock()
@@ -24,9 +24,9 @@ export class PreviewStage {
     this.renderer.setClearColor('#e8f2d2', 1)
     this.renderer.setPixelRatio(1)
     this.camera = new THREE.PerspectiveCamera(36, 1, 0.1, 40)
-    this.camera.position.set(0.25, 1.45, 3.85)
-    this.camera.lookAt(0.05, 0.92, 0)
-    this.orbit = new OrbitZoom(canvas, this.camera, new THREE.Vector3(0.05, 0.92, 0), PREVIEW_ORBIT)
+    this.camera.position.set(2.05, 1.72, 1.55)
+    this.camera.lookAt(0.72, 0.98, 0)
+    this.orbit = new OrbitZoom(canvas, this.camera, new THREE.Vector3(0.72, 0.98, 0), PREVIEW_ORBIT)
     this.scene.background = new THREE.Color('#e8f2d2')
     this.scene.add(new THREE.AmbientLight('#ffe9c8', 0.85))
     this.scene.add(new THREE.HemisphereLight('#fff6e8', '#7a9a58', 1.05))

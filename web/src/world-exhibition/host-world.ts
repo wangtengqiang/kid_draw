@@ -227,9 +227,9 @@ export class HostWorld {
     this.renderer.setPixelRatio(1)
     this.renderer.shadowMap.enabled = false
     this.camera = new THREE.PerspectiveCamera(46, 1, 0.3, 140)
-    this.camera.position.set(4.2, 8.4, 19.5)
-    this.camera.lookAt(5.2, 1.15, -4.5)
-    this.orbit = new OrbitZoom(canvas, this.camera, new THREE.Vector3(4.4, 0.9, -1.2), HOST_ORBIT)
+    this.camera.position.set(3.2, 5.8, 11.2)
+    this.camera.lookAt(0.3, 0.85, 0.6)
+    this.orbit = new OrbitZoom(canvas, this.camera, new THREE.Vector3(0.4, 0.8, 0.4), HOST_ORBIT)
     const grass = new THREE.CanvasTexture(paintGrassGround())
     grass.wrapS = grass.wrapT = THREE.RepeatWrapping
     grass.repeat.set(8, 8)
@@ -284,7 +284,7 @@ export class HostWorld {
     list.forEach((item, i) => {
       if (this.actors.has(item.id)) return
       const group = createAnimalModel(item.animalId, item.regionColors, item.thumb || undefined)
-      group.scale.setScalar(isMarine(item.animalId) ? 0.92 : 1.05)
+      group.scale.setScalar(isMarine(item.animalId) ? 1.05 : 1.42)
       const marine = isMarine(item.animalId)
       const actor: Actor = {
         id: item.id,
