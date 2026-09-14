@@ -88,10 +88,11 @@ describe('host heartbeat', () => {
       animalId: 'lion',
       creatorId: 'c',
       label: 'x',
-      thumb: 't',
+      thumb: 'data:image/png;base64,' + 'A'.repeat(8000),
       regionColors: {},
     })
-    touchHost('8888')
+    for (let i = 0; i < 8; i++) touchHost('8888')
     expect(getRoom('8888')?.animals).toHaveLength(1)
+    expect(getRoom('8888')?.animals[0]?.thumb).toBe('')
   })
 })

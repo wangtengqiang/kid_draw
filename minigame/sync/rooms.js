@@ -65,7 +65,7 @@ function saveRooms(rooms) {
     })
     var next = JSON.stringify(merged)
     var now = wx.getStorageSync(LOCAL_ROOMS_KEY) || ''
-    if (now !== raw) continue
+    if (now !== raw && attempt < 5) continue
     wx.setStorageSync(LOCAL_ROOMS_KEY, next)
     return
   }
@@ -169,7 +169,7 @@ function submitAnimal(roomId, animal) {
     id: `a-${Date.now().toString(36)}`,
     createdAt: Date.now(),
   })
-  room.animals = room.animals.concat([placed])
+  room.animals = room.animals.concat([Object.assign({}, placed, { thumb: '' })])
   room.animalsGen = (room.animalsGen || 0) + 1
   rooms[roomId] = room
   saveRooms(rooms)

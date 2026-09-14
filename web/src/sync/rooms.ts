@@ -31,7 +31,7 @@ function saveRooms(rooms: Record<string, RoomState>): void {
       merged[id] = disk[id] ? mergeRoom(disk[id], room) : normalizeRoom(room)
     }
     const next = JSON.stringify(merged)
-    if (localStorage.getItem(LOCAL_ROOMS_KEY) !== raw) continue
+    if (localStorage.getItem(LOCAL_ROOMS_KEY) !== raw && attempt < 5) continue
     localStorage.setItem(LOCAL_ROOMS_KEY, next)
     channel?.postMessage({ kind: 'rooms' })
     return
@@ -177,7 +177,8 @@ export function submitAnimal(
     id: `a-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
     createdAt: Date.now(),
   }
-  room.animals = [...room.animals, placed]
+  // 主机名单只同步分区色。整张 PNG 缩略图放作品夹，不然心跳会把刚送来的动物写丢。
+  room.animals = [...room.animals, { ...placed, thumb: '' }]
   room.animalsGen = (room.animalsGen ?? 0) + 1
   rooms[roomId] = room
   saveRooms(rooms)
