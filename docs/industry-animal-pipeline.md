@@ -51,21 +51,36 @@
    https://kenney.nl/assets/cube-pets  
    https://quaternius.com/packs/ultimateanimatedanimals.html
 
-（Mixamo 四足：官网动作库是人形，https://www.mixamo.com/ 。四足要用 Quaternius 这类动物包，或自己在 Blender 里绑，而不是硬套 Mixamo。）
+（Mixamo 四足：官网动作库是人形，https://www.mixamo.com/ 。四足要用动物资源包或自己在 Blender 里绑，不要硬套 Mixamo。）
 
-## 我们学到以后改了什么
+## 候选取舍（这一轮又查了一遍）
 
-已下载 **CC0 Quaternius Ultimate Animated Animals**（经 AnimaSim 的 glb，无付费 API、无千图网）：
+家长参考是圆滚、画脸的卡通狮/鹿（`world-*-cute.png` 那种）。免费、免登录、真·狮/鹿/虎、还能 Walk 的 glTF，查完只剩 Kenney Cube Pets 同时满足「物种对 + 画脸 + 可下载」。
 
-- 鹿 ← Stag `Walk` / `Idle` / `Eating`  
-  https://media.githubusercontent.com/media/danwahl/animasim/main/assets/generated/glb/stag.glb
-- 虎 ← Wolf（包里没有老虎）  
-  https://media.githubusercontent.com/media/danwahl/animasim/main/assets/generated/glb/wolf.glb
-- 狮 ← Fox（包里没有狮子；带走路剪辑的橙色四足）  
-  https://media.githubusercontent.com/media/danwahl/animasim/main/assets/generated/glb/fox.glb
-- 鱼 ← Kenney Cube Pets；海豚 / 海龟 ← Gobkit Whale / Seal  
-  https://gobkit.com/api/free
+| 候选 | URL | 结论 |
+| --- | --- | --- |
+| **Kenney Cube Pets** `animal-lion/deer/tiger.glb` | https://kenney.nl/assets/cube-pets · zip https://kenney.nl/media/pages/assets/cube-pets/44e58e945f-1774520254/kenney_cube-pets_1.0.zip | **采用。** 真狮/真鹿/真虎，画好的笑脸，自带 walk。略方，但比「狼当虎」可爱。 |
+| Kenney Animal Pack | https://kenney.nl/assets/animal-pack | **拒绝。** 2015 年 2D PNG，不是 glTF。 |
+| Quaternius Ultimate Animated Animals Stag | https://quaternius.com/packs/ultimateanimatedanimals.html · https://media.githubusercontent.com/media/danwahl/animasim/main/assets/generated/glb/stag.glb | **鹿可用但不用。** 真鹿，可是写实低模，和参考的圆滚幼崽不是同一套语言；三只要统一。 |
+| Quaternius Fox / Wolf | 同上 fox.glb / wolf.glb | **拒绝。** 不是狮、不是虎。 |
+| Quaternius 2016「5 low poly animals」 | https://opengameart.org/content/5-low-poly-animals | **拒绝。** 无狮/虎。 |
+| Zsky Animal Pack Lion / Cat | https://opengameart.org/content/animal-pack · zip https://opengameart.org/sites/default/files/animals_pack.zip · 署名 https://www.patreon.com/Zsky | **拒绝。** 真狮，但鬃毛像花瓣球，无 walk。 |
+| Gobkit free animals | https://gobkit.com/api/free | **海生采用**（鲸/海豹）。陆地无狮/鹿/虎。 |
+| Sketchfab 可下载卡通狮 | https://sketchfab.com/3d-models/cartoon-lion-1d9cf098cbb844d0ba092d0f8f3be05c 等 | **拒绝。** 搜索 API 401，要登录；许可证不统一。 |
+| Poly Pizza 卡通包 | https://poly.pizza/bundle/Animated-Animal-Pack-ILAPXeUYiS | **拒绝。** 403/401，要 API key。 |
+| Poly Haven / pmndrs assets | https://polyhaven.com/ · https://github.com/pmndrs/assets | **拒绝。** 没有卡通狮鹿虎（只有 HDRI / suzi / bunny）。 |
+| Mixamo | https://www.mixamo.com/ | **拒绝。** 人形库，要 Adobe 登录。 |
+| OGA Micket tiger、低模鹿 | https://opengameart.org/content/tiger · https://opengameart.org/content/deer-low-poly-rigged | **拒绝。** CC0 但是 0 A.D. 写实低模，不是幼崽卡通，还是 .blend/.zip。 |
+| Unity/CGTrader 卡通虎 | 付费资源店 | **拒绝。** 付费 API / 商店。 |
+| 粘土 / 胶囊 / icosphere 鬃毛 | 本仓库 `author-animals.mjs` | **拒绝。** 脚本已 throw。 |
 
-运行时：`GLTFLoader` + `SkeletonUtils.clone` + `AnimationMixer`。孩子涂色烤成皮毛 UV（`flipY = false`），眼睛 / 鼻子保留原贴图。喝水用 `Eating`；坐下 / 休息用 Idle + 简单姿势。
+免登录 zip 里**没有**「又圆又像参考图、又是真老虎」的 glTF。虎用 Kenney `animal-tiger`（真虎、画脸），不用狼。
 
-`author-animals.mjs`（Marching Cubes）已禁用，**不是默认**。Zsky `Lion.glb`（CC BY，https://opengameart.org/sites/default/files/animals_pack.zip ，署名 https://www.patreon.com/Zsky）下载过，鬃毛仍像花瓣球，不当默认。许可证见 `web/public/models/NOTICE.md`。
+## 当前默认
+
+- 狮 / 鹿 / 虎 / 鱼 ← Kenney Cube Pets（CC0），正面是画脸，walk 在文件里。
+- 海豚 / 海龟 ← Gobkit Whale / Seal（CC0）。
+- 运行时：`GLTFLoader` + `AnimationMixer`。孩子涂色**乘在皮毛上**，默认白色所以 Kenney 原画脸能看见。
+- 完整 3D 只在网页 Vite。微信小游戏仍是 2D，本回合不移植 Three.js。
+
+许可证：`web/public/models/NOTICE.md`。无千图网、无 CloudBase 密钥。

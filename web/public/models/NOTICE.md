@@ -1,48 +1,35 @@
 # 3D models — licenses
 
-Default land animals are **downloaded premade glTF**. Kid coloring is a coat
-UV albedo (museum/LED stack), not a generated body.
+Default **lion / deer / tiger** are Kenney Cube Pets (CC0): real species,
+painted cartoon faces, built-in `walk` / `idle`. Not fox, not wolf, not clay.
 
-## Quaternius Ultimate Animated Animals — deer, tiger, lion (CC0 1.0)
+## Kenney Cube Pets 2.0 — lion, deer, tiger, fish (CC0 1.0)
 
-- Pack: https://quaternius.com/packs/ultimateanimatedanimals.html
-- License: [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
-- `deer.glb` ← Stag (clips: `Walk`, `Idle`, `Eating`, …)
-- `tiger.glb` ← Wolf (closest CC0 stylized predator with Walk/Idle; pack has no tiger)
-- `lion.glb` ← Fox (closest CC0 orange quadruped with Walk/Idle; pack has no lion)
-- Vendored GLBs: https://github.com/danwahl/animasim/tree/main/assets/generated/glb
-  - https://media.githubusercontent.com/media/danwahl/animasim/main/assets/generated/glb/stag.glb
-  - https://media.githubusercontent.com/media/danwahl/animasim/main/assets/generated/glb/wolf.glb
-  - https://media.githubusercontent.com/media/danwahl/animasim/main/assets/generated/glb/fox.glb
-
-## Zsky Animal Pack — fetched, not the default lion
-
-- https://opengameart.org/content/animal-pack
-- Zip: https://opengameart.org/sites/default/files/animals_pack.zip
-- Credit: https://www.patreon.com/Zsky
-- `Lion.glb` is a real lion mesh (CC BY 4.0) but the mane still reads as petal-spheres.
-  Kept off the default slot. See `ZSKY-LICENSE.txt`.
-
-## Kenney Cube Pets 2.0 — fish only (CC0 1.0)
-
-- https://kenney.nl/assets/cube-pets
+- Pack: https://kenney.nl/assets/cube-pets
 - Zip: https://kenney.nl/media/pages/assets/cube-pets/44e58e945f-1774520254/kenney_cube-pets_1.0.zip
-- `fish.glb` + `Textures/colormap.png`
+- License: [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- Files: `lion.glb` ← `animal-lion.glb`, `deer.glb` ← `animal-deer.glb`,
+  `tiger.glb` ← `animal-tiger.glb`, `fish.glb` ← `animal-fish.glb`
+- Atlas: `Textures/colormap.png` (GLBs reference this path; keep it so the
+  painted smile / eyes show)
+- Clips: `static`, `idle`, `walk`, `run`, `eat`, `dance`, …
+- Author: Kenney (www.kenney.nl)
+
+Kid coloring multiplies coat tint (default white = original Kenney face).
 
 ## Gobkit CC0 — dolphin, turtle stand-ins
 
 - https://gobkit.com/api/free
 - `dolphin.glb` ← Whale.glb · `turtle.glb` ← Seal.glb
 
-## Tried, not used as the land default
+## Tried and not the land default
 
-- Kenney Cube Pets lion/deer/tiger — real glTF, but cube-pet language; not the museum quadruped look.
-- Kenney Animal Pack — 2015 2D PNGs, not glTF.
-- Poly Pizza bundles — API key 401. Not used.
-- Mixamo — humanoid clips; not a cute animal pack we can fetch without an Adobe login.
+See `docs/industry-animal-pipeline.md` (accept / reject table). Short version:
+fox-as-lion and wolf-as-tiger rejected; Zsky lion petal-mane rejected;
+Quaternius pack has no lion/tiger; Sketchfab/Poly Pizza need login or API key;
+clay / capsules rejected.
 
 ## Not in this folder
 
 - No 千图网 / stock-art pixels
 - No marching-cubes / icosphere-mane GLBs
-- No CapsuleGeometry animals as the default look

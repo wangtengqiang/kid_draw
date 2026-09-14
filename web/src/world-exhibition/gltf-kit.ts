@@ -1,6 +1,6 @@
 /**
- * Museum/LED stack: premade glTF mesh + kid coloring as coat UV albedo.
- * GLTFLoader + AnimationMixer + SkeletonUtils.clone. No CapsuleGeometry bodies.
+ * Museum/LED stack: premade Kenney/Gobkit glTF + kid coat tint on the pack atlas.
+ * GLTFLoader + AnimationMixer. No CapsuleGeometry bodies, no fox-as-lion.
  */
 import * as THREE from 'three'
 import { AnimationUtils } from 'three'
@@ -189,17 +189,15 @@ function opaqueLambert(src: THREE.Material, map: THREE.Texture | null, color: TH
   return mat
 }
 
-function paintMesh(obj: THREE.Mesh, coat: THREE.CanvasTexture): void {
+function paintMesh(obj: THREE.Mesh, bodyTint: string): void {
   const srcs = Array.isArray(obj.material) ? obj.material : [obj.material]
   const label = `${obj.name} ${obj.parent?.name || ''}`
   const matName = srcs.map((s) => s.name || '').join(' ')
   const keep = keepFaceName(label) || keepFaceName(matName)
   const next = srcs.map((src) => {
-    if (keep) {
-      const map = 'map' in src && src.map instanceof THREE.Texture ? src.map : null
-      return opaqueLambert(src, map, new THREE.Color('#ffffff'))
-    }
-    return opaqueLambert(src, coat, new THREE.Color('#ffffff'))
+    const map = 'map' in src && src.map instanceof THREE.Texture ? src.map : null
+    const color = keep ? new THREE.Color('#ffffff') : new THREE.Color(bodyTint)
+    return opaqueLambert(src, map, color)
   })
   obj.material = next.length === 1 ? next[0]! : next
   if (keep) obj.userData.region = /nose/i.test(matName + label) ? 'nose' : 'eye'
@@ -211,8 +209,7 @@ function paintMesh(obj: THREE.Mesh, coat: THREE.CanvasTexture): void {
 }
 
 function packOf(animal: AnimalId): string {
-  if (animal === 'lion' || animal === 'deer' || animal === 'tiger') return 'quaternius'
-  if (animal === 'fish') return 'kenney-cube-pets'
+  if (animal === 'lion' || animal === 'deer' || animal === 'tiger' || animal === 'fish') return 'kenney-cube-pets'
   return 'gobkit'
 }
 
@@ -222,8 +219,9 @@ export function instanceAnimal(animal: AnimalId, painted: Record<string, string>
   const cloned = tpl.skinned ? SkeletonUtils.clone(tpl.scene) : tpl.scene.clone(true)
   const inner = cloned as THREE.Group
   const coat = coatTexture(animal, painted)
+  const bodyTint = painted.body || painted.shell || '#ffffff'
   inner.traverse((obj) => {
-    if (obj instanceof THREE.Mesh) paintMesh(obj, coat)
+    if (obj instanceof THREE.Mesh) paintMesh(obj, bodyTint)
   })
 
   const orient = new THREE.Group()

@@ -54,14 +54,12 @@ npm run dev
 
 点 **打开世界**。大森林能看出远近：高树干、层层树冠、弯岸大海，小路会伸进林子。捏合 / 滚轮可以拉近看动物、拉远看深处。侧栏可换 **森林 / 雪原 / 海底**。陆地动物会自己走路、喝水、休息、坐下（错开节拍，不会一起摆同一个姿势）；海洋动物一直在湾里游，不会走上小路。
 
-**3D 动物**走博物馆 / LED 大屏那条业界链路：现成 glTF 网格 + 孩子涂色当皮毛 UV，用 Three.js `GLTFLoader` + `AnimationMixer`（不是胶囊拼身体）：
+**3D 动物**（仅网页）是下载的 **Kenney Cube Pets** glTF，狮 / 鹿 / 虎是真物种、画好的卡通脸、文件里有 `walk`，不是狐狸冒充狮子、也不是狼冒充老虎：
 
-- 小鹿 — [Quaternius Ultimate Animated Animals](https://quaternius.com/packs/ultimateanimatedanimals.html) Stag（CC0，自带 `Walk` / `Idle` / `Eating`）。
-- 老虎 — 同一套 Quaternius 的 Wolf（包里没有老虎；这是带走路剪辑的最接近掠食四足）。
-- 狮子 — 同一套 Quaternius 的 Fox（包里没有狮子；带 `Walk` 的橙色四足）。Zsky `Lion.glb` 已下载，鬃毛仍像花瓣球，不当默认。
-- 鱼 — [Kenney Cube Pets](https://kenney.nl/assets/cube-pets)（CC0）。海豚 / 海龟 — [Gobkit](https://gobkit.com/api/free) Whale / Seal（CC0）。
+- 狮 / 鹿 / 虎 / 鱼 — [Kenney Cube Pets 2.0](https://kenney.nl/assets/cube-pets)（[CC0](https://creativecommons.org/publicdomain/zero/1.0/)）。zip：https://kenney.nl/media/pages/assets/cube-pets/44e58e945f-1774520254/kenney_cube-pets_1.0.zip
+- 海豚 / 海龟 — [Gobkit](https://gobkit.com/api/free) Whale / Seal（CC0）。
 
-孩子分区色烤进 `coatTexture`，贴在皮毛 UV 上（`flipY = false`）。许可证：[`web/public/models/NOTICE.md`](web/public/models/NOTICE.md)。不要把千图网 PNG 当模型，也不要用圆球鬃毛当狮子。
+孩子涂色乘在皮毛上（默认白色，Kenney 原画脸能看见）。免费包里没有更圆、又是真虎、又能免登录下载的 glTF；取舍见 [`docs/industry-animal-pipeline.md`](docs/industry-animal-pipeline.md)。不要把千图网 PNG 当模型。
 
 **纸上涂色**
 
@@ -78,14 +76,15 @@ npm test
 npm run build
 ```
 
-## 微信开发者工具
+## 微信开发者工具 · 导入
 
 1. 安装[微信开发者工具](https://developers.weixin.qq.com/minigame/dev/devtools/download.html)。
-2. 导入本仓库**根目录**（含 `game.js`、`game.json`、`project.config.json`）。
-3. `compileType` 为 `game`，AppID 为 `wxac4e2e55fc8f4a30`。
-4. 小游戏入口是 `game.js` → `minigame/main.js`，同样按 `child-creation/`、`paper-coloring/`、`world-exhibition/` 分流。完整 3D 与打印 PNG 以网页预览为准。
+2. **导入仓库根目录**（能看见 `project.config.json`、`game.js`、`game.json` 的那一层）。不要选 `minigame/`，也不要选 `web/`。
+3. AppID 用 `wxac4e2e55fc8f4a30`（已写在 `project.config.json`）。`compileType` 是 `game`。
+4. **不要在工具里填 CloudBase / AppSecret**；本仓库没有这些密钥，网页预览也不需要。
+5. 入口是 `game.js` → `minigame/main.js`（2D 涂色 / 拍纸 / 侧视世界）。**带 Three.js 的 3D 森林只在网页** `cd web && npm run dev`（端口 43187）；本回合没有把 3D 移植进微信。
 
-云函数在控制台单独上传 `cloudfunctions/`，不要打进小游戏包。
+云函数若以后要用，在微信云开发控制台单独上传 `cloudfunctions/`，不要打进小游戏包，也不要把密钥写进 git。
 
 ## 发布路径（个人主体 · 免版号）
 

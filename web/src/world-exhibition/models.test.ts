@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import * as THREE from 'three'
 import { loadAnimalTemplates, playAnimalClip, setAnimalModelProvider } from './gltf-kit'
 import { createAnimalModel } from './models'
+import type { AnimalId } from '../types'
 
 const PUBLIC = resolve(process.cwd(), 'public')
 
@@ -16,7 +17,6 @@ function glbJson(file: string): {
   asset?: { generator?: string }
   nodes?: { name?: string }[]
   animations?: { name?: string }[]
-  skins?: unknown[]
 } {
   const buf = readFileSync(resolve(PUBLIC, file))
   const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength)
@@ -26,11 +26,10 @@ function glbJson(file: string): {
     asset?: { generator?: string }
     nodes?: { name?: string }[]
     animations?: { name?: string }[]
-    skins?: unknown[]
   }
 }
 
-describe('industry glTF pipeline (Quaternius + Zsky + Gobkit)', () => {
+describe('Kenney Cube Pets as real-species lion/deer/tiger', () => {
   afterEach(() => {
     setAnimalModelProvider(null)
   })
@@ -40,64 +39,50 @@ describe('industry glTF pipeline (Quaternius + Zsky + Gobkit)', () => {
     await loadAnimalTemplates()
   }
 
-  it('loads Quaternius stag/wolf/fox as deer/tiger/lion with Walk clips and a skeleton', async () => {
-    for (const file of ['deer', 'tiger', 'lion'] as const) {
-      const json = glbJson(`models/${file}.glb`)
-      expect(json.asset?.generator ?? '').toMatch(/Khronos glTF Blender/i)
-      expect((json.animations || []).map((c) => c.name)).toContain('Walk')
-      expect((json.animations || []).map((c) => c.name)).toContain('Idle')
-      expect((json.skins || []).length).toBeGreaterThan(0)
-      expect((json.nodes || []).map((n) => n.name)).toContain('FrontLowerLeg.L')
+  it('loads Kenney animal-lion/deer/tiger GLBs, not fox or wolf stand-ins', async () => {
+    await loadShipped()
+    for (const kind of ['lion', 'deer', 'tiger'] as AnimalId[]) {
+      const json = glbJson(`models/${kind}.glb`)
+      const nodes = (json.nodes || []).map((n) => n.name || '')
+      expect(nodes).toContain(`animal-${kind}`)
+      expect(nodes).toContain('body')
+      expect(nodes).toContain('leg-front-left')
+      expect((json.animations || []).map((c) => c.name)).toContain('walk')
+      expect(json.asset?.generator ?? '').toMatch(/UnityGLTF/i)
+
+      const group = createAnimalModel(kind, { body: '#ffffff' })
+      expect(group.userData.pack).toBe('kenney-cube-pets')
+      expect(group.getObjectByName(`animal-${kind}`)).toBeTruthy()
+      expect(group.getObjectByName('iris-left')).toBeFalsy()
+      const body = group.getObjectByName('body') as THREE.Mesh
+      expect(body.geometry).not.toBeInstanceOf(THREE.CapsuleGeometry)
+      expect(body.geometry).not.toBeInstanceOf(THREE.SphereGeometry)
+      const mat = body.material as THREE.MeshLambertMaterial
+      expect(mat.map).toBeTruthy()
+      expect(mat.transparent).toBe(false)
     }
+  })
 
+  it('plays the Kenney walk clip on the lion', async () => {
     await loadShipped()
-    const group = createAnimalModel('deer', { body: '#c9965a' })
-    expect(group.userData.pack).toBe('quaternius')
-    expect(group.userData.source).toBe('gltf')
-    expect(group.getObjectByName('FrontLowerLegL')).toBeTruthy()
-    expect(group.getObjectByName('iris-left')).toBeFalsy()
-    expect(playAnimalClip(group, 'walk', 0.016)).toBe(true)
-    expect((group.userData.activeClip as THREE.AnimationAction).getClip().name).toBe('Walk')
-    expect(playAnimalClip(group, 'eat', 0.016)).toBe(true)
-
-    const lion = createAnimalModel('lion', { body: '#e6c36a' })
-    expect(lion.userData.pack).toBe('quaternius')
+    const lion = createAnimalModel('lion', { body: '#ffffff' })
     expect(playAnimalClip(lion, 'walk', 0.016)).toBe(true)
-
-    let skinned = false
-    group.traverse((o) => {
-      if ((o as THREE.SkinnedMesh).isSkinnedMesh) skinned = true
-    })
-    expect(skinned).toBe(true)
+    expect((lion.userData.activeClip as THREE.AnimationAction).getClip().name).toBe('walk')
   })
 
-  it('puts kid coloring on the coat UV map, not as a tinted primitive', async () => {
+  it('kid coloring tints the Kenney coat and keeps it opaque', async () => {
     await loadShipped()
-    const tiger = createAnimalModel('tiger', { body: '#e89a2d' })
-    expect(tiger.userData.pack).toBe('quaternius')
-    expect(playAnimalClip(tiger, 'walk', 0.016)).toBe(true)
-    let foundCoat = false
-    tiger.traverse((o) => {
-      const mesh = o as THREE.Mesh
-      if (!mesh.isMesh) return
-      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
-      for (const m of mats) {
-        expect(m.transparent).toBe(false)
-        expect(m.opacity).toBe(1)
-        if (m instanceof THREE.MeshLambertMaterial && m.map instanceof THREE.CanvasTexture && mesh.userData.region !== 'eye') {
-          foundCoat = true
-          expect(m.color.getHexString()).toBe('ffffff')
-        }
-        expect(mesh.geometry).not.toBeInstanceOf(THREE.CapsuleGeometry)
-        expect(mesh.geometry).not.toBeInstanceOf(THREE.SphereGeometry)
-      }
-    })
-    expect(foundCoat).toBe(true)
+    const lion = createAnimalModel('lion', { body: '#e24b4b' })
+    const body = lion.getObjectByName('body') as THREE.Mesh
+    const mat = body.material as THREE.MeshLambertMaterial
+    expect(mat.color.getHexString()).toBe('e24b4b')
+    expect(mat.map).toBeTruthy()
+    expect(mat.opacity).toBe(1)
   })
 
-  it('Gobkit whale/seal remain marine stand-ins with mixer clips', async () => {
+  it('Gobkit whale/seal remain marine stand-ins', async () => {
     await loadShipped()
-    const dolphin = createAnimalModel('dolphin', { body: '#5b6d7a' })
+    const dolphin = createAnimalModel('dolphin', { body: '#ffffff' })
     expect(dolphin.userData.pack).toBe('gobkit')
     expect(playAnimalClip(dolphin, 'walk', 0.016)).toBe(true)
   })
