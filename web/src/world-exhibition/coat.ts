@@ -25,23 +25,25 @@ export function coatTexture(animal: AnimalId, painted: Record<string, string>): 
     ctx.fillRect(0, 0, size, size)
 
     const back = ctx.createLinearGradient(0, 0, 0, size)
-    back.addColorStop(0, darken(body, 0.18))
-    back.addColorStop(0.45, body)
+    back.addColorStop(0, darken(body, 0.12))
+    back.addColorStop(0.4, body)
     back.addColorStop(1, body)
     ctx.fillStyle = back
     ctx.fillRect(0, 0, size, Math.round(size * 0.55))
 
     ctx.fillStyle = belly
     ctx.beginPath()
-    ctx.ellipse(size * 0.42, size * 0.92, size * 0.42, size * 0.28, 0, 0, Math.PI * 2)
+    ctx.ellipse(size * 0.44, size * 0.9, size * 0.44, size * 0.32, 0, 0, Math.PI * 2)
     ctx.fill()
 
     ctx.fillStyle = neck
-    ctx.fillRect(Math.round(size * 0.58), Math.round(size * 0.18), Math.round(size * 0.18), Math.round(size * 0.5))
+    ctx.beginPath()
+    ctx.ellipse(size * 0.68, size * 0.4, size * 0.16, size * 0.28, 0.2, 0, Math.PI * 2)
+    ctx.fill()
 
     ctx.fillStyle = head
     ctx.beginPath()
-    ctx.ellipse(size * 0.86, size * 0.38, size * 0.16, size * 0.22, 0.15, 0, Math.PI * 2)
+    ctx.ellipse(size * 0.86, size * 0.36, size * 0.18, size * 0.24, 0.12, 0, Math.PI * 2)
     ctx.fill()
 
     if (animal === 'tiger') paintTiger(ctx, size, body, painted)
@@ -58,47 +60,51 @@ export function coatTexture(animal: AnimalId, painted: Record<string, string>): 
 }
 
 function paintTiger(ctx: CanvasRenderingContext2D, size: number, body: string, painted: Record<string, string>): void {
-  ctx.strokeStyle = darken(body, 0.55)
+  ctx.strokeStyle = darken(body, 0.5)
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
-  for (let i = 0; i < 11; i++) {
-    const u = 0.08 + i * 0.07
-    ctx.lineWidth = 10 + (i % 3) * 4
+  for (let i = 0; i < 12; i++) {
+    const u = 0.07 + i * 0.068
+    ctx.lineWidth = 8 + (i % 3) * 5
     ctx.beginPath()
-    ctx.moveTo(u * size, size * 0.06)
-    ctx.quadraticCurveTo(u * size + 28, size * 0.42, u * size - 10, size * 0.72)
+    ctx.moveTo(u * size, size * 0.05)
+    ctx.quadraticCurveTo(u * size + 22, size * 0.4, u * size - 8, size * 0.74)
     ctx.stroke()
   }
-  ctx.strokeStyle = darken(colorOf('tiger', 'head', painted), 0.5)
-  ctx.lineWidth = 9
+  ctx.strokeStyle = darken(colorOf('tiger', 'head', painted), 0.45)
+  ctx.lineWidth = 8
   for (const u of [0.74, 0.82, 0.9]) {
     ctx.beginPath()
-    ctx.moveTo(u * size, size * 0.16)
-    ctx.quadraticCurveTo(u * size + 12, size * 0.32, u * size - 8, size * 0.48)
+    ctx.moveTo(u * size, size * 0.14)
+    ctx.quadraticCurveTo(u * size + 10, size * 0.3, u * size - 6, size * 0.46)
     ctx.stroke()
   }
 }
 
 function paintDeer(ctx: CanvasRenderingContext2D, size: number, painted: Record<string, string>): void {
   const spots: [string, number, number, number][] = [
-    ['spot1', 0.32, 0.38, 18],
-    ['spot2', 0.48, 0.28, 16],
-    ['spot3', 0.4, 0.52, 14],
-    ['spot1', 0.22, 0.46, 12],
-    ['spot2', 0.54, 0.44, 13],
-    ['spot3', 0.36, 0.22, 11],
+    ['spot1', 0.3, 0.34, 20],
+    ['spot2', 0.46, 0.26, 17],
+    ['spot3', 0.38, 0.5, 15],
+    ['spot1', 0.2, 0.44, 13],
+    ['spot2', 0.54, 0.42, 14],
+    ['spot3', 0.34, 0.2, 12],
+    ['spot1', 0.5, 0.34, 11],
+    ['spot2', 0.26, 0.28, 10],
   ]
   for (const [name, u, v, r] of spots) {
     ctx.fillStyle = colorOf('deer', name, painted)
     ctx.beginPath()
-    ctx.ellipse(u * size, v * size, r, r * 0.72, 0.2, 0, Math.PI * 2)
+    ctx.ellipse(u * size, v * size, r, r * 0.7, 0.18, 0, Math.PI * 2)
     ctx.fill()
   }
 }
 
 function paintLion(ctx: CanvasRenderingContext2D, size: number, painted: Record<string, string>): void {
   ctx.fillStyle = colorOf('lion', 'belly', painted)
-  ctx.fillRect(0, Math.round(size * 0.7), size, Math.round(size * 0.3))
+  ctx.beginPath()
+  ctx.ellipse(size * 0.45, size * 0.88, size * 0.42, size * 0.24, 0, 0, Math.PI * 2)
+  ctx.fill()
 }
 
 function darken(hex: string, amount: number): string {

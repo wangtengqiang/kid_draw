@@ -1,5 +1,5 @@
 /**
- * 观展背景：画出来的密林和草地，靠近照片里的石径树林，不是玩具圆锥。
+ * 观展背景：画出来的远山、湖水和密林，靠近场地照片里的石径树林。
  */
 export function paintForestPanorama(): HTMLCanvasElement {
   const w = 2048
@@ -11,41 +11,85 @@ export function paintForestPanorama(): HTMLCanvasElement {
   if (!ctx) return c
 
   const sky = ctx.createLinearGradient(0, 0, 0, h)
-  sky.addColorStop(0, '#e7f0c8')
-  sky.addColorStop(0.22, '#c5dd9a')
-  sky.addColorStop(0.45, '#7eab55')
-  sky.addColorStop(0.72, '#3f6f32')
-  sky.addColorStop(1, '#244a22')
+  sky.addColorStop(0, '#f4f7e4')
+  sky.addColorStop(0.18, '#d7e9a8')
+  sky.addColorStop(0.38, '#8eb86a')
+  sky.addColorStop(0.58, '#4e8a48')
+  sky.addColorStop(0.78, '#2f5e32')
+  sky.addColorStop(1, '#1c3a22')
   ctx.fillStyle = sky
   ctx.fillRect(0, 0, w, h)
 
-  const glow = ctx.createRadialGradient(w * 0.55, h * 0.28, 20, w * 0.55, h * 0.28, 420)
-  glow.addColorStop(0, 'rgba(255,236,170,0.55)')
+  const glow = ctx.createRadialGradient(w * 0.62, h * 0.22, 30, w * 0.62, h * 0.22, 520)
+  glow.addColorStop(0, 'rgba(255,236,170,0.62)')
   glow.addColorStop(1, 'rgba(255,236,170,0)')
   ctx.fillStyle = glow
   ctx.fillRect(0, 0, w, h)
 
-  for (let i = 0; i < 28; i++) {
-    const x = (i / 28) * w + Math.sin(i * 1.7) * 30
-    paintMass(ctx, x, h * 0.5, 220 + (i % 5) * 40, i)
+  paintRange(ctx, w, h * 0.4, 0.55, ['#7a9570', '#8aa57c', '#6d8668'])
+  paintRange(ctx, w, h * 0.46, 0.42, ['#5d7a52', '#6e8c5e', '#4e6a48'])
+
+  const lake = ctx.createLinearGradient(0, h * 0.5, 0, h * 0.68)
+  lake.addColorStop(0, 'rgba(140, 196, 214, 0.55)')
+  lake.addColorStop(1, 'rgba(70, 140, 168, 0.2)')
+  ctx.fillStyle = lake
+  ctx.beginPath()
+  ctx.ellipse(w * 0.28, h * 0.58, w * 0.22, h * 0.06, 0, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.beginPath()
+  ctx.ellipse(w * 0.72, h * 0.6, w * 0.16, h * 0.045, 0, 0, Math.PI * 2)
+  ctx.fill()
+
+  for (let i = 0; i < 32; i++) {
+    const x = (i / 32) * w + Math.sin(i * 1.7) * 30
+    paintMass(ctx, x, h * 0.52, 200 + (i % 5) * 36, i)
   }
-  for (let i = 0; i < 90; i++) {
+  for (let i = 0; i < 100; i++) {
     const x = ((i * 97) % w) + Math.sin(i) * 12
-    paintTree(ctx, x, h * 0.46 + (i % 6) * 16, 110 + (i % 9) * 22, i)
+    paintTree(ctx, x, h * 0.48 + (i % 6) * 14, 120 + (i % 9) * 22, i)
   }
-  for (let i = 0; i < 50; i++) {
-    paintTree(ctx, (i / 50) * w + 24, h * 0.58 + (i % 4) * 10, 160 + (i % 6) * 28, i + 40)
+  for (let i = 0; i < 56; i++) {
+    paintTree(ctx, (i / 56) * w + 24, h * 0.6 + (i % 4) * 10, 170 + (i % 6) * 28, i + 40)
   }
 
-  ctx.fillStyle = 'rgba(28, 48, 22, 0.28)'
-  ctx.fillRect(0, h * 0.72, w, h * 0.28)
-
-  const mist = ctx.createLinearGradient(0, h * 0.5, 0, h)
+  const mist = ctx.createLinearGradient(0, h * 0.48, 0, h)
   mist.addColorStop(0, 'rgba(210,230,170,0)')
-  mist.addColorStop(1, 'rgba(36,70,32,0.4)')
+  mist.addColorStop(1, 'rgba(28,58,32,0.38)')
   ctx.fillStyle = mist
   ctx.fillRect(0, 0, w, h)
   return c
+}
+
+function paintRange(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  y: number,
+  amp: number,
+  colors: string[],
+): void {
+  ctx.beginPath()
+  ctx.moveTo(0, y + 80)
+  for (let i = 0; i <= 24; i++) {
+    const x = (i / 24) * w
+    const peak = y - (40 + ((i * 17) % 90) * amp)
+    ctx.lineTo(x, peak)
+  }
+  ctx.lineTo(w, y + 120)
+  ctx.closePath()
+  ctx.fillStyle = colors[0]!
+  ctx.fill()
+  ctx.fillStyle = colors[1]!
+  ctx.beginPath()
+  ctx.moveTo(w * 0.15, y + 40)
+  ctx.lineTo(w * 0.28, y - 90 * amp)
+  ctx.lineTo(w * 0.42, y + 50)
+  ctx.fill()
+  ctx.fillStyle = colors[2]!
+  ctx.beginPath()
+  ctx.moveTo(w * 0.55, y + 50)
+  ctx.lineTo(w * 0.7, y - 110 * amp)
+  ctx.lineTo(w * 0.88, y + 40)
+  ctx.fill()
 }
 
 function paintMass(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, seed: number): void {
@@ -94,6 +138,32 @@ export function paintGrassGround(): HTMLCanvasElement {
   return c
 }
 
+export function paintWater(): HTMLCanvasElement {
+  const w = 512
+  const h = 512
+  const c = document.createElement('canvas')
+  c.width = w
+  c.height = h
+  const ctx = c.getContext('2d')
+  if (!ctx) return c
+  const g = ctx.createLinearGradient(0, 0, w, h)
+  g.addColorStop(0, '#6eb7c8')
+  g.addColorStop(0.45, '#3d8fb0')
+  g.addColorStop(1, '#2a6f90')
+  ctx.fillStyle = g
+  ctx.fillRect(0, 0, w, h)
+  ctx.strokeStyle = 'rgba(220,245,255,0.28)'
+  ctx.lineWidth = 2
+  for (let i = 0; i < 18; i++) {
+    ctx.beginPath()
+    const y = 24 + i * 28
+    ctx.moveTo(0, y)
+    ctx.quadraticCurveTo(w * 0.5, y + ((i % 2) * 16 - 8), w, y)
+    ctx.stroke()
+  }
+  return c
+}
+
 export function paintTreeSprite(seed: number): HTMLCanvasElement {
   const c = document.createElement('canvas')
   c.width = 256
@@ -118,12 +188,6 @@ function paintTree(ctx: CanvasRenderingContext2D, x: number, y: number, size: nu
   const trunkW = size * 0.07
   ctx.fillStyle = seed % 2 ? '#4a3018' : '#5c3c22'
   ctx.fillRect(x - trunkW / 2, y - size * 0.38, trunkW, size * 0.42)
-  ctx.strokeStyle = 'rgba(30,18,8,0.35)'
-  ctx.lineWidth = 1
-  ctx.beginPath()
-  ctx.moveTo(x, y - size * 0.08)
-  ctx.lineTo(x, y - size * 0.38)
-  ctx.stroke()
   paintCanopy(ctx, x, y - size * 0.18, size, seed)
 }
 

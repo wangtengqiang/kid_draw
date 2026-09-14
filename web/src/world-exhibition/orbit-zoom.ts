@@ -15,8 +15,8 @@ export type OrbitLimits = {
 /** 主机森林默认机位附近，俯仰大约 25°–75°。 */
 export const HOST_ORBIT: OrbitLimits = {
   minRadius: 4.2,
-  maxRadius: 14,
-  minPhi: (18 * Math.PI) / 180,
+  maxRadius: 18,
+  minPhi: (16 * Math.PI) / 180,
   maxPhi: (68 * Math.PI) / 180,
 }
 

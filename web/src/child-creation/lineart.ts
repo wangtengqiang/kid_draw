@@ -287,7 +287,7 @@ function drawDeerLines(ctx: Ctx): void {
   strokePoly(ctx, DEER_EAR_R)
   for (const beam of DEER_ANTLER_L_BEAM) line(() => path(ctx, beam), 0.04)
   for (const beam of DEER_ANTLER_R_BEAM) line(() => path(ctx, beam), 0.04)
-  face(ctx, 1.02, 1.36, 0.16)
+  face(ctx, 1.12, 1.32, 0.16)
 }
 
 function catLegs(backShift = 0): { id: number; pts: Ring }[] {

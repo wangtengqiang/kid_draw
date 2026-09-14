@@ -1,5 +1,5 @@
 /**
- * 观展动物：可认出的行走侧影体积（有胸宽、四肢、鹿角 / 虎纹 / 狮鬣），
+ * 观展动物：可爱、能认出的行走侧影（鹿角 / 虎纹 / 狮鬣），
  * 不是圆球圆锥，也不是薄片。孩子分区色铺在 UV 皮毛上。
  */
 import * as THREE from 'three'
@@ -12,6 +12,8 @@ import {
   DEER_BODY,
   DEER_EAR_L,
   DEER_EAR_R,
+  DEER_HEAD,
+  DEER_NECK,
   DEER_TAIL,
   LION_BODY,
   LION_EAR_L,
@@ -46,6 +48,8 @@ function toon(
     depthWrite: true,
     depthTest: true,
     alphaTest: 0,
+    emissive: new THREE.Color(color).multiplyScalar(0.08),
+    emissiveIntensity: map ? 0.04 : 0.12,
   })
 }
 
@@ -78,24 +82,24 @@ function addBody(g: THREE.Group, m: THREE.Mesh): void {
   g.add(m)
 }
 
-function smoothRing(pts: Ring, count = 56): THREE.Vector2[] {
+function smoothRing(pts: Ring, count = 72): THREE.Vector2[] {
   const curve = new THREE.CatmullRomCurve3(
     pts.map(([x, y]) => new THREE.Vector3(x, y, 0)),
     true,
     'catmullrom',
-    0.12,
+    0.08,
   )
   return curve.getSpacedPoints(count).map((p) => new THREE.Vector2(p.x, p.y))
 }
 
 /**
- * 侧影挤成有厚度的身子：侧面是真轮廓，侧面切片往中心收，正面能看见胸宽，不是薄板。
+ * 侧影挤成有厚度的身子：侧面是真轮廓，切片往中心收成圆滚滚的胸宽。
  */
 export function profileVolume(
   pts: Ring,
   halfW: number,
   widthAt: (x: number, y: number) => number = () => 1,
-  slices = 8,
+  slices = 12,
 ): THREE.BufferGeometry {
   const contour = smoothRing(pts)
   const n = contour.length
@@ -116,7 +120,7 @@ export function profileVolume(
   for (let s = 0; s < slices; s++) {
     const t = slices === 1 ? 0 : (s / (slices - 1)) * 2 - 1
     const round = Math.sqrt(Math.max(0, 1 - t * t))
-    const pull = 0.2 * (1 - round)
+    const pull = 0.14 * (1 - round)
     for (let i = 0; i < n; i++) {
       const p = contour[i]!
       const w = halfW * widthAt(p.x, p.y)
@@ -140,8 +144,7 @@ export function profileVolume(
     const a = tri[0]!
     const b = tri[1]!
     const c = tri[2]!
-    // Slice 0 is at −Z and must face outward (−Z). Slice last is at +Z.
-    // triangulateShape is CCW in XY (faces +Z), so the −Z cap is reversed.
+    // 第 0 片在 −Z，朝外要反向；末片在 +Z。
     indices.push(a, c, b)
     indices.push(back + a, back + b, back + c)
   }
@@ -154,7 +157,7 @@ export function profileVolume(
 }
 
 function tube(pts: THREE.Vector3[], radius: number, tubular = 12): THREE.TubeGeometry {
-  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), tubular, radius, 8, false)
+  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), tubular, radius, 10, false)
 }
 
 export function createAnimalModel(
@@ -188,34 +191,40 @@ export function recolorAnimal(
 function deer(painted: Record<string, string>, coat: THREE.Texture): THREE.Group {
   const g = new THREE.Group()
   const a: AnimalId = 'deer'
-  const bodyGeo = profileVolume(DEER_BODY, 0.22, (x, y) => {
-    if (x > 0.95) return 0.42
-    if (x > 0.7 && y > 1.05) return 0.5
-    if (x > 0.48 && y > 1.05) return 0.62
-    if (y < 0.88) return 0.42
+  const bodyGeo = profileVolume(DEER_BODY, 0.24, (x, y) => {
+    if (x > 0.95) return 0.48
+    if (x > 0.68 && y > 1.08) return 0.58
+    if (y < 0.86) return 0.46
     return 1
   })
   addBody(g, part(bodyGeo, 'body', a, painted, coat))
-  addBody(g, part(profileVolume(DEER_EAR_L, 0.03), 'earL', a, painted))
-  addBody(g, part(profileVolume(DEER_EAR_R, 0.03), 'earR', a, painted))
-  addBody(g, part(profileVolume(DEER_TAIL, 0.04), 'tail', a, painted))
+  addBody(g, part(profileVolume(DEER_NECK, 0.1), 'neck', a, painted, coat))
+  addBody(g, part(profileVolume(DEER_HEAD, 0.12, (x) => (x > 1.18 ? 0.62 : 1)), 'head', a, painted, coat))
+  const cheek = mesh(new THREE.SphereGeometry(0.09, 14, 12), colorOf(a, 'head', painted))
+  cheek.position.set(1.04, 1.28, 0)
+  cheek.scale.set(1.15, 0.95, 1.05)
+  cheek.userData.region = 'head'
+  g.add(cheek)
+  addBody(g, part(profileVolume(DEER_EAR_L, 0.028), 'earL', a, painted))
+  addBody(g, part(profileVolume(DEER_EAR_R, 0.028), 'earR', a, painted))
+  addBody(g, part(profileVolume(DEER_TAIL, 0.045), 'tail', a, painted))
 
   const antlerPts = (rings: Ring[], zSign: number): THREE.Vector3[][] =>
-    rings.map((ring) => ring.map(([x, y]) => new THREE.Vector3(x, y, zSign * 0.06)))
+    rings.map((ring) => ring.map(([x, y]) => new THREE.Vector3(x, y, zSign * 0.07)))
   for (const chain of antlerPts(DEER_ANTLER_L_BEAM, 1)) {
-    g.add(part(tube(chain, 0.016, 14), 'antlerL', a, painted))
+    g.add(part(tube(chain, 0.02, 16), 'antlerL', a, painted))
   }
   for (const chain of antlerPts(DEER_ANTLER_R_BEAM, -1)) {
-    g.add(part(tube(chain, 0.016, 14), 'antlerR', a, painted))
+    g.add(part(tube(chain, 0.02, 16), 'antlerR', a, painted))
   }
 
   const legs = placeLegs(g, a, painted, [
-    { name: 'legFL', x: 0.42, z: 0.24, hipY: 0.7, radius: 0.042, foot: 'hoof' },
-    { name: 'legFR', x: 0.42, z: -0.24, hipY: 0.7, radius: 0.042, foot: 'hoof' },
-    { name: 'legBL', x: -0.38, z: 0.26, hipY: 0.72, radius: 0.046, foot: 'hoof' },
-    { name: 'legBR', x: -0.38, z: -0.26, hipY: 0.72, radius: 0.046, foot: 'hoof' },
+    { name: 'legFL', x: 0.4, z: 0.24, hipY: 0.7, radius: 0.04, foot: 'hoof' },
+    { name: 'legFR', x: 0.4, z: -0.24, hipY: 0.7, radius: 0.04, foot: 'hoof' },
+    { name: 'legBL', x: -0.36, z: 0.26, hipY: 0.72, radius: 0.044, foot: 'hoof' },
+    { name: 'legBR', x: -0.36, z: -0.26, hipY: 0.72, radius: 0.044, foot: 'hoof' },
   ])
-  addSideEyes(g, 1.02, 1.38, 0.1)
+  cuteFace(g, 1.12, 1.32, 0.1, 0.92)
   g.userData.legs = legs
   return g
 }
@@ -223,18 +232,18 @@ function deer(painted: Record<string, string>, coat: THREE.Texture): THREE.Group
 function tiger(painted: Record<string, string>, coat: THREE.Texture): THREE.Group {
   const g = new THREE.Group()
   const a: AnimalId = 'tiger'
-  const bodyGeo = profileVolume(TIGER_BODY, 0.28, (x, y) => {
+  const bodyGeo = profileVolume(TIGER_BODY, 0.3, (x, y) => {
     if (x < -0.5) return 0.85
-    if (y < 0.74) return 0.5
+    if (y < 0.74) return 0.52
     return 1
   })
   addBody(g, part(bodyGeo, 'body', a, painted, coat))
 
-  const headGeo = profileVolume(TIGER_HEAD, 0.22, (x) => (x > 1.05 ? 0.7 : 1))
+  const headGeo = profileVolume(TIGER_HEAD, 0.24, (x) => (x > 1.12 ? 0.72 : 1))
   addBody(g, part(headGeo, 'head', a, painted, coat))
-  addBody(g, part(profileVolume(TIGER_MUZZLE, 0.14), 'muzzle', a, painted))
-  addBody(g, part(profileVolume(TIGER_EAR_L, 0.04), 'earL', a, painted))
-  addBody(g, part(profileVolume(TIGER_EAR_R, 0.04), 'earR', a, painted))
+  addBody(g, part(profileVolume(TIGER_MUZZLE, 0.15), 'muzzle', a, painted))
+  addBody(g, part(profileVolume(TIGER_EAR_L, 0.045), 'earL', a, painted))
+  addBody(g, part(profileVolume(TIGER_EAR_R, 0.045), 'earR', a, painted))
   const innerL = part(profileVolume(TIGER_EAR_L, 0.02), 'innerL', a, painted)
   innerL.scale.set(0.55, 0.55, 1)
   innerL.position.set(0.02, 0.02, 0.03)
@@ -247,22 +256,22 @@ function tiger(painted: Record<string, string>, coat: THREE.Texture): THREE.Grou
   const tailGeo = tube(
     [
       new THREE.Vector3(-0.74, 0.72, 0),
-      new THREE.Vector3(-1.0, 0.92, 0.06),
-      new THREE.Vector3(-1.22, 0.7, 0),
-      new THREE.Vector3(-1.28, 0.42, -0.04),
+      new THREE.Vector3(-1.0, 0.94, 0.06),
+      new THREE.Vector3(-1.24, 0.72, 0),
+      new THREE.Vector3(-1.3, 0.4, -0.04),
     ],
-    0.042,
+    0.044,
     16,
   )
   g.add(part(tailGeo, 'tail', a, painted))
 
   const legs = placeLegs(g, a, painted, [
-    { name: 'legFL', x: 0.48, z: 0.32, hipY: 0.64, radius: 0.055, foot: 'paw' },
-    { name: 'legFR', x: 0.48, z: -0.32, hipY: 0.64, radius: 0.055, foot: 'paw' },
-    { name: 'legBL', x: -0.46, z: 0.34, hipY: 0.66, radius: 0.06, foot: 'paw' },
-    { name: 'legBR', x: -0.46, z: -0.34, hipY: 0.66, radius: 0.06, foot: 'paw' },
+    { name: 'legFL', x: 0.46, z: 0.32, hipY: 0.64, radius: 0.056, foot: 'paw' },
+    { name: 'legFR', x: 0.46, z: -0.32, hipY: 0.64, radius: 0.056, foot: 'paw' },
+    { name: 'legBL', x: -0.44, z: 0.34, hipY: 0.66, radius: 0.06, foot: 'paw' },
+    { name: 'legBR', x: -0.44, z: -0.34, hipY: 0.66, radius: 0.06, foot: 'paw' },
   ])
-  addSideEyes(g, 1.02, 0.98, 0.18)
+  cuteFace(g, 1.08, 0.92, 0.2, 1.12)
   g.userData.legs = legs
   return g
 }
@@ -273,10 +282,7 @@ function lion(painted: Record<string, string>, coat: THREE.Texture): THREE.Group
   addBody(
     g,
     part(
-      profileVolume(LION_BODY, 0.26, (_x, y) => {
-        if (y < 0.74) return 0.5
-        return 1
-      }),
+      profileVolume(LION_BODY, 0.28, (_x, y) => (y < 0.74 ? 0.52 : 1)),
       'body',
       a,
       painted,
@@ -285,43 +291,54 @@ function lion(painted: Record<string, string>, coat: THREE.Texture): THREE.Group
   )
 
   const manePts: THREE.Vector2[] = []
-  for (let i = 0; i <= 20; i++) {
-    const t = i / 20
+  for (let i = 0; i <= 24; i++) {
+    const t = i / 24
     const ang = t * Math.PI
-    const scallop = 1 + 0.1 * Math.sin(t * Math.PI * 9)
-    const r = (0.16 + Math.sin(ang) * 0.4) * scallop
-    manePts.push(new THREE.Vector2(Math.max(0.1, r), 0.58 + (1 - Math.cos(ang)) * 0.46))
+    const scallop = 1 + 0.12 * Math.sin(t * Math.PI * 11)
+    const r = (0.18 + Math.sin(ang) * 0.46) * scallop
+    manePts.push(new THREE.Vector2(Math.max(0.12, r), 0.52 + (1 - Math.cos(ang)) * 0.5))
   }
-  const maneLathe = new THREE.LatheGeometry(manePts, 28)
-  const mane = part(maneLathe, 'mane', a, painted)
+  const mane = part(new THREE.LatheGeometry(manePts, 32), 'mane', a, painted)
   mane.position.x = 0.62
   addBody(g, mane)
-  addBody(g, part(profileVolume(LION_MANE, 0.16), 'mane', a, painted))
+  addBody(g, part(profileVolume(LION_MANE, 0.2), 'mane', a, painted))
+  for (const [ox, oy, oz, s] of [
+    [0.62, 1.42, 0.18, 0.16],
+    [0.62, 1.42, -0.18, 0.16],
+    [0.42, 1.18, 0.28, 0.14],
+    [0.42, 1.18, -0.28, 0.14],
+    [0.88, 1.28, 0.22, 0.13],
+    [0.88, 1.28, -0.22, 0.13],
+  ] as const) {
+    const tuft = part(new THREE.SphereGeometry(s, 10, 8), 'mane', a, painted)
+    tuft.position.set(ox, oy, oz)
+    g.add(tuft)
+  }
 
-  addBody(g, part(profileVolume(LION_HEAD, 0.18), 'head', a, painted, coat))
-  addBody(g, part(profileVolume(LION_MUZZLE, 0.12), 'muzzle', a, painted))
-  addBody(g, part(profileVolume(LION_EAR_L, 0.03), 'earL', a, painted))
-  addBody(g, part(profileVolume(LION_EAR_R, 0.03), 'earR', a, painted))
+  addBody(g, part(profileVolume(LION_HEAD, 0.2), 'head', a, painted, coat))
+  addBody(g, part(profileVolume(LION_MUZZLE, 0.13), 'muzzle', a, painted))
+  addBody(g, part(profileVolume(LION_EAR_L, 0.032), 'earL', a, painted))
+  addBody(g, part(profileVolume(LION_EAR_R, 0.032), 'earR', a, painted))
   addBody(g, part(profileVolume(LION_TUFT, 0.05), 'tuft', a, painted))
 
   const tailGeo = tube(
     [
       new THREE.Vector3(-0.68, 0.72, 0),
-      new THREE.Vector3(-0.95, 0.9, 0.05),
-      new THREE.Vector3(-1.16, 0.68, 0),
+      new THREE.Vector3(-0.95, 0.92, 0.05),
+      new THREE.Vector3(-1.18, 0.7, 0),
     ],
-    0.032,
+    0.034,
     12,
   )
   g.add(part(tailGeo, 'tail', a, painted))
 
   const legs = placeLegs(g, a, painted, [
-    { name: 'legFL', x: 0.44, z: 0.3, hipY: 0.64, radius: 0.056, foot: 'paw' },
-    { name: 'legFR', x: 0.44, z: -0.3, hipY: 0.64, radius: 0.056, foot: 'paw' },
-    { name: 'legBL', x: -0.4, z: 0.32, hipY: 0.66, radius: 0.06, foot: 'paw' },
-    { name: 'legBR', x: -0.4, z: -0.32, hipY: 0.66, radius: 0.06, foot: 'paw' },
+    { name: 'legFL', x: 0.42, z: 0.3, hipY: 0.64, radius: 0.056, foot: 'paw' },
+    { name: 'legFR', x: 0.42, z: -0.3, hipY: 0.64, radius: 0.056, foot: 'paw' },
+    { name: 'legBL', x: -0.38, z: 0.32, hipY: 0.66, radius: 0.06, foot: 'paw' },
+    { name: 'legBR', x: -0.38, z: -0.32, hipY: 0.66, radius: 0.06, foot: 'paw' },
   ])
-  addSideEyes(g, 0.94, 0.98, 0.16)
+  cuteFace(g, 1.0, 0.94, 0.18, 1.05)
   g.userData.legs = legs
   return g
 }
@@ -337,9 +354,9 @@ type LegSpec = {
   foot: FootKind
 }
 
-/** Closed tapered column. Capsules/lathes can hole out in the middle. */
+/** 实心锥柱，上粗下细。不要用会漏光的胶囊车削。 */
 function solidShaft(radius: number, length: number): THREE.BufferGeometry {
-  return new THREE.CylinderGeometry(radius, radius * 0.88, length, 20, 1, false)
+  return new THREE.CylinderGeometry(radius * 1.04, radius * 0.78, length, 18, 1, false)
 }
 
 function limb(
@@ -364,13 +381,11 @@ function placeLegs(
   for (const spec of specs) {
     const hip = new THREE.Group()
     hip.position.set(spec.x, spec.hipY, spec.z)
-    const footH = spec.foot === 'hoof' ? 0.055 : 0.05
+    const footH = spec.foot === 'hoof' ? 0.05 : 0.048
     const length = Math.max(0.12, spec.hipY - footH)
     const shaft = limb(solidShaft(spec.radius, length), spec.name, animal, painted)
     shaft.position.y = -length / 2
     hip.add(shaft)
-    const hipCap = limb(new THREE.SphereGeometry(spec.radius * 1.2, 14, 10), spec.name, animal, painted)
-    hip.add(hipCap)
     hip.add(makeFoot(spec, animal, painted))
     g.add(hip)
     legs.push(hip)
@@ -382,52 +397,48 @@ function makeFoot(spec: LegSpec, animal: AnimalId, painted: Record<string, strin
   const f = new THREE.Group()
   f.position.y = -spec.hipY
   if (spec.foot === 'hoof') {
-    const hoof = mesh(
-      new THREE.BoxGeometry(spec.radius * 3.2, 0.05, spec.radius * 1.55),
-      '#3a2418',
-      undefined,
-      true,
-    )
-    hoof.position.set(0.02, 0.025, 0)
+    const hoof = mesh(new THREE.SphereGeometry(spec.radius * 1.35, 12, 10), '#3a2418', undefined, true)
+    hoof.scale.set(1.15, 0.55, 0.85)
+    hoof.position.set(0.02, 0.028, 0)
     f.add(hoof)
   } else {
     const pad = mesh(
-      new THREE.BoxGeometry(spec.radius * 3.4, 0.048, spec.radius * 2.5),
+      new THREE.SphereGeometry(spec.radius * 1.45, 12, 10),
       colorOf(animal, spec.name, painted),
       undefined,
       true,
     )
-    pad.position.set(0.05, 0.024, 0)
+    pad.scale.set(1.35, 0.42, 1.1)
+    pad.position.set(0.04, 0.026, 0)
     f.add(pad)
-    for (const tz of [-0.72, 0, 0.72]) {
-      const toe = mesh(
-        new THREE.BoxGeometry(spec.radius * 1.15, 0.032, spec.radius * 0.72),
-        '#3a2418',
-        undefined,
-        true,
-      )
-      toe.position.set(spec.radius * 1.85, 0.018, spec.radius * tz)
+    for (const tz of [-0.7, 0, 0.7]) {
+      const toe = mesh(new THREE.SphereGeometry(spec.radius * 0.42, 8, 6), '#3a2418', undefined, true)
+      toe.scale.set(1.2, 0.7, 0.9)
+      toe.position.set(spec.radius * 1.7, 0.018, spec.radius * tz)
       f.add(toe)
     }
   }
   return f
 }
 
-function addSideEyes(g: THREE.Group, x: number, y: number, z: number): void {
-  const white = new THREE.MeshBasicMaterial({ color: '#fff8ee' })
+/** 圆眼睛 + 高光 + 圆鼻子，小朋友看得懂的脸。 */
+function cuteFace(g: THREE.Group, x: number, y: number, z: number, scale = 1): void {
+  const white = new THREE.MeshLambertMaterial({ color: '#fff8ee', emissive: '#22180c', emissiveIntensity: 0.08 })
   const ink = new THREE.MeshBasicMaterial({ color: '#1a120c' })
+  const shine = new THREE.MeshBasicMaterial({ color: '#ffffff' })
   for (const s of [-1, 1]) {
-    const w = new THREE.Mesh(new THREE.CircleGeometry(0.042, 10), white)
-    w.position.set(x, y, s * z)
-    if (s < 0) w.rotation.y = Math.PI
-    const p = new THREE.Mesh(new THREE.CircleGeometry(0.02, 8), ink)
-    p.position.set(x + 0.012, y - 0.004, s * (z + 0.003))
-    if (s < 0) p.rotation.y = Math.PI
-    g.add(w, p)
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.052 * scale, 14, 12), white)
+    eye.position.set(x, y, s * z)
+    eye.scale.set(0.95, 1.12, 0.8)
+    const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.026 * scale, 10, 8), ink)
+    pupil.position.set(x + 0.026 * scale, y - 0.004, s * (z + 0.03 * scale))
+    const hi = new THREE.Mesh(new THREE.SphereGeometry(0.011 * scale, 8, 6), shine)
+    hi.position.set(x + 0.018 * scale, y + 0.018 * scale, s * (z + 0.042 * scale))
+    g.add(eye, pupil, hi)
   }
-  const nose = new THREE.Mesh(new THREE.CircleGeometry(0.028, 8), ink)
-  nose.rotation.y = Math.PI / 2
-  nose.position.set(x + 0.2, y - 0.1, 0)
+  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.03 * scale, 10, 8), ink)
+  nose.position.set(x + 0.2 * scale, y - 0.08 * scale, 0)
+  nose.scale.set(1.25, 0.85, 0.9)
   g.add(nose)
 }
 

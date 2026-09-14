@@ -26,12 +26,15 @@ export class PreviewStage {
     this.camera.position.set(0, 1.15, 3.5)
     this.camera.lookAt(0, 0.95, 0)
     this.orbit = new OrbitZoom(canvas, this.camera, new THREE.Vector3(0, 0.95, 0), PREVIEW_ORBIT)
-    this.scene.background = new THREE.Color('#e7f0d4')
-    this.scene.add(new THREE.AmbientLight('#ffe9c8', 0.65))
-    this.scene.add(new THREE.HemisphereLight('#fff6e8', '#5c7a48', 1.15))
-    const key = new THREE.DirectionalLight('#fff1cc', 1)
+    this.scene.background = new THREE.Color('#e8f2d2')
+    this.scene.add(new THREE.AmbientLight('#ffe9c8', 0.85))
+    this.scene.add(new THREE.HemisphereLight('#fff6e8', '#7a9a58', 1.05))
+    const key = new THREE.DirectionalLight('#fff4d8', 0.95)
     key.position.set(3, 5, 2)
     this.scene.add(key)
+    const fill = new THREE.DirectionalLight('#fff8ee', 0.4)
+    fill.position.set(-3, 2, 4)
+    this.scene.add(fill)
     const floor = new THREE.Mesh(
       new THREE.CircleGeometry(1.8, 32),
       new THREE.MeshLambertMaterial({ color: '#c5b89a' }),

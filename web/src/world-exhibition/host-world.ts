@@ -6,7 +6,7 @@ import * as THREE from 'three'
 import type { AnimalId, EmoteId, PlacedAnimal, ThemeId } from '../types'
 import { createAnimalModel, tickWalk } from './models'
 import { HOST_ORBIT, OrbitZoom } from './orbit-zoom'
-import { paintBushSprite, paintForestPanorama, paintGrassGround, paintTreeSprite } from './forest-art'
+import { paintBushSprite, paintForestPanorama, paintGrassGround, paintTreeSprite, paintWater } from './forest-art'
 
 interface Actor {
   id: string
@@ -38,15 +38,15 @@ export class HostWorld {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, preserveDrawingBuffer: true })
     this.renderer.setPixelRatio(Math.min(devicePixelRatio, 2))
     this.renderer.shadowMap.enabled = true
-    this.camera = new THREE.PerspectiveCamera(42, 1, 0.1, 80)
-    this.camera.position.set(0, 2.55, 7.1)
-    this.camera.lookAt(0, 0.85, 0)
-    this.orbit = new OrbitZoom(canvas, this.camera, new THREE.Vector3(0, 0.85, 0), HOST_ORBIT)
+    this.camera = new THREE.PerspectiveCamera(42, 1, 0.1, 140)
+    this.camera.position.set(0, 3.2, 9.4)
+    this.camera.lookAt(0, 0.7, 0)
+    this.orbit = new OrbitZoom(canvas, this.camera, new THREE.Vector3(0, 0.7, 0), HOST_ORBIT)
     const grass = new THREE.CanvasTexture(paintGrassGround())
     grass.wrapS = grass.wrapT = THREE.RepeatWrapping
-    grass.repeat.set(4, 4)
+    grass.repeat.set(6, 6)
     this.ground = new THREE.Mesh(
-      new THREE.CircleGeometry(14, 64),
+      new THREE.CircleGeometry(28, 72),
       new THREE.MeshLambertMaterial({ map: grass, color: '#8fb56a' }),
     )
     this.ground.rotation.x = -Math.PI / 2
@@ -160,6 +160,12 @@ export class HostWorld {
     }
     this.decorations.children.forEach((c, i) => {
       if (c.userData.kelp) c.rotation.z = Math.sin(t * 1.4 + i) * 0.15
+      if (c.userData.water && c instanceof THREE.Mesh) {
+        const mat = c.material
+        if (mat instanceof THREE.MeshPhongMaterial) {
+          mat.opacity = 0.68 + Math.sin(t * 1.1 + i) * 0.06
+        }
+      }
     })
     this.renderer.render(this.scene, this.camera)
   }
@@ -171,13 +177,13 @@ export class HostWorld {
 
   private buildForest(): void {
     this.scene.background = new THREE.Color('#c5d6a0')
-    this.scene.fog = new THREE.Fog('#c5d6a0', 22, 42)
+    this.scene.fog = new THREE.Fog('#c5d6a0', 28, 72)
     const grassMat = this.ground.material as THREE.MeshLambertMaterial
     grassMat.color.set('#7da85a')
-    this.addLight(new THREE.AmbientLight('#ffe6b8', 0.45))
-    this.addLight(new THREE.HemisphereLight('#fff4d4', '#3d5c32', 1.12))
-    const sun = new THREE.DirectionalLight('#ffe6b0', 1.15)
-    sun.position.set(5, 9, 6)
+    this.addLight(new THREE.AmbientLight('#ffe6b8', 0.5))
+    this.addLight(new THREE.HemisphereLight('#fff4d4', '#3d5c32', 1.05))
+    const sun = new THREE.DirectionalLight('#ffe6b0', 1.1)
+    sun.position.set(6, 12, 8)
     sun.castShadow = true
     sun.shadow.mapSize.set(1024, 1024)
     this.addLight(sun)
@@ -185,13 +191,62 @@ export class HostWorld {
     const woods = new THREE.CanvasTexture(paintForestPanorama())
     woods.colorSpace = THREE.SRGBColorSpace
     const woodsMat = new THREE.MeshBasicMaterial({ map: woods, side: THREE.BackSide, fog: false })
-    const backdrop = new THREE.Mesh(
-      new THREE.CylinderGeometry(18, 18, 12, 48, 1, true),
-      woodsMat,
-    )
-    backdrop.position.y = 4.8
+    const backdrop = new THREE.Mesh(new THREE.CylinderGeometry(32, 32, 16, 56, 1, true), woodsMat)
+    backdrop.position.y = 6.4
     this.decorations.add(backdrop)
 
+    this.addStonePath()
+    this.addLake(-7.4, 3.6, 2.7, 0.08)
+    this.addLake(8.6, -5.2, 1.7, 0.12)
+
+    for (let i = 0; i < 7; i++) {
+      const hill = rollingHill(i)
+      const a = (i / 7) * Math.PI * 2 + 0.4
+      hill.position.set(Math.cos(a) * 12.5, 0, Math.sin(a) * 12.5)
+      this.decorations.add(hill)
+    }
+    for (let i = 0; i < 6; i++) {
+      const mtn = mountain(i)
+      const a = (i / 6) * Math.PI * 2 + 0.18
+      mtn.position.set(Math.cos(a) * 20, 0, Math.sin(a) * 20)
+      this.decorations.add(mtn)
+    }
+
+    for (let i = 0; i < 18; i++) {
+      const tree = woodTree(i)
+      const a = (i / 18) * Math.PI * 2 + 0.07
+      tree.position.set(Math.cos(a) * 6.8, 0, Math.sin(a) * 6.8)
+      tree.scale.setScalar(1.05 + (i % 4) * 0.1)
+      this.decorations.add(tree)
+    }
+    for (let i = 0; i < 20; i++) {
+      const tree = woodTree(i + 40)
+      const a = (i / 20) * Math.PI * 2 + 0.31
+      tree.position.set(Math.cos(a) * 9.6, 0, Math.sin(a) * 9.6)
+      tree.scale.setScalar(1.35 + (i % 3) * 0.12)
+      this.decorations.add(tree)
+    }
+    for (let i = 0; i < 14; i++) {
+      const tree = woodTree(i + 80)
+      const a = (i / 14) * Math.PI * 2 + 0.55
+      tree.position.set(Math.cos(a) * 14.2, 0, Math.sin(a) * 14.2)
+      tree.scale.setScalar(1.7)
+      this.decorations.add(tree)
+    }
+    for (let i = 0; i < 16; i++) {
+      const bush = bushSprite(i)
+      const a = (i / 16) * Math.PI * 2 + 0.4
+      bush.position.set(Math.cos(a) * 5.4, 0, Math.sin(a) * 5.4)
+      this.decorations.add(bush)
+    }
+    for (let i = 0; i < 8; i++) {
+      const reed = reedClump(i)
+      reed.position.set(-7.4 + Math.cos(i) * 2.2, 0, 3.6 + Math.sin(i * 1.3) * 1.6)
+      this.decorations.add(reed)
+    }
+  }
+
+  private addStonePath(): void {
     const dirt = new THREE.Mesh(
       new THREE.RingGeometry(3.05, 5.05, 64),
       new THREE.MeshLambertMaterial({ color: '#b79a72' }),
@@ -199,7 +254,6 @@ export class HostWorld {
     dirt.rotation.x = -Math.PI / 2
     dirt.position.y = 0.012
     this.decorations.add(dirt)
-
     for (let i = 0; i < 96; i++) {
       const a = (i / 96) * Math.PI * 2 + (i % 7) * 0.01
       const r = 3.35 + (i % 6) * 0.22
@@ -213,62 +267,99 @@ export class HostWorld {
       stone.receiveShadow = true
       this.decorations.add(stone)
     }
+  }
 
-    for (let i = 0; i < 22; i++) {
-      const tree = woodTree(i)
-      const a = (i / 22) * Math.PI * 2 + 0.05
-      tree.position.set(Math.cos(a) * 6.6, 0, Math.sin(a) * 6.6)
-      tree.scale.setScalar(1.05 + (i % 4) * 0.08)
-      this.decorations.add(tree)
-    }
-    for (let i = 0; i < 16; i++) {
-      const tree = woodTree(i + 30)
-      const a = (i / 16) * Math.PI * 2 + 0.28
-      tree.position.set(Math.cos(a) * 9.2, 0, Math.sin(a) * 9.2)
-      tree.scale.setScalar(1.35)
-      this.decorations.add(tree)
-    }
-    for (let i = 0; i < 14; i++) {
-      const bush = bushSprite(i)
-      const a = (i / 14) * Math.PI * 2 + 0.4
-      bush.position.set(Math.cos(a) * 5.35, 0, Math.sin(a) * 5.35)
-      this.decorations.add(bush)
-    }
+  private addLake(x: number, z: number, radius: number, rot: number): void {
+    const shore = new THREE.Mesh(
+      new THREE.CircleGeometry(radius + 0.55, 40),
+      new THREE.MeshLambertMaterial({ color: '#cbb58a' }),
+    )
+    shore.rotation.x = -Math.PI / 2
+    shore.position.set(x, 0.018, z)
+    shore.rotation.z = rot
+    shore.scale.set(1.25, 1, 0.82)
+    this.decorations.add(shore)
+
+    const waterTex = new THREE.CanvasTexture(paintWater())
+    waterTex.colorSpace = THREE.SRGBColorSpace
+    waterTex.wrapS = waterTex.wrapT = THREE.RepeatWrapping
+    waterTex.repeat.set(2, 2)
+    const water = new THREE.Mesh(
+      new THREE.CircleGeometry(radius, 48),
+      new THREE.MeshPhongMaterial({
+        map: waterTex,
+        color: '#5aa7c2',
+        transparent: true,
+        opacity: 0.72,
+        shininess: 90,
+        specular: '#d7f4ff',
+        depthWrite: false,
+      }),
+    )
+    water.rotation.x = -Math.PI / 2
+    water.position.set(x, 0.04, z)
+    water.scale.set(1.25, 1, 0.82)
+    water.userData.water = true
+    this.decorations.add(water)
   }
 
   private buildSnow(): void {
     this.scene.background = new THREE.Color('#d9ebf7')
-    this.scene.fog = new THREE.Fog('#d9ebf7', 10, 26)
+    this.scene.fog = new THREE.Fog('#d9ebf7', 22, 70)
     ;(this.ground.material as THREE.MeshLambertMaterial).color.set('#f4f8ff')
     this.addLight(new THREE.HemisphereLight('#eef6ff', '#9bb4c8', 1.1))
-    const sun = new THREE.DirectionalLight('#ffffff', 0.9)
+    const sun = new THREE.DirectionalLight('#ffffff', 0.95)
     sun.position.set(4, 12, 6)
     sun.castShadow = true
     this.addLight(sun)
-    for (let i = 0; i < 12; i++) {
-      const tree = billboardTree(i + 3)
+    this.addStonePath()
+    const ice = new THREE.Mesh(
+      new THREE.CircleGeometry(2.8, 40),
+      new THREE.MeshPhongMaterial({ color: '#cfe8f6', shininess: 70, specular: '#ffffff' }),
+    )
+    ice.rotation.x = -Math.PI / 2
+    ice.position.set(-7.2, 0.04, 3.4)
+    ice.scale.set(1.2, 1, 0.8)
+    ice.userData.water = true
+    this.decorations.add(ice)
+    for (let i = 0; i < 6; i++) {
+      const mtn = mountain(i, true)
+      const a = (i / 6) * Math.PI * 2 + 0.2
+      mtn.position.set(Math.cos(a) * 20, 0, Math.sin(a) * 20)
+      this.decorations.add(mtn)
+    }
+    for (let i = 0; i < 14; i++) {
+      const tree = woodTree(i + 3)
       const cap = new THREE.Mesh(
-        new THREE.ConeGeometry(0.7, 0.5, 8),
+        new THREE.SphereGeometry(0.7, 10, 8),
         new THREE.MeshLambertMaterial({ color: '#ffffff' }),
       )
-      cap.position.y = 2.4
+      cap.position.y = 2.5
+      cap.scale.set(1.2, 0.55, 1.2)
       tree.add(cap)
-      const a = (i / 12) * Math.PI * 2 + 0.2
-      tree.position.set(Math.cos(a) * 8.2, 0, Math.sin(a) * 8.2)
+      const a = (i / 14) * Math.PI * 2 + 0.2
+      tree.position.set(Math.cos(a) * 8.4, 0, Math.sin(a) * 8.4)
       this.decorations.add(tree)
     }
-    this.particles = makePoints('#ffffff', 180, 8)
+    this.particles = makePoints('#ffffff', 180, 10)
     this.scene.add(this.particles)
   }
 
   private buildUnderwater(): void {
     this.scene.background = new THREE.Color('#0b4f6c')
-    this.scene.fog = new THREE.Fog('#0b4f6c', 8, 22)
+    this.scene.fog = new THREE.Fog('#0b4f6c', 10, 36)
     ;(this.ground.material as THREE.MeshLambertMaterial).color.set('#c2b280')
     this.addLight(new THREE.HemisphereLight('#7fd3ff', '#063447', 1.05))
     const sun = new THREE.DirectionalLight('#9ee7ff', 0.85)
     sun.position.set(2, 10, 3)
     this.addLight(sun)
+    for (let i = 0; i < 8; i++) {
+      const mound = rollingHill(i)
+      const a = (i / 8) * Math.PI * 2
+      mound.position.set(Math.cos(a) * 10, 0, Math.sin(a) * 10)
+      mound.scale.setScalar(0.7)
+      this.decorations.add(mound)
+    }
     for (let i = 0; i < 16; i++) {
       const kelp = new THREE.Mesh(
         new THREE.CylinderGeometry(0.05, 0.08, 2.4 + Math.random(), 6),
@@ -287,7 +378,7 @@ export class HostWorld {
       coral.position.set(Math.cos(a) * 6.4, 0.35, Math.sin(a) * 6.4)
       this.decorations.add(coral)
     }
-    this.particles = makePoints('#b9f3ff', 90, 6)
+    this.particles = makePoints('#b9f3ff', 90, 8)
     this.scene.add(this.particles)
   }
 }
@@ -302,6 +393,21 @@ function woodTree(seed: number): THREE.Group {
   trunk.position.y = h / 2
   trunk.castShadow = true
   g.add(trunk)
+  const greens = ['#2f7a38', '#3d8f44', '#246830', '#4ea050']
+  for (let i = 0; i < 4; i++) {
+    const canopy = new THREE.Mesh(
+      new THREE.SphereGeometry(0.55 + (i % 3) * 0.12, 10, 8),
+      new THREE.MeshLambertMaterial({ color: greens[(seed + i) % greens.length]! }),
+    )
+    canopy.position.set(
+      Math.sin(seed + i) * 0.28,
+      h * 0.72 + (i % 3) * 0.22,
+      Math.cos(seed * 0.7 + i) * 0.28,
+    )
+    canopy.scale.set(1.15, 0.85, 1.1)
+    canopy.castShadow = true
+    g.add(canopy)
+  }
   const tex = new THREE.CanvasTexture(paintTreeSprite(seed))
   tex.colorSpace = THREE.SRGBColorSpace
   const mat = new THREE.MeshLambertMaterial({
@@ -338,8 +444,58 @@ function bushSprite(seed: number): THREE.Group {
   return g
 }
 
-function billboardTree(seed: number): THREE.Group {
-  return woodTree(seed)
+function rollingHill(seed: number): THREE.Group {
+  const g = new THREE.Group()
+  const hill = new THREE.Mesh(
+    new THREE.SphereGeometry(2.2 + (seed % 3) * 0.4, 12, 10),
+    new THREE.MeshLambertMaterial({ color: seed % 2 ? '#5d8a4a' : '#6b9a55' }),
+  )
+  hill.scale.set(1.6, 0.38 + (seed % 3) * 0.08, 1.3)
+  hill.position.y = 0.15
+  g.add(hill)
+  g.userData.hill = true
+  return g
+}
+
+function mountain(seed: number, snowy = false): THREE.Group {
+  const g = new THREE.Group()
+  const h = 5.4 + (seed % 4) * 1.1
+  const r = 3.2 + (seed % 3) * 0.5
+  const rock = new THREE.Mesh(
+    new THREE.ConeGeometry(r, h, 6 + (seed % 3)),
+    new THREE.MeshLambertMaterial({ color: snowy ? '#8aa0b0' : seed % 2 ? '#6d8a62' : '#7f9570' }),
+  )
+  rock.position.y = h / 2
+  rock.rotation.y = seed * 0.7
+  g.add(rock)
+  const shoulder = new THREE.Mesh(
+    new THREE.ConeGeometry(r * 0.62, h * 0.7, 6),
+    new THREE.MeshLambertMaterial({ color: snowy ? '#9bb0be' : '#5f7a54' }),
+  )
+  shoulder.position.set(r * 0.35, h * 0.32, -r * 0.1)
+  g.add(shoulder)
+  const cap = new THREE.Mesh(
+    new THREE.ConeGeometry(r * 0.38, h * 0.28, 6),
+    new THREE.MeshLambertMaterial({ color: snowy ? '#f4f8fb' : '#e7efe4' }),
+  )
+  cap.position.y = h * 0.84
+  g.add(cap)
+  g.userData.mountain = true
+  return g
+}
+
+function reedClump(seed: number): THREE.Group {
+  const g = new THREE.Group()
+  for (let i = 0; i < 5; i++) {
+    const reed = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.015, 0.02, 0.7 + (i % 3) * 0.15, 5),
+      new THREE.MeshLambertMaterial({ color: i % 2 ? '#3d7a38' : '#5a9448' }),
+    )
+    reed.position.set(Math.sin(seed + i) * 0.12, 0.4, Math.cos(seed * 0.5 + i) * 0.12)
+    reed.rotation.z = (i - 2) * 0.08
+    g.add(reed)
+  }
+  return g
 }
 
 function makePoints(color: string, count: number, spread: number): THREE.Points {
