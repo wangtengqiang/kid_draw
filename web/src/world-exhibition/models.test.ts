@@ -1,4 +1,4 @@
-import { Box3, DoubleSide, Group, Mesh, MeshLambertMaterial, Vector3 } from 'three'
+import { Box3, FrontSide, Group, Mesh, MeshLambertMaterial, Vector3 } from 'three'
 import { describe, expect, it } from 'vitest'
 import { ANIMAL_IDS, LAND_IDS } from '../types'
 import { createAnimalModel, profileVolume, tickAction, tickWalk } from './models'
@@ -76,7 +76,7 @@ describe('3D animal volumes', () => {
     }
   })
 
-  it('gives legs opaque double-sided shafts outside the torso', () => {
+  it('gives legs opaque closed volumes outside the torso', () => {
     const g = createAnimalModel('deer', {})
     const legs = g.userData.legs as Group[]
     const zs = legs.map((leg) => leg.position.z)
@@ -90,14 +90,15 @@ describe('3D animal volumes', () => {
         if (!(obj instanceof Mesh)) return
         if (!String(obj.userData.region || '').startsWith('leg')) return
         expect(obj.geometry.type).not.toBe('CapsuleGeometry')
+        expect(obj.geometry.type).not.toBe('CylinderGeometry')
         const mat = obj.material as MeshLambertMaterial
         expect(mat.transparent).toBe(false)
         expect(mat.opacity).toBe(1)
         expect(mat.depthWrite).toBe(true)
-        expect(mat.side).toBe(DoubleSide)
+        expect(mat.side).toBe(FrontSide)
         shafts += 1
       })
-      expect(shafts).toBeGreaterThan(0)
+      expect(shafts).toBeGreaterThan(2)
     }
   })
 
@@ -123,6 +124,20 @@ describe('3D animal volumes', () => {
       expect(g.rotation.z).toBeLessThan(-0.4)
       tickAction(g, 'rest', 0)
       expect(g.rotation.z).toBeGreaterThan(0.8)
+    }
+  })
+
+  it('keeps every animal mesh opaque', () => {
+    for (const id of ANIMAL_IDS) {
+      const g = createAnimalModel(id, { body: '#e24b4b' })
+      g.traverse((obj) => {
+        if (!(obj instanceof Mesh)) return
+        const mat = obj.material
+        if (Array.isArray(mat)) return
+        if ('transparent' in mat) expect(mat.transparent).toBe(false)
+        if ('opacity' in mat) expect(mat.opacity).toBe(1)
+        if ('depthWrite' in mat) expect(mat.depthWrite).toBe(true)
+      })
     }
   })
 

@@ -15,7 +15,7 @@ export function coatTexture(animal: AnimalId, painted: Record<string, string>): 
   const c = document.createElement('canvas')
   c.width = size
   c.height = size
-  const ctx = c.getContext('2d')
+  const ctx = c.getContext('2d', { alpha: false })
   if (ctx) {
     const body = colorOf(animal, 'body', painted)
     const belly = colorOf(animal, 'belly', painted)
@@ -63,6 +63,8 @@ export function coatTexture(animal: AnimalId, painted: Record<string, string>): 
   tex.wrapT = THREE.ClampToEdgeWrapping
   tex.minFilter = THREE.LinearFilter
   tex.magFilter = THREE.LinearFilter
+  tex.premultiplyAlpha = false
+  tex.generateMipmaps = false
   return tex
 }
 

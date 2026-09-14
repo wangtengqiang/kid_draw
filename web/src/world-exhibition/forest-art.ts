@@ -97,7 +97,7 @@ export function paintGrassGround(): HTMLCanvasElement {
   const c = document.createElement('canvas')
   c.width = w
   c.height = h
-  const ctx = c.getContext('2d')
+  const ctx = c.getContext('2d', { alpha: false })
   if (!ctx) return c
   ctx.fillStyle = '#3f6e32'
   ctx.fillRect(0, 0, w, h)
@@ -135,7 +135,7 @@ export function paintWater(): HTMLCanvasElement {
   const c = document.createElement('canvas')
   c.width = w
   c.height = h
-  const ctx = c.getContext('2d')
+  const ctx = c.getContext('2d', { alpha: false })
   if (!ctx) return c
   const g = ctx.createLinearGradient(0, 0, w, h)
   g.addColorStop(0, '#6eb7c8')

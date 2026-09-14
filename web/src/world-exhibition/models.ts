@@ -12,42 +12,30 @@ function colorOf(animal: AnimalId, region: string, painted: Record<string, strin
   return painted[region] || ANIMAL_META[animal].defaults[region] || '#d9b48a'
 }
 
-/** 全场共用几何，避免每只动物再 new 一份。 */
+/** 全场共用封闭圆球。不用空心圆柱，草地不会从腿中间透出来。 */
 const GEO = {
   sphere: new THREE.SphereGeometry(1, 16, 12),
   fluffy: new THREE.SphereGeometry(1, 10, 8),
-  cyl: new THREE.CylinderGeometry(1, 1, 1, 12, 1, false),
 }
 
-const Y_UP = new THREE.Vector3(0, 1, 0)
-const _dir = new THREE.Vector3()
-
-function toon(
-  color: string,
-  map?: THREE.Texture,
-  doubleSide = false,
-): THREE.MeshLambertMaterial {
+function toon(color: string, map?: THREE.Texture): THREE.MeshLambertMaterial {
   return new THREE.MeshLambertMaterial({
     color,
     map: map ?? null,
-    side: doubleSide ? THREE.DoubleSide : THREE.FrontSide,
+    side: THREE.FrontSide,
     transparent: false,
     opacity: 1,
     depthWrite: true,
     depthTest: true,
     alphaTest: 0,
+    blending: THREE.NormalBlending,
     emissive: new THREE.Color(color).multiplyScalar(0.08),
     emissiveIntensity: map ? 0.04 : 0.12,
   })
 }
 
-function mesh(
-  geo: THREE.BufferGeometry,
-  color: string,
-  map?: THREE.Texture,
-  doubleSide = false,
-): THREE.Mesh {
-  const m = new THREE.Mesh(geo, toon(color, map, doubleSide))
+function mesh(geo: THREE.BufferGeometry, color: string, map?: THREE.Texture): THREE.Mesh {
+  const m = new THREE.Mesh(geo, toon(color, map))
   m.castShadow = false
   m.receiveShadow = false
   return m
@@ -91,12 +79,12 @@ function limb(
   animal: AnimalId,
   painted: Record<string, string>,
 ): THREE.Mesh {
-  const m = mesh(geo, colorOf(animal, region, painted), undefined, true)
+  const m = mesh(geo, colorOf(animal, region, painted))
   m.userData.region = region
   return m
 }
 
-/** 圆柱从 from 接到 to，共享 GEO.cyl。 */
+/** 一串实心圆球，从 from 接到 to。不是空心管。 */
 function stick(
   from: readonly [number, number, number],
   to: readonly [number, number, number],
@@ -104,16 +92,21 @@ function stick(
   region: string,
   animal: AnimalId,
   painted: Record<string, string>,
-): THREE.Mesh {
+): THREE.Group {
   const dx = to[0] - from[0]
   const dy = to[1] - from[1]
   const dz = to[2] - from[2]
   const len = Math.hypot(dx, dy, dz) || 0.01
-  const m = limb(GEO.cyl, region, animal, painted)
-  m.position.set((from[0] + to[0]) / 2, (from[1] + to[1]) / 2, (from[2] + to[2]) / 2)
-  m.scale.set(radius, len, radius)
-  m.quaternion.setFromUnitVectors(Y_UP, _dir.set(dx / len, dy / len, dz / len))
-  return m
+  const n = Math.max(3, Math.round(len / Math.max(radius * 1.15, 0.04)))
+  const g = new THREE.Group()
+  for (let i = 0; i <= n; i++) {
+    const t = i / n
+    const bead = limb(GEO.sphere, region, animal, painted)
+    bead.position.set(from[0] + dx * t, from[1] + dy * t, from[2] + dz * t)
+    bead.scale.setScalar(radius)
+    g.add(bead)
+  }
+  return g
 }
 
 function smoothRing(pts: Ring, count = 72): THREE.Vector2[] {
@@ -465,7 +458,7 @@ type LegSpec = {
   foot: FootKind
 }
 
-/** 短粗直柱：髋到地面，蹄/爪贴地。共享圆柱，几乎不收尖。 */
+/** 实心圆球串成的腿：髋到地面，蹄/爪贴地。封闭体，草地透不出来。 */
 function placeLegs(
   g: THREE.Group,
   animal: AnimalId,
@@ -478,10 +471,15 @@ function placeLegs(
     hip.position.set(spec.x, spec.hipY, spec.z)
     const footH = spec.foot === 'hoof' ? 0.055 : 0.05
     const length = Math.max(0.16, spec.hipY - footH)
-    const shaft = limb(GEO.cyl, spec.name, animal, painted)
-    shaft.scale.set(spec.radius, length, spec.radius)
-    shaft.position.y = -length / 2
-    hip.add(shaft)
+    const n = 4
+    for (let i = 0; i < n; i++) {
+      const t = i / (n - 1)
+      const bead = limb(GEO.sphere, spec.name, animal, painted)
+      const fat = spec.radius * (1.18 - t * 0.12)
+      bead.scale.set(fat, spec.radius * 1.05, fat)
+      bead.position.y = -t * (length - spec.radius * 0.8)
+      hip.add(bead)
+    }
     hip.add(makeFoot(spec, animal, painted))
     g.add(hip)
     legs.push(hip)
@@ -493,17 +491,17 @@ function makeFoot(spec: LegSpec, animal: AnimalId, painted: Record<string, strin
   const f = new THREE.Group()
   f.position.y = -spec.hipY
   if (spec.foot === 'hoof') {
-    const hoof = mesh(GEO.sphere, '#3a2418', undefined, true)
+    const hoof = mesh(GEO.sphere, '#3a2418')
     hoof.scale.set(spec.radius * 1.45, spec.radius * 0.7, spec.radius * 1.15)
     hoof.position.set(0.03, 0.032, 0)
     f.add(hoof)
   } else {
-    const pad = mesh(GEO.sphere, colorOf(animal, spec.name, painted), undefined, true)
+    const pad = mesh(GEO.sphere, colorOf(animal, spec.name, painted))
     pad.scale.set(spec.radius * 1.7, spec.radius * 0.55, spec.radius * 1.45)
     pad.position.set(0.05, 0.03, 0)
     f.add(pad)
     for (const tz of [-0.65, 0, 0.65]) {
-      const toe = mesh(GEO.fluffy, '#3a2418', undefined, true)
+      const toe = mesh(GEO.fluffy, '#3a2418')
       toe.scale.set(spec.radius * 0.55, spec.radius * 0.35, spec.radius * 0.45)
       toe.position.set(spec.radius * 1.55, 0.02, spec.radius * tz)
       f.add(toe)
