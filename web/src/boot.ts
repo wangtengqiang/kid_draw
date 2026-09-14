@@ -59,6 +59,7 @@ export class App {
     else if (s.name === 'gallery') this.exhibition.showGallery()
     else if (s.name === 'preview') this.exhibition.showPreview(s.item)
     else if (s.name === 'need-scan') this.child.needScan()
+    else if (s.name === 'scan') this.child.scan()
     else if (s.name === 'ended') this.child.ended()
     else if (s.name === 'pick') this.child.pick(s.roomId)
     else if (s.name === 'paint') this.child.paintScreen(s.roomId, s.animalId)
@@ -82,6 +83,7 @@ export class App {
         <button class="hit host-hit" data-act="host" type="button">打开世界</button>
         <p class="home-kicker">小朋友</p>
         <button class="hit kid-hit" data-act="draw" type="button">开始画画</button>
+        <button class="hit scan-hit" data-act="scan" type="button">扫码进入</button>
         <button class="camera-hit" data-act="paper" type="button">拍纸上的画</button>
         <button class="text-link" data-act="gallery" type="button">我的画</button>
         <button class="text-link quiet" data-act="print" type="button">老师打印线稿</button>
@@ -118,6 +120,7 @@ export class App {
       })
       this.go({ name: 'pick', roomId })
     })
+    this.root.querySelector('[data-act="scan"]')?.addEventListener('click', () => this.go({ name: 'scan' }))
     this.root.querySelector('[data-act="paper"]')?.addEventListener('click', () => {
       const join = joinQuery()
       if (join && getRoom(join)) this.go({ name: 'paper-pick', roomId: join })

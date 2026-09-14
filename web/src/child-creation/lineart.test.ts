@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { ANIMAL_IDS } from '../types'
-import { FRAME } from '../silhouettes'
+import { COLOR_FRAME } from './coloring-book'
+import { parseJoinFromQr } from './scan-qr'
+import { loadDraft, saveDraft, DRAFT_KEY } from './drafts'
 
-describe('lineart frame', () => {
+describe('coloring-book frame', () => {
   for (const id of ANIMAL_IDS) {
-    it(`${id} silhouette fits a 320×360 pick card with padding`, () => {
-      const b = FRAME[id]
+    it(`${id} fits a 320×360 pick card with padding`, () => {
+      const b = COLOR_FRAME[id]
       const w = 320
       const h = 360
       const pad = Math.min(w, h) * 0.08
@@ -19,8 +21,34 @@ describe('lineart frame', () => {
     })
   }
 
-  it('deer frame is tall enough for antlers', () => {
-    expect(FRAME.deer.maxY).toBeGreaterThan(2)
-    expect(FRAME.deer.maxX - FRAME.deer.minX).toBeGreaterThan(2)
+  it('deer is standing (taller than a sideways blob)', () => {
+    const b = COLOR_FRAME.deer
+    const height = b.maxY - b.minY
+    const width = b.maxX - b.minX
+    expect(height).toBeGreaterThan(width * 0.7)
+    expect(b.maxY).toBeGreaterThan(2)
+  })
+})
+
+describe('parseJoinFromQr', () => {
+  it('reads ?join= from a host URL', () => {
+    expect(parseJoinFromQr('http://127.0.0.1:43187/?join=2774')).toBe('2774')
+  })
+
+  it('reads a bare 4-digit room', () => {
+    expect(parseJoinFromQr('1001')).toBe('1001')
+  })
+
+  it('rejects junk', () => {
+    expect(parseJoinFromQr('hello')).toBeNull()
+  })
+})
+
+describe('paint drafts', () => {
+  it('saves and restores a local coloring', () => {
+    localStorage.removeItem(DRAFT_KEY)
+    saveDraft({ roomId: '1001', animalId: 'deer', colorPng: 'data:image/png;base64,aa', savedAt: 1 })
+    expect(loadDraft('1001', 'deer')?.colorPng).toContain('data:image/png')
+    expect(loadDraft('1001', 'tiger')).toBeNull()
   })
 })

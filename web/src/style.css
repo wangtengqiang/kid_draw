@@ -68,7 +68,10 @@ h1 {
 
 .host-hit { background: var(--sun); box-shadow: 0 7px 0 #c4891a; }
 .kid-hit { background: var(--leaf); color: #fff; box-shadow: 0 7px 0 #2a6b38; }
-.host-hit:active, .kid-hit:active, .camera-hit:active, .send-hit:active {
+.scan-hit { background: #5aa7c7; color: #fff; box-shadow: 0 7px 0 #3b7d96; }
+.draft-hit { background: #f4d27a; box-shadow: 0 7px 0 #c4891a; }
+.scan-file-hit { background: #efe4d2; box-shadow: 0 7px 0 #d7c4a4; }
+.host-hit:active, .kid-hit:active, .camera-hit:active, .send-hit:active, .scan-hit:active, .draft-hit:active {
   transform: translateY(3px);
   box-shadow: 0 3px 0 rgba(0,0,0,0.15);
 }
@@ -83,6 +86,27 @@ h1 {
 }
 
 .back { align-self: flex-start; }
+
+.paint-bar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.paint-bar .hit {
+  min-height: 64px;
+  font-size: 22px;
+  margin: 0;
+}
+.paint-msg.is-error { color: #b43b38; }
+.paint-msg.is-ok { color: #2a6b38; }
+.scan-video {
+  width: 100%;
+  max-height: 42dvh;
+  min-height: 180px;
+  border-radius: 28px;
+  background: #1a120c;
+  object-fit: cover;
+}
 
 .pick-grid { display: grid; gap: 14px; }
 
@@ -109,7 +133,7 @@ h1 {
   gap: 10px;
 }
 
-.paint-body { flex: 1; min-height: 42dvh; }
+.paint-body { flex: 1; min-height: 42dvh; position: relative; }
 .paint-stage {
   position: relative;
   width: 100%;

@@ -197,6 +197,26 @@ export class PaintSurface {
     return out
   }
 
+  colorDataURL(): string {
+    return this.color.toDataURL('image/png')
+  }
+
+  async restoreColor(dataUrl: string): Promise<void> {
+    const ctx = this.color.getContext('2d')
+    if (!ctx) throw new Error('画布打不开')
+    await new Promise<void>((resolve, reject) => {
+      const img = new Image()
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, this.color.width, this.color.height)
+        this.undoStack = []
+        this.snapshot()
+        resolve()
+      }
+      img.onerror = () => reject(new Error('草稿坏了'))
+      img.src = dataUrl
+    })
+  }
+
   thumb(): string {
     const out = document.createElement('canvas')
     out.width = 360

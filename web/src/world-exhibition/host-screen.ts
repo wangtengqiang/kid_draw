@@ -55,6 +55,8 @@ export class HostScreen {
           <button class="back" data-act="home" type="button">返回</button>
           <p class="room-code">${roomId}</p>
           <img class="qr" id="qr" alt="房间码" />
+          <p class="lead">小朋友点首页「扫码进入」，用摄像头或选这张码的截图。</p>
+          <button type="button" class="text-link" data-act="save-qr">下载二维码</button>
           <p class="occ" id="occ">${room.animals.length}/${ROOM_CAP} 只小动物</p>
           <p class="status" id="status">${hostStatus(room.paused, room.animals.length)}</p>
           <div class="theme-row" id="themes"></div>
@@ -79,9 +81,18 @@ export class HostScreen {
       })
         .then((url) => {
           qr.src = url
+          qr.dataset.src = url
         })
         .catch(() => undefined)
     }
+    this.root.querySelector('[data-act="save-qr"]')?.addEventListener('click', () => {
+      const href = qr?.dataset.src || qr?.src
+      if (!href) return
+      const a = document.createElement('a')
+      a.href = href
+      a.download = `kid-draw-room-${roomId}.png`
+      a.click()
+    })
     const themes = this.root.querySelector('#themes')
     if (themes) {
       themes.innerHTML = THEME_IDS.map(

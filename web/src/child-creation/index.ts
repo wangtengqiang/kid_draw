@@ -1,10 +1,12 @@
 /**
  * 儿童创作用例：选动物、涂色、导出贴图、送进世界。
- * 这里没有主机森林、没有换主题、没有二维码、没有 3D 预览。
+ * 网页预览可扫主机码进房间。这里不渲染主机森林、不换主题、不画 3D 预览。
  */
 export { exportTexture } from './export-texture'
+export { loadDraft, saveDraft } from './drafts'
 export { drawLineArt, drawPreview, drawRegions } from './lineart'
 export { PaintSurface } from './paint'
+export { parseJoinFromQr } from './scan-qr'
 export { ChildCreation } from './screens'
 export type { ChildGo } from './screens'
 export { sendColoredAnimal, sendToWorld } from './send-to-world'
