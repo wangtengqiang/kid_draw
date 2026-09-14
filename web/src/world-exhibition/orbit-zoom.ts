@@ -14,18 +14,18 @@ export type OrbitLimits = {
 
 /** 主机森林默认机位附近，俯仰大约 25°–75°。 */
 export const HOST_ORBIT: OrbitLimits = {
-  minRadius: 7,
-  maxRadius: 18,
-  minPhi: (25 * Math.PI) / 180,
-  maxPhi: (75 * Math.PI) / 180,
+  minRadius: 4.2,
+  maxRadius: 14,
+  minPhi: (18 * Math.PI) / 180,
+  maxPhi: (68 * Math.PI) / 180,
 }
 
 /** 作品夹转台更近，缩放幅度更小。 */
 export const PREVIEW_ORBIT: OrbitLimits = {
-  minRadius: 2.4,
-  maxRadius: 7,
-  minPhi: (20 * Math.PI) / 180,
-  maxPhi: (80 * Math.PI) / 180,
+  minRadius: 2.2,
+  maxRadius: 6.5,
+  minPhi: (18 * Math.PI) / 180,
+  maxPhi: (78 * Math.PI) / 180,
 }
 
 export function clamp(n: number, lo: number, hi: number): number {

@@ -9,8 +9,7 @@ describe('orbit clamps', () => {
     expect(clampOrbit(12, Math.PI, HOST_ORBIT).phi).toBe(HOST_ORBIT.maxPhi)
   })
 
-  it('keeps preview zoom tighter than the host forest', () => {
-    expect(PREVIEW_ORBIT.maxRadius).toBeLessThanOrEqual(HOST_ORBIT.minRadius)
+  it('keeps preview zoom for a close look at one animal', () => {
     expect(PREVIEW_ORBIT.minRadius).toBeLessThan(HOST_ORBIT.minRadius)
     const far = clampOrbit(20, 1, PREVIEW_ORBIT)
     expect(far.radius).toBe(PREVIEW_ORBIT.maxRadius)

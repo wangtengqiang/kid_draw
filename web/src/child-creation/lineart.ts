@@ -125,7 +125,13 @@ export function drawLineArt(animal: AnimalId, ctx: Ctx, w: number, h: number): v
   if (animal === 'lion') drawLionLines(ctx, cx, h)
 }
 
-export function drawPreview(animal: AnimalId, ctx: Ctx, w: number, h: number): void {
+export function drawPreview(
+  animal: AnimalId,
+  ctx: Ctx,
+  w: number,
+  h: number,
+  painted?: Record<string, string>,
+): void {
   ctx.clearRect(0, 0, w, h)
   ctx.fillStyle = '#fffaf1'
   ctx.fillRect(0, 0, w, h)
@@ -143,7 +149,7 @@ export function drawPreview(animal: AnimalId, ctx: Ctx, w: number, h: number): v
     const id = data.data[i]
     if (!id || data.data[i + 3] < 10) continue
     const name = list.find((r) => r.id === id)?.name
-    const hex = (name && defaults[name]) || '#e7d3b0'
+    const hex = (name && (painted?.[name] || defaults[name])) || '#e7d3b0'
     const rgb = hexToRgb(hex)
     out.data[i] = rgb[0]
     out.data[i + 1] = rgb[1]
@@ -164,171 +170,194 @@ function hexToRgb(hex: string): [number, number, number] {
 }
 
 function drawDeerRegions(ctx: Ctx, cx: number, h: number): void {
-  const y = h * 0.52
-  fillRegion(ctx, 16, () => ellipse(ctx, cx + 78, y - 10, 22, 14))
-  fillRegion(ctx, 14, () => ellipse(ctx, cx - 38, y + 118, 16, 52))
-  fillRegion(ctx, 15, () => ellipse(ctx, cx + 38, y + 118, 16, 52))
-  fillRegion(ctx, 12, () => ellipse(ctx, cx - 28, y + 108, 16, 58))
-  fillRegion(ctx, 13, () => ellipse(ctx, cx + 28, y + 108, 16, 58))
-  fillRegion(ctx, 7, () => ellipse(ctx, cx, y + 18, 92, 78))
-  fillRegion(ctx, 8, () => ellipse(ctx, cx, y + 36, 52, 42))
-  fillRegion(ctx, 9, () => ellipse(ctx, cx - 28, y + 8, 12, 10))
-  fillRegion(ctx, 10, () => ellipse(ctx, cx + 24, y - 4, 11, 9))
-  fillRegion(ctx, 11, () => ellipse(ctx, cx + 8, y + 22, 10, 8))
-  fillRegion(ctx, 6, () => ellipse(ctx, cx, y - 58, 32, 36))
-  fillRegion(ctx, 3, () => ellipse(ctx, cx - 48, y - 118, 18, 26))
-  fillRegion(ctx, 4, () => ellipse(ctx, cx + 48, y - 118, 18, 26))
-  fillRegion(ctx, 5, () => ellipse(ctx, cx, y - 102, 52, 48))
+  const y = h * 0.56
+  fillRegion(ctx, 14, () => ellipse(ctx, cx - 78, y + 100, 11, 60))
+  fillRegion(ctx, 15, () => ellipse(ctx, cx - 48, y + 108, 11, 54))
+  fillRegion(ctx, 12, () => ellipse(ctx, cx + 42, y + 104, 10, 58))
+  fillRegion(ctx, 13, () => ellipse(ctx, cx + 70, y + 94, 10, 64))
+  fillRegion(ctx, 16, () => ellipse(ctx, cx - 118, y - 6, 18, 12))
+  fillRegion(ctx, 7, () => ellipse(ctx, cx - 8, y + 10, 122, 54))
+  fillRegion(ctx, 8, () => ellipse(ctx, cx + 6, y + 32, 72, 30))
+  fillRegion(ctx, 9, () => ellipse(ctx, cx - 36, y - 2, 11, 9))
+  fillRegion(ctx, 10, () => ellipse(ctx, cx + 8, y - 10, 10, 8))
+  fillRegion(ctx, 11, () => ellipse(ctx, cx + 40, y + 8, 9, 7))
   ctx.save()
-  ctx.translate(cx - 34, y - 148)
-  ctx.rotate(-0.5)
+  ctx.translate(cx + 78, y - 36)
+  ctx.rotate(-0.75)
+  fillRegion(ctx, 6, () => ellipse(ctx, 0, 0, 20, 52))
+  ctx.restore()
+  fillRegion(ctx, 3, () => ellipse(ctx, cx + 92, y - 124, 12, 24))
+  fillRegion(ctx, 4, () => ellipse(ctx, cx + 114, y - 128, 12, 22))
+  ctx.save()
+  ctx.translate(cx + 118, y - 88)
+  ctx.rotate(-0.28)
+  fillRegion(ctx, 5, () => ellipse(ctx, 0, 0, 46, 28))
+  ctx.restore()
+  ctx.save()
+  ctx.translate(cx + 96, y - 132)
   fillRegion(ctx, 1, () => {
-    ellipse(ctx, 0, 0, 10, 38)
-    ellipse(ctx, -18, -18, 8, 22)
+    ellipse(ctx, -6, -28, 7, 36)
+    ellipse(ctx, -26, -44, 6, 20)
+    ellipse(ctx, 6, -52, 5, 18)
   })
   ctx.restore()
   ctx.save()
-  ctx.translate(cx + 34, y - 148)
-  ctx.rotate(0.5)
+  ctx.translate(cx + 116, y - 134)
   fillRegion(ctx, 2, () => {
-    ellipse(ctx, 0, 0, 10, 38)
-    ellipse(ctx, 18, -18, 8, 22)
+    ellipse(ctx, 10, -30, 7, 38)
+    ellipse(ctx, 28, -48, 6, 20)
+    ellipse(ctx, 6, -54, 5, 16)
   })
   ctx.restore()
 }
 
 function drawDeerLines(ctx: Ctx, cx: number, h: number): void {
-  const y = h * 0.52
+  const y = h * 0.56
   const line = (d: () => void) => strokeLine(ctx, d, 7)
-  line(() => ellipse(ctx, cx + 78, y - 10, 22, 14))
-  line(() => ellipse(ctx, cx - 38, y + 118, 16, 52))
-  line(() => ellipse(ctx, cx + 38, y + 118, 16, 52))
-  line(() => ellipse(ctx, cx - 28, y + 108, 16, 58))
-  line(() => ellipse(ctx, cx + 28, y + 108, 16, 58))
-  line(() => ellipse(ctx, cx, y + 18, 92, 78))
-  line(() => ellipse(ctx, cx, y + 36, 52, 42))
-  line(() => ellipse(ctx, cx - 28, y + 8, 12, 10))
-  line(() => ellipse(ctx, cx + 24, y - 4, 11, 9))
-  line(() => ellipse(ctx, cx + 8, y + 22, 10, 8))
-  line(() => ellipse(ctx, cx, y - 58, 32, 36))
-  line(() => ellipse(ctx, cx - 48, y - 118, 18, 26))
-  line(() => ellipse(ctx, cx + 48, y - 118, 18, 26))
-  line(() => ellipse(ctx, cx, y - 102, 52, 48))
+  line(() => ellipse(ctx, cx - 78, y + 100, 11, 60))
+  line(() => ellipse(ctx, cx - 48, y + 108, 11, 54))
+  line(() => ellipse(ctx, cx + 42, y + 104, 10, 58))
+  line(() => ellipse(ctx, cx + 70, y + 94, 10, 64))
+  line(() => ellipse(ctx, cx - 118, y - 6, 18, 12))
+  line(() => ellipse(ctx, cx - 8, y + 10, 122, 54))
+  line(() => ellipse(ctx, cx + 6, y + 32, 72, 30))
   ctx.save()
-  ctx.translate(cx - 34, y - 148)
-  ctx.rotate(-0.5)
+  ctx.translate(cx + 78, y - 36)
+  ctx.rotate(-0.75)
+  line(() => ellipse(ctx, 0, 0, 20, 52))
+  ctx.restore()
+  line(() => ellipse(ctx, cx + 92, y - 124, 12, 24))
+  line(() => ellipse(ctx, cx + 114, y - 128, 12, 22))
+  ctx.save()
+  ctx.translate(cx + 118, y - 88)
+  ctx.rotate(-0.28)
+  line(() => ellipse(ctx, 0, 0, 46, 28))
+  ctx.restore()
+  ctx.save()
+  ctx.translate(cx + 96, y - 132)
   line(() => {
-    ellipse(ctx, 0, 0, 10, 38)
-    ellipse(ctx, -18, -18, 8, 22)
+    ellipse(ctx, -6, -28, 7, 36)
+    ellipse(ctx, -26, -44, 6, 20)
+    ellipse(ctx, 6, -52, 5, 18)
   })
   ctx.restore()
   ctx.save()
-  ctx.translate(cx + 34, y - 148)
-  ctx.rotate(0.5)
+  ctx.translate(cx + 116, y - 134)
   line(() => {
-    ellipse(ctx, 0, 0, 10, 38)
-    ellipse(ctx, 18, -18, 8, 22)
+    ellipse(ctx, 10, -30, 7, 38)
+    ellipse(ctx, 28, -48, 6, 20)
+    ellipse(ctx, 6, -54, 5, 16)
   })
   ctx.restore()
-  face(ctx, cx, y - 102, 48)
+  face(ctx, cx + 122, y - 92, 36)
 }
 
 function drawTigerRegions(ctx: Ctx, cx: number, h: number): void {
-  const y = h * 0.55
+  const y = h * 0.58
   ctx.save()
-  ctx.translate(cx + 88, y + 8)
-  ctx.rotate(0.6)
-  fillRegion(ctx, 13, () => ellipse(ctx, 0, 0, 14, 70))
+  ctx.translate(cx - 120, y + 8)
+  ctx.rotate(-0.9)
+  fillRegion(ctx, 13, () => ellipse(ctx, 0, 0, 12, 72))
   ctx.restore()
-  fillRegion(ctx, 11, () => ellipse(ctx, cx - 40, y + 108, 18, 48))
-  fillRegion(ctx, 12, () => ellipse(ctx, cx + 36, y + 108, 18, 48))
-  fillRegion(ctx, 9, () => ellipse(ctx, cx - 22, y + 100, 18, 54))
-  fillRegion(ctx, 10, () => ellipse(ctx, cx + 20, y + 100, 18, 54))
-  fillRegion(ctx, 7, () => ellipse(ctx, cx, y + 12, 100, 72))
-  fillRegion(ctx, 8, () => ellipse(ctx, cx, y + 28, 58, 42))
-  fillRegion(ctx, 1, () => ellipse(ctx, cx - 58, y - 118, 22, 28))
-  fillRegion(ctx, 2, () => ellipse(ctx, cx + 58, y - 118, 22, 28))
-  fillRegion(ctx, 3, () => ellipse(ctx, cx - 58, y - 114, 12, 16))
-  fillRegion(ctx, 4, () => ellipse(ctx, cx + 58, y - 114, 12, 16))
-  fillRegion(ctx, 5, () => ellipse(ctx, cx, y - 88, 70, 62))
-  fillRegion(ctx, 6, () => ellipse(ctx, cx, y - 64, 42, 28))
+  fillRegion(ctx, 11, () => ellipse(ctx, cx - 70, y + 100, 16, 52))
+  fillRegion(ctx, 12, () => ellipse(ctx, cx - 38, y + 108, 16, 48))
+  fillRegion(ctx, 9, () => ellipse(ctx, cx + 48, y + 102, 16, 54))
+  fillRegion(ctx, 10, () => ellipse(ctx, cx + 78, y + 94, 16, 58))
+  fillRegion(ctx, 7, () => ellipse(ctx, cx, y + 16, 130, 58))
+  fillRegion(ctx, 8, () => ellipse(ctx, cx + 10, y + 36, 78, 34))
+  fillRegion(ctx, 1, () => ellipse(ctx, cx + 108, y - 108, 18, 26))
+  fillRegion(ctx, 2, () => ellipse(ctx, cx + 138, y - 104, 18, 26))
+  fillRegion(ctx, 3, () => ellipse(ctx, cx + 108, y - 104, 10, 14))
+  fillRegion(ctx, 4, () => ellipse(ctx, cx + 138, y - 100, 10, 14))
+  fillRegion(ctx, 5, () => ellipse(ctx, cx + 122, y - 70, 58, 52))
+  fillRegion(ctx, 6, () => ellipse(ctx, cx + 148, y - 52, 32, 22))
 }
 
 function drawTigerLines(ctx: Ctx, cx: number, h: number): void {
-  const y = h * 0.55
+  const y = h * 0.58
   const line = (d: () => void) => strokeLine(ctx, d, 7)
   ctx.save()
-  ctx.translate(cx + 88, y + 8)
-  ctx.rotate(0.6)
-  line(() => ellipse(ctx, 0, 0, 14, 70))
+  ctx.translate(cx - 120, y + 8)
+  ctx.rotate(-0.9)
+  line(() => ellipse(ctx, 0, 0, 12, 72))
   ctx.restore()
-  line(() => ellipse(ctx, cx - 40, y + 108, 18, 48))
-  line(() => ellipse(ctx, cx + 36, y + 108, 18, 48))
-  line(() => ellipse(ctx, cx - 22, y + 100, 18, 54))
-  line(() => ellipse(ctx, cx + 20, y + 100, 18, 54))
-  line(() => ellipse(ctx, cx, y + 12, 100, 72))
-  line(() => ellipse(ctx, cx, y + 28, 58, 42))
-  line(() => ellipse(ctx, cx - 58, y - 118, 22, 28))
-  line(() => ellipse(ctx, cx + 58, y - 118, 22, 28))
-  line(() => ellipse(ctx, cx, y - 88, 70, 62))
-  line(() => ellipse(ctx, cx, y - 64, 42, 28))
-  face(ctx, cx, y - 92, 52)
+  line(() => ellipse(ctx, cx - 70, y + 100, 16, 52))
+  line(() => ellipse(ctx, cx - 38, y + 108, 16, 48))
+  line(() => ellipse(ctx, cx + 48, y + 102, 16, 54))
+  line(() => ellipse(ctx, cx + 78, y + 94, 16, 58))
+  line(() => ellipse(ctx, cx, y + 16, 130, 58))
+  line(() => ellipse(ctx, cx + 10, y + 36, 78, 34))
+  line(() => ellipse(ctx, cx + 108, y - 108, 18, 26))
+  line(() => ellipse(ctx, cx + 138, y - 104, 18, 26))
+  line(() => ellipse(ctx, cx + 122, y - 70, 58, 52))
+  line(() => ellipse(ctx, cx + 148, y - 52, 32, 22))
+  face(ctx, cx + 128, y - 74, 44)
   ctx.save()
   ctx.strokeStyle = '#1a120c'
   ctx.lineWidth = 6
   ctx.lineCap = 'round'
   for (const [x0, y0, x1, y1] of [
-    [cx - 46, y - 8, cx - 18, y + 8],
-    [cx + 46, y - 8, cx + 18, y + 8],
-    [cx - 50, y + 22, cx - 16, y + 34],
-    [cx + 50, y + 22, cx + 16, y + 34],
+    [cx - 40, y - 8, cx - 20, y + 18],
+    [cx - 8, y - 16, cx + 8, y + 20],
+    [cx + 24, y - 10, cx + 36, y + 16],
+    [cx + 52, y - 4, cx + 60, y + 18],
   ]) {
     ctx.beginPath()
     ctx.moveTo(x0, y0)
-    ctx.lineTo(x1, y1)
+    ctx.quadraticCurveTo((x0 + x1) / 2 + 8, (y0 + y1) / 2, x1, y1)
     ctx.stroke()
   }
   ctx.restore()
 }
 
 function drawLionRegions(ctx: Ctx, cx: number, h: number): void {
-  const y = h * 0.54
+  const y = h * 0.56
   ctx.save()
-  ctx.translate(cx + 86, y + 20)
-  ctx.rotate(0.5)
-  fillRegion(ctx, 12, () => ellipse(ctx, 0, 0, 12, 62))
+  ctx.translate(cx - 118, y + 24)
+  ctx.rotate(-0.7)
+  fillRegion(ctx, 12, () => ellipse(ctx, 0, 0, 12, 64))
   ctx.restore()
-  fillRegion(ctx, 13, () => ellipse(ctx, cx + 118, y + 58, 18, 16))
-  fillRegion(ctx, 10, () => ellipse(ctx, cx - 38, y + 112, 18, 48))
-  fillRegion(ctx, 11, () => ellipse(ctx, cx + 34, y + 112, 18, 48))
-  fillRegion(ctx, 8, () => ellipse(ctx, cx - 22, y + 104, 18, 54))
-  fillRegion(ctx, 9, () => ellipse(ctx, cx + 18, y + 104, 18, 54))
-  fillRegion(ctx, 6, () => ellipse(ctx, cx, y + 28, 92, 70))
-  fillRegion(ctx, 7, () => ellipse(ctx, cx, y + 42, 52, 40))
-  fillRegion(ctx, 1, () => ellipse(ctx, cx, y - 96, 108, 100))
-  fillRegion(ctx, 2, () => ellipse(ctx, cx - 42, y - 132, 16, 20))
-  fillRegion(ctx, 3, () => ellipse(ctx, cx + 42, y - 132, 16, 20))
-  fillRegion(ctx, 4, () => ellipse(ctx, cx, y - 92, 58, 54))
-  fillRegion(ctx, 5, () => ellipse(ctx, cx, y - 72, 36, 24))
+  fillRegion(ctx, 13, () => ellipse(ctx, cx - 148, y + 70, 22, 16))
+  fillRegion(ctx, 10, () => ellipse(ctx, cx - 64, y + 108, 16, 50))
+  fillRegion(ctx, 11, () => ellipse(ctx, cx - 32, y + 114, 16, 46))
+  fillRegion(ctx, 8, () => ellipse(ctx, cx + 36, y + 106, 16, 52))
+  fillRegion(ctx, 9, () => ellipse(ctx, cx + 64, y + 98, 16, 56))
+  fillRegion(ctx, 6, () => ellipse(ctx, cx - 8, y + 28, 108, 58))
+  fillRegion(ctx, 7, () => ellipse(ctx, cx, y + 46, 64, 32))
+  fillRegion(ctx, 1, () => {
+    ellipse(ctx, cx + 108, y - 78, 92, 88)
+    ellipse(ctx, cx + 70, y - 110, 36, 36)
+    ellipse(ctx, cx + 148, y - 108, 34, 34)
+    ellipse(ctx, cx + 108, y - 140, 40, 28)
+  })
+  fillRegion(ctx, 2, () => ellipse(ctx, cx + 88, y - 128, 14, 18))
+  fillRegion(ctx, 3, () => ellipse(ctx, cx + 126, y - 128, 14, 18))
+  fillRegion(ctx, 4, () => ellipse(ctx, cx + 108, y - 78, 48, 44))
+  fillRegion(ctx, 5, () => ellipse(ctx, cx + 128, y - 58, 28, 20))
 }
 
 function drawLionLines(ctx: Ctx, cx: number, h: number): void {
-  const y = h * 0.54
+  const y = h * 0.56
   const line = (d: () => void) => strokeLine(ctx, d, 7)
   ctx.save()
-  ctx.translate(cx + 86, y + 20)
-  ctx.rotate(0.5)
-  line(() => ellipse(ctx, 0, 0, 12, 62))
+  ctx.translate(cx - 118, y + 24)
+  ctx.rotate(-0.7)
+  line(() => ellipse(ctx, 0, 0, 12, 64))
   ctx.restore()
-  line(() => ellipse(ctx, cx + 118, y + 58, 18, 16))
-  line(() => ellipse(ctx, cx - 38, y + 112, 18, 48))
-  line(() => ellipse(ctx, cx + 34, y + 112, 18, 48))
-  line(() => ellipse(ctx, cx - 22, y + 104, 18, 54))
-  line(() => ellipse(ctx, cx + 18, y + 104, 18, 54))
-  line(() => ellipse(ctx, cx, y + 28, 92, 70))
-  line(() => ellipse(ctx, cx, y + 42, 52, 40))
-  line(() => ellipse(ctx, cx, y - 96, 108, 100))
-  line(() => ellipse(ctx, cx, y - 92, 58, 54))
-  line(() => ellipse(ctx, cx, y - 72, 36, 24))
-  face(ctx, cx, y - 96, 50)
+  line(() => ellipse(ctx, cx - 148, y + 70, 22, 16))
+  line(() => ellipse(ctx, cx - 64, y + 108, 16, 50))
+  line(() => ellipse(ctx, cx - 32, y + 114, 16, 46))
+  line(() => ellipse(ctx, cx + 36, y + 106, 16, 52))
+  line(() => ellipse(ctx, cx + 64, y + 98, 16, 56))
+  line(() => ellipse(ctx, cx - 8, y + 28, 108, 58))
+  line(() => ellipse(ctx, cx, y + 46, 64, 32))
+  line(() => {
+    ellipse(ctx, cx + 108, y - 78, 92, 88)
+    ellipse(ctx, cx + 70, y - 110, 36, 36)
+    ellipse(ctx, cx + 148, y - 108, 34, 34)
+    ellipse(ctx, cx + 108, y - 140, 40, 28)
+  })
+  line(() => ellipse(ctx, cx + 108, y - 78, 48, 44))
+  line(() => ellipse(ctx, cx + 128, y - 58, 28, 20))
+  face(ctx, cx + 112, y - 82, 42)
 }

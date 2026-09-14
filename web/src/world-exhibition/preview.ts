@@ -23,17 +23,17 @@ export class PreviewStage {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true })
     this.renderer.setPixelRatio(Math.min(devicePixelRatio, 2))
     this.camera = new THREE.PerspectiveCamera(40, 1, 0.1, 40)
-    this.camera.position.set(0, 1.6, 4.2)
-    this.camera.lookAt(0, 0.8, 0)
-    this.orbit = new OrbitZoom(canvas, this.camera, new THREE.Vector3(0, 0.8, 0), PREVIEW_ORBIT)
-    this.scene.background = new THREE.Color('#f4efe4')
-    this.scene.add(new THREE.HemisphereLight('#fff6e8', '#8c7a62', 1.2))
-    const key = new THREE.DirectionalLight('#ffffff', 0.9)
+    this.camera.position.set(0, 1.15, 3.5)
+    this.camera.lookAt(0, 0.95, 0)
+    this.orbit = new OrbitZoom(canvas, this.camera, new THREE.Vector3(0, 0.95, 0), PREVIEW_ORBIT)
+    this.scene.background = new THREE.Color('#e7f0d4')
+    this.scene.add(new THREE.HemisphereLight('#fff6e8', '#5c7a48', 1.15))
+    const key = new THREE.DirectionalLight('#fff1cc', 1)
     key.position.set(3, 5, 2)
     this.scene.add(key)
     const floor = new THREE.Mesh(
-      new THREE.CircleGeometry(1.6, 32),
-      new THREE.MeshLambertMaterial({ color: '#e7dcc8' }),
+      new THREE.CircleGeometry(1.8, 32),
+      new THREE.MeshLambertMaterial({ color: '#c5b89a' }),
     )
     floor.rotation.x = -Math.PI / 2
     this.scene.add(floor)
@@ -41,9 +41,9 @@ export class PreviewStage {
     this.loop()
   }
 
-  show(animal: AnimalId, colors: Record<string, string>): void {
+  show(animal: AnimalId, colors: Record<string, string>, thumb?: string): void {
     if (this.model) this.scene.remove(this.model)
-    this.model = createAnimalModel(animal, colors)
+    this.model = createAnimalModel(animal, colors, thumb)
     this.scene.add(this.model)
   }
 

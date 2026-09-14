@@ -6,6 +6,7 @@ import * as THREE from 'three'
 import type { AnimalId, EmoteId, PlacedAnimal, ThemeId } from '../types'
 import { createAnimalModel, tickWalk } from './models'
 import { HOST_ORBIT, OrbitZoom } from './orbit-zoom'
+import { paintForestPanorama, paintGrassGround, paintTreeSprite } from './forest-art'
 
 interface Actor {
   id: string
@@ -38,12 +39,15 @@ export class HostWorld {
     this.renderer.setPixelRatio(Math.min(devicePixelRatio, 2))
     this.renderer.shadowMap.enabled = true
     this.camera = new THREE.PerspectiveCamera(42, 1, 0.1, 80)
-    this.camera.position.set(0, 8.2, 11.5)
-    this.camera.lookAt(0, 0.4, 0)
-    this.orbit = new OrbitZoom(canvas, this.camera, new THREE.Vector3(0, 0.4, 0), HOST_ORBIT)
+    this.camera.position.set(0, 2.55, 7.1)
+    this.camera.lookAt(0, 0.85, 0)
+    this.orbit = new OrbitZoom(canvas, this.camera, new THREE.Vector3(0, 0.85, 0), HOST_ORBIT)
+    const grass = new THREE.CanvasTexture(paintGrassGround())
+    grass.wrapS = grass.wrapT = THREE.RepeatWrapping
+    grass.repeat.set(4, 4)
     this.ground = new THREE.Mesh(
-      new THREE.CircleGeometry(9, 48),
-      new THREE.MeshLambertMaterial({ color: '#3d6b3a' }),
+      new THREE.CircleGeometry(14, 64),
+      new THREE.MeshLambertMaterial({ map: grass, color: '#8fb56a' }),
     )
     this.ground.rotation.x = -Math.PI / 2
     this.ground.receiveShadow = true
@@ -90,8 +94,8 @@ export class HostWorld {
     }
     list.forEach((item, i) => {
       if (this.actors.has(item.id)) return
-      const group = createAnimalModel(item.animalId, item.regionColors)
-      group.scale.setScalar(0.95)
+      const group = createAnimalModel(item.animalId, item.regionColors, item.thumb || undefined)
+      group.scale.setScalar(0.92)
       const actor: Actor = {
         id: item.id,
         animalId: item.animalId,
@@ -166,27 +170,57 @@ export class HostWorld {
   }
 
   private buildForest(): void {
-    this.scene.background = new THREE.Color('#b7d7a8')
-    this.scene.fog = new THREE.Fog('#b7d7a8', 12, 28)
-    ;(this.ground.material as THREE.MeshLambertMaterial).color.set('#3f7a3a')
-    this.addLight(new THREE.HemisphereLight('#fff4d6', '#3d5c32', 1.15))
-    const sun = new THREE.DirectionalLight('#fff1cc', 1.1)
-    sun.position.set(6, 10, 4)
+    this.scene.background = new THREE.Color('#c3d6a4')
+    this.scene.fog = new THREE.Fog('#c3d6a4', 10, 22)
+    const grassMat = this.ground.material as THREE.MeshLambertMaterial
+    grassMat.color.set('#8fb56a')
+    this.addLight(new THREE.HemisphereLight('#fff1d0', '#3d5c32', 1.05))
+    const sun = new THREE.DirectionalLight('#ffe6b0', 1.05)
+    sun.position.set(5, 9, 6)
     sun.castShadow = true
+    sun.shadow.mapSize.set(1024, 1024)
     this.addLight(sun)
-    for (let i = 0; i < 14; i++) {
-      const tree = treeMesh('#2f6b32', '#8b5a2b')
-      const a = (i / 14) * Math.PI * 2
-      tree.position.set(Math.cos(a) * 7.2, 0, Math.sin(a) * 7.2)
+
+    const woods = new THREE.CanvasTexture(paintForestPanorama())
+    woods.colorSpace = THREE.SRGBColorSpace
+    const backdrop = new THREE.Mesh(
+      new THREE.CylinderGeometry(16, 16, 11, 48, 1, true),
+      new THREE.MeshBasicMaterial({ map: woods, side: THREE.BackSide }),
+    )
+    backdrop.position.y = 4.4
+    this.decorations.add(backdrop)
+
+    for (let i = 0; i < 72; i++) {
+      const a = (i / 72) * Math.PI * 2
+      const r = 3.5 + (i % 5) * 0.22
+      const stone = new THREE.Mesh(
+        new THREE.BoxGeometry(0.38 + (i % 3) * 0.1, 0.1, 0.3 + (i % 2) * 0.12),
+        new THREE.MeshLambertMaterial({ color: i % 2 ? '#9a9084' : '#b7aea2' }),
+      )
+      stone.position.set(Math.cos(a) * r, 0.05, Math.sin(a) * r)
+      stone.rotation.y = a
+      stone.receiveShadow = true
+      this.decorations.add(stone)
+    }
+
+    for (let i = 0; i < 10; i++) {
+      const tree = billboardTree(i)
+      const a = (i / 10) * Math.PI * 2 + 0.12
+      tree.position.set(Math.cos(a) * 8.4, 0, Math.sin(a) * 8.4)
       this.decorations.add(tree)
     }
-    const path = new THREE.Mesh(
-      new THREE.RingGeometry(2.6, 4.6, 40),
-      new THREE.MeshLambertMaterial({ color: '#c4a574' }),
-    )
-    path.rotation.x = -Math.PI / 2
-    path.position.y = 0.02
-    this.decorations.add(path)
+
+    for (let i = 0; i < 90; i++) {
+      const blade = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.08, 0.28),
+        new THREE.MeshLambertMaterial({ color: i % 2 ? '#3f7a32' : '#5b9a44', side: THREE.DoubleSide }),
+      )
+      const a = Math.random() * Math.PI * 2
+      const r = 1.2 + Math.random() * 8
+      blade.position.set(Math.cos(a) * r, 0.14, Math.sin(a) * r)
+      blade.rotation.y = Math.random() * Math.PI
+      this.decorations.add(blade)
+    }
   }
 
   private buildSnow(): void {
@@ -199,15 +233,15 @@ export class HostWorld {
     sun.castShadow = true
     this.addLight(sun)
     for (let i = 0; i < 12; i++) {
-      const tree = treeMesh('#1f4d3a', '#5a4634')
+      const tree = billboardTree(i + 3)
       const cap = new THREE.Mesh(
-        new THREE.ConeGeometry(0.55, 0.45, 8),
+        new THREE.ConeGeometry(0.7, 0.5, 8),
         new THREE.MeshLambertMaterial({ color: '#ffffff' }),
       )
-      cap.position.y = 2.15
+      cap.position.y = 2.4
       tree.add(cap)
       const a = (i / 12) * Math.PI * 2 + 0.2
-      tree.position.set(Math.cos(a) * 7.1, 0, Math.sin(a) * 7.1)
+      tree.position.set(Math.cos(a) * 8.2, 0, Math.sin(a) * 8.2)
       this.decorations.add(tree)
     }
     this.particles = makePoints('#ffffff', 180, 8)
@@ -245,21 +279,18 @@ export class HostWorld {
   }
 }
 
-function treeMesh(leaf: string, trunk: string): THREE.Group {
+function billboardTree(seed: number): THREE.Group {
   const g = new THREE.Group()
-  const t = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.1, 0.14, 0.8, 7),
-    new THREE.MeshLambertMaterial({ color: trunk }),
-  )
-  t.position.y = 0.4
-  t.castShadow = true
-  const l = new THREE.Mesh(
-    new THREE.ConeGeometry(0.7, 1.8, 9),
-    new THREE.MeshLambertMaterial({ color: leaf }),
-  )
-  l.position.y = 1.5
-  l.castShadow = true
-  g.add(t, l)
+  const tex = new THREE.CanvasTexture(paintTreeSprite(seed))
+  tex.colorSpace = THREE.SRGBColorSpace
+  const mat = new THREE.MeshLambertMaterial({ map: tex, transparent: true, alphaTest: 0.2, side: THREE.DoubleSide })
+  const a = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 3.6), mat)
+  const b = a.clone()
+  b.rotation.y = Math.PI / 2
+  a.position.y = 1.8
+  b.position.y = 1.8
+  a.castShadow = true
+  g.add(a, b)
   return g
 }
 

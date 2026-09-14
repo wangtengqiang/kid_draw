@@ -73,10 +73,14 @@ export class App {
   private home(): void {
     this.root.innerHTML = `
       <main class="page home">
-        <div class="hero-mark" aria-hidden="true">🦌</div>
-        <h1>彩绘动物进森林</h1>
-        <p class="lead">一台主机打开世界。小朋友只涂色、把画送进去。</p>
+        <div class="home-hero">
+          <div class="hero-mark" aria-hidden="true">🦌</div>
+          <h1>彩绘动物进森林</h1>
+          <p class="lead">一台主机打开世界。小朋友只涂色、把画送进去。</p>
+        </div>
+        <p class="home-kicker">老师 · 主机</p>
         <button class="hit host-hit" data-act="host" type="button">打开世界</button>
+        <p class="home-kicker">小朋友</p>
         <button class="hit kid-hit" data-act="draw" type="button">开始画画</button>
         <button class="camera-hit" data-act="paper" type="button">拍纸上的画</button>
         <button class="text-link" data-act="gallery" type="button">我的画</button>

@@ -32,7 +32,7 @@ export class PreviewScreen {
     const canvas = this.root.querySelector<HTMLCanvasElement>('#preview-canvas')
     if (canvas) {
       this.stage = new PreviewStage(canvas)
-      this.stage.show(item.animalId, item.regionColors)
+      this.stage.show(item.animalId, item.regionColors, item.thumb)
     }
     this.root.querySelector('[data-act="gallery"]')?.addEventListener('click', () => this.goGallery())
   }
