@@ -227,9 +227,9 @@ export class HostWorld {
     this.renderer.setPixelRatio(1)
     this.renderer.shadowMap.enabled = false
     this.camera = new THREE.PerspectiveCamera(46, 1, 0.3, 140)
-    this.camera.position.set(3.2, 5.8, 11.2)
-    this.camera.lookAt(0.3, 0.85, 0.6)
-    this.orbit = new OrbitZoom(canvas, this.camera, new THREE.Vector3(0.4, 0.8, 0.4), HOST_ORBIT)
+    this.camera.position.set(4.8, 3.35, 8.6)
+    this.camera.lookAt(0.2, 0.72, 0.5)
+    this.orbit = new OrbitZoom(canvas, this.camera, new THREE.Vector3(0.35, 0.7, 0.35), HOST_ORBIT)
     const grass = new THREE.CanvasTexture(paintGrassGround())
     grass.wrapS = grass.wrapT = THREE.RepeatWrapping
     grass.repeat.set(8, 8)

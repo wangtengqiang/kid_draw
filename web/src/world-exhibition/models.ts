@@ -187,7 +187,7 @@ function tuftMesh(seed: number, color: string, x: number, y: number, z: number, 
   const m = mesh(GEO.fluff[seed % GEO.fluff.length]!, color)
   m.position.set(x, y, z)
   m.scale.set(sx, sy, sz)
-  m.rotation.set(hash(seed) * 2, hash(seed + 2) * 3, hash(seed + 4) * 2)
+  m.rotation.set(0.85 + hash(seed) * 0.7, hash(seed + 2) * 6.2, 0.45)
   m.userData.region = 'mane'
   return m
 }
