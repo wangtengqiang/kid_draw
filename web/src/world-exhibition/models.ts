@@ -32,15 +32,30 @@ function colorOf(animal: AnimalId, region: string, painted: Record<string, strin
   return painted[region] || ANIMAL_META[animal].defaults[region] || '#d9b48a'
 }
 
-function toon(color: string, map?: THREE.Texture): THREE.MeshLambertMaterial {
+function toon(
+  color: string,
+  map?: THREE.Texture,
+  doubleSide = false,
+): THREE.MeshLambertMaterial {
   return new THREE.MeshLambertMaterial({
     color,
     map: map ?? null,
+    side: doubleSide ? THREE.DoubleSide : THREE.FrontSide,
+    transparent: false,
+    opacity: 1,
+    depthWrite: true,
+    depthTest: true,
+    alphaTest: 0,
   })
 }
 
-function mesh(geo: THREE.BufferGeometry, color: string, map?: THREE.Texture): THREE.Mesh {
-  const m = new THREE.Mesh(geo, toon(color, map))
+function mesh(
+  geo: THREE.BufferGeometry,
+  color: string,
+  map?: THREE.Texture,
+  doubleSide = false,
+): THREE.Mesh {
+  const m = new THREE.Mesh(geo, toon(color, map, doubleSide))
   m.castShadow = true
   m.receiveShadow = false
   return m
@@ -125,8 +140,10 @@ export function profileVolume(
     const a = tri[0]!
     const b = tri[1]!
     const c = tri[2]!
-    indices.push(a, b, c)
-    indices.push(back + a, back + c, back + b)
+    // Slice 0 is at −Z and must face outward (−Z). Slice last is at +Z.
+    // triangulateShape is CCW in XY (faces +Z), so the −Z cap is reversed.
+    indices.push(a, c, b)
+    indices.push(back + a, back + b, back + c)
   }
   const geo = new THREE.BufferGeometry()
   geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
@@ -171,10 +188,11 @@ export function recolorAnimal(
 function deer(painted: Record<string, string>, coat: THREE.Texture): THREE.Group {
   const g = new THREE.Group()
   const a: AnimalId = 'deer'
-  const bodyGeo = profileVolume(DEER_BODY, 0.2, (x, y) => {
+  const bodyGeo = profileVolume(DEER_BODY, 0.22, (x, y) => {
     if (x > 0.95) return 0.42
     if (x > 0.7 && y > 1.05) return 0.5
     if (x > 0.48 && y > 1.05) return 0.62
+    if (y < 0.88) return 0.42
     return 1
   })
   addBody(g, part(bodyGeo, 'body', a, painted, coat))
@@ -192,10 +210,10 @@ function deer(painted: Record<string, string>, coat: THREE.Texture): THREE.Group
   }
 
   const legs = placeLegs(g, a, painted, [
-    { name: 'legFL', x: 0.44, z: 0.09, hipY: 0.56, radius: 0.032, foot: 'hoof' },
-    { name: 'legFR', x: 0.44, z: -0.09, hipY: 0.56, radius: 0.032, foot: 'hoof' },
-    { name: 'legBL', x: -0.4, z: 0.09, hipY: 0.58, radius: 0.036, foot: 'hoof' },
-    { name: 'legBR', x: -0.4, z: -0.09, hipY: 0.58, radius: 0.036, foot: 'hoof' },
+    { name: 'legFL', x: 0.42, z: 0.24, hipY: 0.7, radius: 0.042, foot: 'hoof' },
+    { name: 'legFR', x: 0.42, z: -0.24, hipY: 0.7, radius: 0.042, foot: 'hoof' },
+    { name: 'legBL', x: -0.38, z: 0.26, hipY: 0.72, radius: 0.046, foot: 'hoof' },
+    { name: 'legBR', x: -0.38, z: -0.26, hipY: 0.72, radius: 0.046, foot: 'hoof' },
   ])
   addSideEyes(g, 1.02, 1.38, 0.1)
   g.userData.legs = legs
@@ -205,7 +223,11 @@ function deer(painted: Record<string, string>, coat: THREE.Texture): THREE.Group
 function tiger(painted: Record<string, string>, coat: THREE.Texture): THREE.Group {
   const g = new THREE.Group()
   const a: AnimalId = 'tiger'
-  const bodyGeo = profileVolume(TIGER_BODY, 0.28, (x) => (x < -0.5 ? 0.85 : 1))
+  const bodyGeo = profileVolume(TIGER_BODY, 0.28, (x, y) => {
+    if (x < -0.5) return 0.85
+    if (y < 0.74) return 0.5
+    return 1
+  })
   addBody(g, part(bodyGeo, 'body', a, painted, coat))
 
   const headGeo = profileVolume(TIGER_HEAD, 0.22, (x) => (x > 1.05 ? 0.7 : 1))
@@ -235,10 +257,10 @@ function tiger(painted: Record<string, string>, coat: THREE.Texture): THREE.Grou
   g.add(part(tailGeo, 'tail', a, painted))
 
   const legs = placeLegs(g, a, painted, [
-    { name: 'legFL', x: 0.48, z: 0.13, hipY: 0.44, radius: 0.05, foot: 'paw' },
-    { name: 'legFR', x: 0.48, z: -0.13, hipY: 0.44, radius: 0.05, foot: 'paw' },
-    { name: 'legBL', x: -0.48, z: 0.13, hipY: 0.46, radius: 0.055, foot: 'paw' },
-    { name: 'legBR', x: -0.48, z: -0.13, hipY: 0.46, radius: 0.055, foot: 'paw' },
+    { name: 'legFL', x: 0.48, z: 0.32, hipY: 0.64, radius: 0.055, foot: 'paw' },
+    { name: 'legFR', x: 0.48, z: -0.32, hipY: 0.64, radius: 0.055, foot: 'paw' },
+    { name: 'legBL', x: -0.46, z: 0.34, hipY: 0.66, radius: 0.06, foot: 'paw' },
+    { name: 'legBR', x: -0.46, z: -0.34, hipY: 0.66, radius: 0.06, foot: 'paw' },
   ])
   addSideEyes(g, 1.02, 0.98, 0.18)
   g.userData.legs = legs
@@ -248,7 +270,19 @@ function tiger(painted: Record<string, string>, coat: THREE.Texture): THREE.Grou
 function lion(painted: Record<string, string>, coat: THREE.Texture): THREE.Group {
   const g = new THREE.Group()
   const a: AnimalId = 'lion'
-  addBody(g, part(profileVolume(LION_BODY, 0.26), 'body', a, painted, coat))
+  addBody(
+    g,
+    part(
+      profileVolume(LION_BODY, 0.26, (_x, y) => {
+        if (y < 0.74) return 0.5
+        return 1
+      }),
+      'body',
+      a,
+      painted,
+      coat,
+    ),
+  )
 
   const manePts: THREE.Vector2[] = []
   for (let i = 0; i <= 20; i++) {
@@ -282,10 +316,10 @@ function lion(painted: Record<string, string>, coat: THREE.Texture): THREE.Group
   g.add(part(tailGeo, 'tail', a, painted))
 
   const legs = placeLegs(g, a, painted, [
-    { name: 'legFL', x: 0.44, z: 0.13, hipY: 0.46, radius: 0.052, foot: 'paw' },
-    { name: 'legFR', x: 0.44, z: -0.13, hipY: 0.46, radius: 0.052, foot: 'paw' },
-    { name: 'legBL', x: -0.42, z: 0.13, hipY: 0.48, radius: 0.056, foot: 'paw' },
-    { name: 'legBR', x: -0.42, z: -0.13, hipY: 0.48, radius: 0.056, foot: 'paw' },
+    { name: 'legFL', x: 0.44, z: 0.3, hipY: 0.64, radius: 0.056, foot: 'paw' },
+    { name: 'legFR', x: 0.44, z: -0.3, hipY: 0.64, radius: 0.056, foot: 'paw' },
+    { name: 'legBL', x: -0.4, z: 0.32, hipY: 0.66, radius: 0.06, foot: 'paw' },
+    { name: 'legBR', x: -0.4, z: -0.32, hipY: 0.66, radius: 0.06, foot: 'paw' },
   ])
   addSideEyes(g, 0.94, 0.98, 0.16)
   g.userData.legs = legs
@@ -303,7 +337,23 @@ type LegSpec = {
   foot: FootKind
 }
 
-/** 直柱四肢：髋到地面，蹄/爪贴地。不是折管，也不是圆球脚。 */
+/** Closed tapered column. Capsules/lathes can hole out in the middle. */
+function solidShaft(radius: number, length: number): THREE.BufferGeometry {
+  return new THREE.CylinderGeometry(radius, radius * 0.88, length, 20, 1, false)
+}
+
+function limb(
+  geo: THREE.BufferGeometry,
+  region: string,
+  animal: AnimalId,
+  painted: Record<string, string>,
+): THREE.Mesh {
+  const m = mesh(geo, colorOf(animal, region, painted), undefined, true)
+  m.userData.region = region
+  return m
+}
+
+/** 直柱四肢：髋到地面，蹄/爪贴地。实心不透，双面，不是折管。 */
 function placeLegs(
   g: THREE.Group,
   animal: AnimalId,
@@ -315,11 +365,12 @@ function placeLegs(
     const hip = new THREE.Group()
     hip.position.set(spec.x, spec.hipY, spec.z)
     const footH = spec.foot === 'hoof' ? 0.055 : 0.05
-    const total = spec.hipY - footH
-    const length = Math.max(0.08, total - spec.radius * 2)
-    const shaft = part(new THREE.CapsuleGeometry(spec.radius, length, 4, 10), spec.name, animal, painted)
-    shaft.position.y = -total / 2
+    const length = Math.max(0.12, spec.hipY - footH)
+    const shaft = limb(solidShaft(spec.radius, length), spec.name, animal, painted)
+    shaft.position.y = -length / 2
     hip.add(shaft)
+    const hipCap = limb(new THREE.SphereGeometry(spec.radius * 1.2, 14, 10), spec.name, animal, painted)
+    hip.add(hipCap)
     hip.add(makeFoot(spec, animal, painted))
     g.add(hip)
     legs.push(hip)
@@ -334,6 +385,8 @@ function makeFoot(spec: LegSpec, animal: AnimalId, painted: Record<string, strin
     const hoof = mesh(
       new THREE.BoxGeometry(spec.radius * 3.2, 0.05, spec.radius * 1.55),
       '#3a2418',
+      undefined,
+      true,
     )
     hoof.position.set(0.02, 0.025, 0)
     f.add(hoof)
@@ -341,6 +394,8 @@ function makeFoot(spec: LegSpec, animal: AnimalId, painted: Record<string, strin
     const pad = mesh(
       new THREE.BoxGeometry(spec.radius * 3.4, 0.048, spec.radius * 2.5),
       colorOf(animal, spec.name, painted),
+      undefined,
+      true,
     )
     pad.position.set(0.05, 0.024, 0)
     f.add(pad)
@@ -348,6 +403,8 @@ function makeFoot(spec: LegSpec, animal: AnimalId, painted: Record<string, strin
       const toe = mesh(
         new THREE.BoxGeometry(spec.radius * 1.15, 0.032, spec.radius * 0.72),
         '#3a2418',
+        undefined,
+        true,
       )
       toe.position.set(spec.radius * 1.85, 0.018, spec.radius * tz)
       f.add(toe)
@@ -379,7 +436,7 @@ export function tickWalk(group: THREE.Group, t: number, moving: boolean): void {
   if (!legs) return
   legs.forEach((leg, i) => {
     const pair = i === 0 || i === 3 ? 1 : -1
-    leg.rotation.z = moving ? Math.sin(t * 5) * 0.08 * pair : 0
+    leg.rotation.z = moving ? Math.sin(t * 5) * 0.05 * pair : 0
   })
   group.position.y = 0
 }

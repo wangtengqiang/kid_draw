@@ -1,4 +1,4 @@
-import { Box3, Group, Vector3 } from 'three'
+import { Box3, DoubleSide, Group, Mesh, MeshLambertMaterial, Vector3 } from 'three'
 import { describe, expect, it } from 'vitest'
 import { ANIMAL_IDS } from '../types'
 import { createAnimalModel, profileVolume, tickWalk } from './models'
@@ -66,5 +66,46 @@ describe('3D animal volumes', () => {
       const g = createAnimalModel(id, { body: '#3b82f6' })
       expect(g.userData.coat).toBeTruthy()
     }
+  })
+
+  it('gives legs opaque double-sided shafts outside the torso', () => {
+    const g = createAnimalModel('deer', {})
+    const legs = g.userData.legs as Group[]
+    const zs = legs.map((leg) => leg.position.z)
+    expect(Math.max(...zs) - Math.min(...zs)).toBeGreaterThan(0.4)
+    for (const leg of legs) {
+      expect(Math.abs(leg.position.z)).toBeGreaterThan(0.2)
+      expect(leg.position.y).toBeGreaterThan(0.65)
+      let shafts = 0
+      leg.traverse((obj) => {
+        if (!(obj instanceof Mesh)) return
+        if (!String(obj.userData.region || '').startsWith('leg')) return
+        expect(obj.geometry.type).not.toBe('CapsuleGeometry')
+        const mat = obj.material as MeshLambertMaterial
+        expect(mat.transparent).toBe(false)
+        expect(mat.opacity).toBe(1)
+        expect(mat.depthWrite).toBe(true)
+        expect(mat.side).toBe(DoubleSide)
+        shafts += 1
+      })
+      expect(shafts).toBeGreaterThan(0)
+    }
+  })
+
+  it('closes silhouette caps so the flank faces outward', () => {
+    const geo = profileVolume(DEER_BODY, 0.2)
+    const pos = geo.getAttribute('position')
+    const nrm = geo.getAttribute('normal')
+    let maxZ = -Infinity
+    let maxI = 0
+    for (let i = 0; i < pos.count; i++) {
+      const z = pos.getZ(i)
+      if (z > maxZ) {
+        maxZ = z
+        maxI = i
+      }
+    }
+    expect(maxZ).toBeGreaterThan(0.15)
+    expect(nrm.getZ(maxI)).toBeGreaterThan(0)
   })
 })

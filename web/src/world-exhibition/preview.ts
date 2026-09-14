@@ -71,7 +71,7 @@ export class PreviewStage {
     if (this.model) {
       if (!this.orbit.interacting) this.rot += 0.006
       this.model.rotation.y = this.rot
-      tickWalk(this.model, t, true)
+      tickWalk(this.model, t, false)
     }
     this.renderer.render(this.scene, this.camera)
   }
