@@ -85,10 +85,10 @@ export class App {
         <button class="hit host-hit" data-act="host" type="button">打开世界</button>
         <p class="home-kicker">小朋友</p>
         <button class="hit kid-hit" data-act="draw" type="button">开始画画</button>
+        <button class="hit paper-hit" data-act="paper" type="button">拍纸上的画</button>
         <button class="hit scan-hit" data-act="scan" type="button">扫码进入</button>
-        <button class="camera-hit" data-act="paper" type="button">拍纸上的画</button>
         <button class="text-link" data-act="gallery" type="button">我的画</button>
-        <button class="hit draft-hit" data-act="drafts" type="button">我的草稿</button>
+        <button class="text-link" data-act="drafts" type="button">我的草稿</button>
         <button class="text-link quiet" data-act="print" type="button">老师打印线稿</button>
       </main>`
     this.root.querySelector('[data-act="host"]')?.addEventListener('click', () => {

@@ -120,7 +120,7 @@ export class PaperColoring {
         <button class="back" data-act="pick" type="button">重选动物</button>
         <h1>拍纸上的画</h1>
         <p class="lead">对准四角黑块。这是${ANIMAL_META[animalId].name}。</p>
-        <label class="camera-hit">
+        <label class="hit paper-hit">
           拍照
           <input id="paper-file" type="file" accept="image/*" capture="environment" hidden />
         </label>
