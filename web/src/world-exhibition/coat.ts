@@ -59,6 +59,7 @@ export function coatTexture(animal: AnimalId, painted: Record<string, string>): 
   }
   const tex = new THREE.CanvasTexture(c)
   tex.colorSpace = THREE.SRGBColorSpace
+  tex.flipY = false
   tex.wrapS = THREE.ClampToEdgeWrapping
   tex.wrapT = THREE.ClampToEdgeWrapping
   tex.minFilter = THREE.LinearFilter

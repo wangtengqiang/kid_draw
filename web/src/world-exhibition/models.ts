@@ -1,17 +1,17 @@
 /**
- * 观展动物：Kenney / Gobkit 等可分发 glTF，不是运行时胶囊拼装。
- * 孩子涂的色乘在身体网格上；原贴图atlas留在 map 里。
+ * 观展动物：下载的 glTF 网格。孩子的涂色烤成皮毛 UV 贴图，不捏胶囊身体。
  */
 import * as THREE from 'three'
 import type { AnimalId, WorldAction } from '../types'
-import { ANIMAL_META } from '../types'
 import { type Ring } from '../silhouettes'
+import { coatTexture } from './coat'
 import { instanceAnimal, playAnimalClip } from './gltf-kit'
 
 export { loadAnimalTemplates, setAnimalModelProvider, animalTemplatesReady } from './gltf-kit'
 
-function colorOf(animal: AnimalId, region: string, painted: Record<string, string>): string {
-  return painted[region] || ANIMAL_META[animal].defaults[region] || '#d9b48a'
+function keepFace(obj: THREE.Object3D): boolean {
+  const n = `${obj.name} ${obj.userData.region || ''}`.toLowerCase()
+  return n.includes('eye') || n.includes('iris') || n.includes('pupil') || n.includes('shine') || n.includes('nose')
 }
 
 function smoothRing(pts: Ring, count = 72): THREE.Vector2[] {
@@ -101,17 +101,15 @@ export function recolorAnimal(
   animal: AnimalId,
   painted: Record<string, string>,
 ): void {
-  const bodyTint = painted.body || painted.shell || colorOf(animal, 'body', painted)
+  const coat = coatTexture(animal, painted)
+  group.userData.coat = coat
   group.traverse((obj) => {
-    if (!(obj instanceof THREE.Mesh) || obj.userData.outline) return
+    if (!(obj instanceof THREE.Mesh) || keepFace(obj)) return
     const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
-    const n = String(obj.userData.region || obj.name).toLowerCase()
-    const keepFace =
-      n.includes('eye') || n.includes('iris') || n.includes('pupil') || n.includes('shine') || n.includes('nose') || n === 'outline'
-    if (keepFace) return
     for (const mat of mats) {
+      if ('map' in mat) mat.map = coat
       if ('color' in mat && mat.color && typeof (mat.color as THREE.Color).set === 'function') {
-        ;(mat.color as THREE.Color).set(bodyTint)
+        ;(mat.color as THREE.Color).set('#ffffff')
       }
     }
   })

@@ -54,12 +54,14 @@ npm run dev
 
 点 **打开世界**。大森林能看出远近：高树干、层层树冠、弯岸大海，小路会伸进林子。捏合 / 滚轮可以拉近看动物、拉远看深处。侧栏可换 **森林 / 雪原 / 海底**。陆地动物会自己走路、喝水、休息、坐下（错开节拍，不会一起摆同一个姿势）；海洋动物一直在湾里游，不会走上小路。
 
-**3D 动物**是网上拉下来的 **glTF**（`web/public/models/*.glb`），不是运行时圆球 / 胶囊，也不是贴纸大眼：
+**3D 动物**走博物馆 / LED 大屏那条业界链路：现成 glTF 网格 + 孩子涂色当皮毛 UV，用 Three.js `GLTFLoader` + `AnimationMixer`（不是胶囊拼身体）：
 
-- 狮 / 鹿 / 虎 / 鱼 — [Kenney Cube Pets 2.0](https://kenney.nl/assets/cube-pets)（[CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)）。带画好的卡通脸、四条腿，文件里有 `walk` / `idle` 片段。共用 atlas `web/public/models/Textures/colormap.png`。
-- 海豚 — [Gobkit](https://gobkit.com/api/free) `Whale.glb`（CC0）。海龟 — Gobkit `Seal.glb`（CC0 替代；OGA 海龟只有 `.blend`）。
+- 小鹿 — [Quaternius Ultimate Animated Animals](https://quaternius.com/packs/ultimateanimatedanimals.html) Stag（CC0，自带 `Walk` / `Idle` / `Eating`）。
+- 老虎 — 同一套 Quaternius 的 Wolf（包里没有老虎；这是带走路剪辑的最接近掠食四足）。
+- 狮子 — [Zsky Animal Pack](https://opengameart.org/content/animal-pack) `Lion.glb`（CC BY 4.0，署名 [Zsky](https://www.patreon.com/Zsky)）。真狮网格 + 原装 `Eyes_Lion`，不加贴纸瞳仁。
+- 鱼 — [Kenney Cube Pets](https://kenney.nl/assets/cube-pets)（CC0）。海豚 / 海龟 — [Gobkit](https://gobkit.com/api/free) Whale / Seal（CC0）。
 
-孩子涂的色乘在皮毛上（默认白色，Kenney 原画脸能看见）。许可证见 [`web/public/models/NOTICE.md`](web/public/models/NOTICE.md)。不要把千图网 PNG 当模型，也不要用胶囊 / marching cubes / 贴纸瞳仁拼动物。
+孩子分区色烤进 `coatTexture`，贴在皮毛 UV 上（`flipY = false`）。许可证：[`web/public/models/NOTICE.md`](web/public/models/NOTICE.md)。不要把千图网 PNG 当模型，也不要用圆球鬃毛当狮子。
 
 **纸上涂色**
 

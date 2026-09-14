@@ -1,7 +1,6 @@
 /**
- * Load shipped third-party animal glTF (Kenney Cube Pets + Gobkit marine).
- * Keep the pack atlas / vertex colors. Kid paint only multiplies coat tint.
- * No sphere eyes, no icosphere manes, no ink hulls.
+ * Museum/LED stack: premade glTF mesh + kid coloring as coat UV albedo.
+ * GLTFLoader + AnimationMixer + SkeletonUtils.clone. No CapsuleGeometry bodies.
  */
 import * as THREE from 'three'
 import { AnimationUtils } from 'three'
@@ -50,6 +49,10 @@ const LEG_ALIASES: [string, string][] = [
   ['legFR', 'leg-front-right'],
   ['legBL', 'leg-back-left'],
   ['legBR', 'leg-back-right'],
+  ['legFL', 'FrontLowerLeg.L'],
+  ['legFR', 'FrontLowerLeg.R'],
+  ['legBL', 'BackLowerLeg.L'],
+  ['legBR', 'BackLowerLeg.R'],
   ['legFL', 'FrontLowerLegL'],
   ['legFR', 'FrontLowerLegR'],
   ['legBL', 'BackLowerLegL'],
@@ -167,20 +170,15 @@ function keepFaceName(name: string): boolean {
   return n.includes('eye') || n.includes('iris') || n.includes('pupil') || n.includes('shine') || n.includes('nose')
 }
 
-function coatMaterial(src: THREE.Material, tint: string): THREE.MeshLambertMaterial {
-  const map = 'map' in src && src.map instanceof THREE.Texture ? src.map : null
+function opaqueLambert(src: THREE.Material, map: THREE.Texture | null, color: THREE.Color): THREE.MeshLambertMaterial {
   if (map) {
     map.colorSpace = THREE.SRGBColorSpace
     map.needsUpdate = true
   }
-  const color = new THREE.Color(tint)
-  if (tint === '#ffffff' && 'color' in src && src.color instanceof THREE.Color) {
-    color.copy(src.color)
-  }
   const mat = new THREE.MeshLambertMaterial({
     color,
     map,
-    vertexColors: Boolean('vertexColors' in src && src.vertexColors),
+    vertexColors: false,
     side: THREE.FrontSide,
     transparent: false,
     opacity: 1,
@@ -191,18 +189,32 @@ function coatMaterial(src: THREE.Material, tint: string): THREE.MeshLambertMater
   return mat
 }
 
-function paintMesh(obj: THREE.Mesh, bodyTint: string): void {
+function paintMesh(obj: THREE.Mesh, coat: THREE.CanvasTexture): void {
   const srcs = Array.isArray(obj.material) ? obj.material : [obj.material]
   const label = `${obj.name} ${obj.parent?.name || ''}`
   const matName = srcs.map((s) => s.name || '').join(' ')
   const keep = keepFaceName(label) || keepFaceName(matName)
-  const next = srcs.map((src) => coatMaterial(src, keep ? '#ffffff' : bodyTint))
+  const next = srcs.map((src) => {
+    if (keep) {
+      const map = 'map' in src && src.map instanceof THREE.Texture ? src.map : null
+      return opaqueLambert(src, map, new THREE.Color('#ffffff'))
+    }
+    return opaqueLambert(src, coat, new THREE.Color('#ffffff'))
+  })
   obj.material = next.length === 1 ? next[0]! : next
   if (keep) obj.userData.region = /nose/i.test(matName + label) ? 'nose' : 'eye'
-  else if (/body|leg|tail|wing|fugu|whale|seal|cube/i.test(label + obj.name)) obj.userData.region = /leg/i.test(obj.name) ? 'leg' : 'body'
-  else obj.userData.region = obj.name
+  else if (/body|leg|tail|wing|fur|fugu|whale|seal|cube/i.test(label + obj.name + matName)) {
+    obj.userData.region = /leg/i.test(obj.name) ? 'leg' : 'body'
+  } else obj.userData.region = obj.name
   obj.castShadow = false
   obj.receiveShadow = false
+}
+
+function packOf(animal: AnimalId): string {
+  if (animal === 'lion') return 'zsky'
+  if (animal === 'deer' || animal === 'tiger') return 'quaternius'
+  if (animal === 'fish') return 'kenney-cube-pets'
+  return 'gobkit'
 }
 
 export function instanceAnimal(animal: AnimalId, painted: Record<string, string>): THREE.Group {
@@ -211,9 +223,8 @@ export function instanceAnimal(animal: AnimalId, painted: Record<string, string>
   const cloned = tpl.skinned ? SkeletonUtils.clone(tpl.scene) : tpl.scene.clone(true)
   const inner = cloned as THREE.Group
   const coat = coatTexture(animal, painted)
-  const bodyTint = painted.body || painted.shell || '#ffffff'
   inner.traverse((obj) => {
-    if (obj instanceof THREE.Mesh) paintMesh(obj, bodyTint)
+    if (obj instanceof THREE.Mesh) paintMesh(obj, coat)
   })
 
   const orient = new THREE.Group()
@@ -242,7 +253,7 @@ export function instanceAnimal(animal: AnimalId, painted: Record<string, string>
 
   root.userData.kind = animal
   root.userData.source = 'gltf'
-  root.userData.pack = animal === 'dolphin' || animal === 'turtle' ? 'gobkit' : 'kenney-cube-pets'
+  root.userData.pack = packOf(animal)
   root.userData.coat = coat
   root.userData.marine = isMarine(animal)
   root.userData.legs = isMarine(animal) ? [] : collectLegs(root)
