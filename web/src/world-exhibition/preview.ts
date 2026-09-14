@@ -30,11 +30,11 @@ export class PreviewStage {
     this.scene.background = new THREE.Color('#e8f2d2')
     this.scene.add(new THREE.AmbientLight('#ffe9c8', 0.85))
     this.scene.add(new THREE.HemisphereLight('#fff6e8', '#7a9a58', 1.05))
-    const key = new THREE.DirectionalLight('#fff4d8', 0.95)
-    key.position.set(3, 5, 2)
+    const key = new THREE.DirectionalLight('#fff4d8', 1.05)
+    key.position.set(-4, 5, 2)
     this.scene.add(key)
-    const fill = new THREE.DirectionalLight('#fff8ee', 0.4)
-    fill.position.set(-3, 2, 4)
+    const fill = new THREE.DirectionalLight('#fff8ee', 0.55)
+    fill.position.set(3, 2, 4)
     this.scene.add(fill)
     const floor = new THREE.Mesh(
       new THREE.CircleGeometry(1.8, 32),

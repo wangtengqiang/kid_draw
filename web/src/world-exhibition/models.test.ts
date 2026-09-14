@@ -65,11 +65,18 @@ describe('3D animal volumes', () => {
     let meshes = 0
     g.traverse((obj) => {
       if (!(obj instanceof Mesh)) return
+      if (obj.userData.outline) return
+      if (['eye', 'iris', 'pupil', 'shine'].includes(String(obj.userData.region))) return
       meshes += 1
       assertNotPrimitive(obj.geometry)
     })
     expect(meshes).toBeGreaterThan(1)
     expect(bodyMeshes(g).length).toBeGreaterThan(0)
+    let irises = 0
+    g.traverse((obj) => {
+      if (obj.userData.region === 'iris') irises += 1
+    })
+    expect(irises).toBeGreaterThan(1)
   })
 
   it('instances land bodies from triangle glTF, not runtime primitives', () => {
@@ -129,7 +136,7 @@ describe('3D animal volumes', () => {
         expect(m.transparent).toBe(false)
         expect(m.opacity).toBe(1)
         expect(m.depthWrite).toBe(true)
-        expect(m.side).toBe(FrontSide)
+        if (!obj.userData.outline) expect(m.side).toBe(FrontSide)
       }
     })
   })
@@ -207,7 +214,7 @@ describe('3D animal volumes', () => {
     const g = createAnimalModel('lion', { body: '#3b82f6' })
     let bodyTinted = 0
     g.traverse((obj) => {
-      if (!(obj instanceof Mesh)) return
+      if (!(obj instanceof Mesh) || obj.userData.outline) return
       const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
       if (obj.userData.region === 'body') {
         const named = mats.find((m) => /fur|main|body/i.test(m.name || '')) || mats[0]
@@ -216,5 +223,16 @@ describe('3D animal volumes', () => {
       }
     })
     expect(bodyTinted).toBeGreaterThan(0)
+  })
+
+  it('bakes tiger stripes onto the coat map', () => {
+    const g = createAnimalModel('tiger', { body: '#e89a2d' })
+    let mapped = 0
+    g.traverse((obj) => {
+      if (!(obj instanceof Mesh) || obj.userData.region !== 'body' || obj.userData.outline) return
+      const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
+      if ((mats[0] as MeshLambertMaterial).map) mapped += 1
+    })
+    expect(mapped).toBeGreaterThan(0)
   })
 })

@@ -7,8 +7,9 @@ import { AnimationUtils } from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js'
 import type { AnimalId } from '../types'
-import { ANIMAL_IDS, isMarine } from '../types'
+import { ANIMAL_IDS, isMarine, ANIMAL_META } from '../types'
 import { coatTexture } from './coat'
+import { addInkOutline, attachCartoonEyes, ensureBoxUv, makeToonMaterial } from './cartoon-look'
 
 type AnimalTemplate = {
   scene: THREE.Group
@@ -118,6 +119,7 @@ export async function loadAnimalTemplates(): Promise<void> {
         let skinned = false
         scene.traverse((obj) => {
           if ((obj as THREE.SkinnedMesh).isSkinnedMesh) skinned = true
+          if (obj instanceof THREE.Mesh) ensureBoxUv(obj.geometry)
         })
         templates.set(id, {
           scene,
@@ -174,53 +176,52 @@ function collectEyes(root: THREE.Object3D): THREE.Object3D[] {
 
 function keepFaceName(name: string): boolean {
   const n = name.toLowerCase()
-  return n.includes('eye') || n.includes('iris') || n.includes('pupil') || n.includes('shine') || n.includes('nose')
+  return (
+    n.includes('eye') ||
+    n.includes('iris') ||
+    n.includes('pupil') ||
+    n.includes('shine') ||
+    n.includes('nose') ||
+    n === 'material.010' ||
+    n === 'material.011' ||
+    n === 'cube_3' ||
+    n === 'cube_4'
+  )
 }
 
-function toonKeepMap(src: THREE.Material, tint: string): THREE.MeshLambertMaterial {
-  const map = 'map' in src && src.map instanceof THREE.Texture ? src.map : null
+function toonKeepMap(src: THREE.Material, tint: string, coat: THREE.Texture | null, face: 'eye' | 'nose' | null): THREE.MeshToonMaterial {
+  const map = 'map' in src && src.map instanceof THREE.Texture ? src.map : face ? null : coat
   if (map) {
     map.colorSpace = THREE.SRGBColorSpace
     map.needsUpdate = true
   }
-  const color = new THREE.Color(tint)
-  if (tint === '#ffffff' && 'color' in src && src.color instanceof THREE.Color) {
+  const color = new THREE.Color(face === 'eye' ? '#fff8ee' : face === 'nose' ? '#5a3820' : tint)
+  if (!face && tint === '#ffffff' && 'color' in src && src.color instanceof THREE.Color) {
     color.copy(src.color)
   }
-  const mat = new THREE.MeshLambertMaterial({
-    color,
-    map,
-    vertexColors: Boolean('vertexColors' in src && src.vertexColors),
-    side: THREE.FrontSide,
-    transparent: false,
-    opacity: 1,
-    depthWrite: true,
-    depthTest: true,
-    alphaTest: 0,
-    blending: THREE.NormalBlending,
-    emissive: color.clone().multiplyScalar(map ? 0.03 : 0.08),
-    emissiveIntensity: map ? 0.04 : 0.1,
-  })
+  const mat = makeToonMaterial(color, map, Boolean('vertexColors' in src && src.vertexColors))
   mat.name = src.name
   return mat
 }
 
-function paintMesh(obj: THREE.Mesh, bodyTint: string): void {
+function paintMesh(obj: THREE.Mesh, bodyTint: string, coat: THREE.Texture): void {
   const srcs = Array.isArray(obj.material) ? obj.material : [obj.material]
   const label = `${obj.name} ${obj.parent?.name || ''}`
+  const matName = srcs.map((s) => s.name || '').join(' ')
   const next = srcs.map((src) => {
     const keep = keepFaceName(src.name || label)
-    return toonKeepMap(src, keep ? '#ffffff' : bodyTint)
+    const face = keep ? (/nose/i.test(src.name || label) ? 'nose' : 'eye') : null
+    return toonKeepMap(src, bodyTint, coat, face)
   })
   obj.material = next.length === 1 ? next[0]! : next
-  const matName = srcs.map((s) => s.name || '').join(' ')
   if (keepFaceName(label) || keepFaceName(matName)) {
     obj.userData.region = /nose/i.test(matName + label) ? 'nose' : 'eye'
-  } else if (/body|torso|cube|lion|cat|stag|fugu|whale|seal|retopo|fur/i.test(label + matName)) {
-    obj.userData.region = 'body'
+  } else if (/body|torso|cube|lion|cat|stag|fugu|whale|seal|retopo|fur|horn/i.test(label + matName)) {
+    obj.userData.region = /horn/i.test(label) ? 'antler' : 'body'
   } else obj.userData.region = obj.name
   obj.castShadow = false
   obj.receiveShadow = false
+  if (obj.userData.region === 'body' || obj.userData.region === 'antler') addInkOutline(obj)
 }
 
 export function instanceAnimal(animal: AnimalId, painted: Record<string, string>): THREE.Group {
@@ -229,10 +230,11 @@ export function instanceAnimal(animal: AnimalId, painted: Record<string, string>
   const cloned = tpl.skinned ? SkeletonUtils.clone(tpl.scene) : tpl.scene.clone(true)
   const inner = cloned as THREE.Group
   const coat = coatTexture(animal, painted)
-  const bodyTint = painted.body || painted.shell || '#ffffff'
+  const bodyTint = painted.body || painted.shell || ANIMAL_META[animal].defaults.body || '#ffffff'
   inner.traverse((obj) => {
-    if (obj instanceof THREE.Mesh) paintMesh(obj, bodyTint)
+    if (obj instanceof THREE.Mesh) paintMesh(obj, bodyTint, coat)
   })
+  attachCartoonEyes(inner, animal)
 
   const orient = new THREE.Group()
   if (tpl.zForward) orient.rotation.y = -Math.PI / 2

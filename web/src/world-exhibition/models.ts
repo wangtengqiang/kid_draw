@@ -103,12 +103,17 @@ export function recolorAnimal(
 ): void {
   const bodyTint = painted.body || painted.shell || colorOf(animal, 'body', painted)
   group.traverse((obj) => {
-    if (!(obj instanceof THREE.Mesh)) return
-    const mat = obj.material
-    if (!(mat instanceof THREE.MeshLambertMaterial)) return
+    if (!(obj instanceof THREE.Mesh) || obj.userData.outline) return
+    const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
     const n = String(obj.userData.region || obj.name).toLowerCase()
-    const keepFace = n.includes('eye') || n.includes('iris') || n.includes('pupil') || n.includes('shine') || n.includes('nose')
-    if (!keepFace) mat.color.set(bodyTint)
+    const keepFace =
+      n.includes('eye') || n.includes('iris') || n.includes('pupil') || n.includes('shine') || n.includes('nose') || n === 'outline'
+    if (keepFace) return
+    for (const mat of mats) {
+      if ('color' in mat && mat.color && typeof (mat.color as THREE.Color).set === 'function') {
+        ;(mat.color as THREE.Color).set(bodyTint)
+      }
+    }
   })
 }
 

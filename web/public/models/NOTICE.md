@@ -30,7 +30,7 @@ No CC0/CC-BY **tiger** glTF was available without a Poly Pizza API key or Sketch
 - File: `tiger.glb` is Zsky `Cat.glb` from the same Animal Pack as the lion (closest cartoon feline)
 - Same license/credit as the lion: **Zsky** https://www.patreon.com/Zsky
 
-Kid paint still tints the coat; eyes stay.
+Kid paint tints coat materials (and a stripe/spot canvas on UV); eyes stay cute stickers, not the pack's black pits. Host uses toon shading + ink outline on the downloaded meshes.
 
 ## Fish / dolphin / turtle — Gobkit (CC0)
 

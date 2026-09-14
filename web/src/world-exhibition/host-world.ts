@@ -425,9 +425,12 @@ export class HostWorld {
     this.scene.fog = new THREE.Fog('#c5dcc8', 38, 108)
     ;(this.ground.material as THREE.MeshLambertMaterial).color.set('#7da85a')
     this.addLight(new THREE.HemisphereLight('#fff6d8', '#3d5c32', 1.18))
-    const sun = new THREE.DirectionalLight('#ffe6b0', 0.85)
+    const sun = new THREE.DirectionalLight('#ffe6b0', 0.95)
     sun.position.set(14, 18, 9)
     this.addLight(sun)
+    const fill = new THREE.DirectionalLight('#fff4e4', 0.55)
+    fill.position.set(-10, 8, 6)
+    this.addLight(fill)
 
     const woods = new THREE.CanvasTexture(paintForestPanorama())
     woods.colorSpace = THREE.SRGBColorSpace
