@@ -2,7 +2,7 @@
  * 纸上涂色：把拍到的官方线稿对准同一张模板。
  * 只认四角标记 + 用户选的小鹿/老虎/狮子。不猜测未知动物。
  */
-import { drawLineArt, drawRegions, regionName } from '../child-creation/lineart'
+import { drawRegions, regionName } from '../child-creation/lineart'
 import type { AnimalId } from '../types'
 import { MARK, TEMPLATE_H, TEMPLATE_W, markCenters, type Point } from './template'
 
@@ -196,25 +196,21 @@ export function sampleRegionsFrom(canvas: HTMLCanvasElement, animal: AnimalId): 
   return out
 }
 
-export function mappedThumb(warped: HTMLCanvasElement, animal: AnimalId): string {
+export function mappedThumb(warped: HTMLCanvasElement, _animal: AnimalId): string {
+  void _animal
+  return bitmapThumb(warped)
+}
+
+function bitmapThumb(canvas: HTMLCanvasElement, maxW = 512): string {
+  const scale = Math.min(1, maxW / Math.max(canvas.width, 1))
+  if (scale >= 0.999) return canvas.toDataURL('image/png')
   const out = document.createElement('canvas')
-  out.width = 360
-  out.height = 414
+  out.width = Math.max(1, Math.round(canvas.width * scale))
+  out.height = Math.max(1, Math.round(canvas.height * scale))
   const ctx = out.getContext('2d')
-  if (!ctx) return ''
-  ctx.fillStyle = '#fffaf1'
-  ctx.fillRect(0, 0, out.width, out.height)
-  const artX = ((TEMPLATE_W - 720) / 2 / TEMPLATE_W) * out.width
-  const artY = (88 / TEMPLATE_H) * out.height
-  const artW = (720 / TEMPLATE_W) * out.width
-  const artH = (860 / TEMPLATE_H) * out.height
-  ctx.drawImage(warped, artX, artY, artW, artH)
-  const lines = document.createElement('canvas')
-  lines.width = out.width
-  lines.height = out.height
-  const lctx = lines.getContext('2d')
-  if (lctx) drawLineArt(animal, lctx, out.width, out.height)
-  ctx.drawImage(lines, 0, 0)
+  if (!ctx) return canvas.toDataURL('image/png')
+  ctx.imageSmoothingEnabled = false
+  ctx.drawImage(canvas, 0, 0, out.width, out.height)
   return out.toDataURL('image/png')
 }
 
@@ -239,7 +235,7 @@ export function mapPhotoToTemplate(
     ictx.drawImage(warped, ox, oy, 720, 860, 0, 0, 720, 860)
   }
   return {
-    thumb: mappedThumb(warped, animal),
+    thumb: bitmapThumb(inner),
     regionColors: sampleRegionsFrom(inner, animal),
     aligned: Boolean(H),
   }

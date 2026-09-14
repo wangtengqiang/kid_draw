@@ -31,7 +31,7 @@ WorldExhibition.prototype.renderHost = function (ctx, roomId) {
   sync.touchHost(roomId)
   if (!this.world) this.world = new HostWorld()
   this.world.applyTheme(room.theme)
-  this.world.syncAnimals(room.animals)
+    this.world.syncAnimals(sync.hydrateThumbs(room.animals))
   const worldBox = { x: 0, y: 0, w: W, h: H * 0.52 }
   this.world.render(ctx, worldBox, Date.now())
   if (!room.animals.length) {

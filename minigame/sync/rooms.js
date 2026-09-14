@@ -3,7 +3,7 @@
  * 小游戏单机用 wx 存储；真机多端靠 cloudfunctions/rooms。
  * 贴图写入看 child-creation/；列表与预览看 world-exhibition/。
  */
-const { LOCAL_CREATOR_KEY, LOCAL_ROOMS_KEY } = require('./keys.js')
+const { rememberCoat } = require('./coats.js')
 const { ROOM_CAP } = require('../types.js')
 
 function store() {
@@ -169,6 +169,7 @@ function submitAnimal(roomId, animal) {
     id: `a-${Date.now().toString(36)}`,
     createdAt: Date.now(),
   })
+  rememberCoat(placed.id, placed.thumb)
   room.animals = room.animals.concat([Object.assign({}, placed, { thumb: '' })])
   room.animalsGen = (room.animalsGen || 0) + 1
   rooms[roomId] = room
@@ -223,4 +224,7 @@ module.exports = {
   setTheme,
   submitAnimal,
   touchHost,
+  rememberCoat: require('./coats.js').rememberCoat,
+  hydrateThumbs: require('./coats.js').hydrateThumbs,
+  coatOf: require('./coats.js').coatOf,
 }

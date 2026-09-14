@@ -1,6 +1,6 @@
 /**
- * 孩子的分区色烤进 UV 皮毛：沿身子 U（尾→吻）V（腹→背）。
- * 不把整张涂鸦画糊在盒子上。
+ * 分区色合成皮毛（旧路径）。孩子的条纹不再走这里：
+ * 画板 / 拍照原图由 drawing-coat.ts 直接投影到网格。
  */
 import * as THREE from 'three'
 import type { AnimalId } from '../types'

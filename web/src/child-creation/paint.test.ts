@@ -17,4 +17,11 @@ describe('PaintSurface brush', () => {
     paint.tool = 'eraser'
     expect(paint.tool).toBe('eraser')
   })
+
+  it('exposes a raw coat bitmap separate from the lineart thumb', () => {
+    const paint = new PaintSurface('lion', () => undefined)
+    expect(typeof paint.coatDataURL).toBe('function')
+    expect(typeof paint.thumb).toBe('function')
+    expect(paint.coatDataURL).not.toBe(paint.thumb)
+  })
 })

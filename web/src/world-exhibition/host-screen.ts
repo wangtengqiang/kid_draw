@@ -11,6 +11,7 @@ import {
   creatorJoinUrl,
   endRoom,
   getRoom,
+  hydrateThumbs,
   onSync,
   patchRoom,
   setTheme,
@@ -72,7 +73,7 @@ export class HostScreen {
     if (!canvas) return
     this.world = new HostWorld(canvas)
     this.world.applyTheme(room.theme)
-    this.world.syncAnimals(room.animals)
+    this.world.syncAnimals(hydrateThumbs(room.animals))
     const qr = this.root.querySelector<HTMLImageElement>('#qr')
     if (qr) {
       QRCode.toDataURL(creatorJoinUrl(roomId), {
@@ -140,7 +141,7 @@ export class HostScreen {
       const cur = getRoom(roomId)
       if (!cur) return
       this.world?.applyTheme(cur.theme)
-      this.world?.syncAnimals(cur.animals)
+      this.world?.syncAnimals(hydrateThumbs(cur.animals))
       for (const em of cur.emotes) {
         if (this.seenEmotes.has(em.id)) continue
         this.seenEmotes.add(em.id)

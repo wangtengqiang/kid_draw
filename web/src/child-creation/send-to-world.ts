@@ -7,6 +7,7 @@
 import { storage } from '../storage'
 import { LOCAL_GALLERY_KEY } from '../sync/keys'
 import { animalLabel, creatorId, submitAnimal } from '../sync/rooms'
+import { rememberCoat } from '../sync/coats'
 import type { AnimalId, GalleryItem, PlacedAnimal } from '../types'
 import { exportTexture } from './export-texture'
 import type { PaintSurface } from './paint'
@@ -54,11 +55,13 @@ export async function sendColoredAnimal(input: {
 
   if (!result.ok) {
     cacheGallery(item)
+    rememberCoat(item.id, input.thumb)
     return { ok: false, reason: result.reason, item }
   }
 
   item.id = result.placed.id
   cacheGallery(item)
+  rememberCoat(result.placed.id, input.thumb)
 
   const tex = await storage.putTexture(input.thumb, `${input.animalId}-${item.id}`)
   await storage.saveGalleryItem({

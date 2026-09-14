@@ -8,7 +8,6 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js'
 import type { AnimalId } from '../types'
 import { ANIMAL_IDS, isMarine } from '../types'
-import { coatTexture } from './coat'
 
 type AnimalTemplate = {
   scene: THREE.Group
@@ -218,7 +217,6 @@ export function instanceAnimal(animal: AnimalId, painted: Record<string, string>
   if (!tpl) throw new Error(`模型未加载：${animal}`)
   const cloned = tpl.skinned ? SkeletonUtils.clone(tpl.scene) : tpl.scene.clone(true)
   const inner = cloned as THREE.Group
-  const coat = coatTexture(animal, painted)
   const bodyTint = painted.body || painted.shell || '#ffffff'
   inner.traverse((obj) => {
     if (obj instanceof THREE.Mesh) paintMesh(obj, bodyTint)
@@ -251,7 +249,6 @@ export function instanceAnimal(animal: AnimalId, painted: Record<string, string>
   root.userData.kind = animal
   root.userData.source = 'gltf'
   root.userData.pack = packOf(animal)
-  root.userData.coat = coat
   root.userData.marine = isMarine(animal)
   root.userData.legs = isMarine(animal) ? [] : collectLegs(root)
   root.userData.eyes = EYE_ALIASES.map((n) => named(root, [n])).filter((o): o is THREE.Object3D => Boolean(o))

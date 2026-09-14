@@ -244,6 +244,21 @@ export class PaintSurface {
     return this.color.toDataURL('image/png')
   }
 
+  /** 皮毛原图：只含蜡笔层，不叠官方线稿，不缩小成单色。 */
+  coatDataURL(maxW = 512): string {
+    const src = this.color
+    const scale = Math.min(1, maxW / Math.max(src.width, 1))
+    if (scale >= 0.999) return src.toDataURL('image/png')
+    const out = document.createElement('canvas')
+    out.width = Math.max(1, Math.round(src.width * scale))
+    out.height = Math.max(1, Math.round(src.height * scale))
+    const ctx = out.getContext('2d')
+    if (!ctx) return src.toDataURL('image/png')
+    ctx.imageSmoothingEnabled = false
+    ctx.drawImage(src, 0, 0, out.width, out.height)
+    return out.toDataURL('image/png')
+  }
+
   async restoreColor(dataUrl: string): Promise<void> {
     const ctx = this.color.getContext('2d')
     if (!ctx) throw new Error('画布打不开')

@@ -5,6 +5,7 @@
 import type { AnimalId, EmoteId, PlacedAnimal, RoomState, ThemeId } from '../types'
 import { ROOM_CAP } from '../types'
 import { LOCAL_CREATOR_KEY, LOCAL_ROOMS_KEY, ROOM_CHANNEL } from './keys'
+import { rememberCoat } from './coats'
 
 const channel =
   typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(ROOM_CHANNEL) : null
@@ -186,7 +187,8 @@ export function submitAnimal(
     id: `a-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
     createdAt: Date.now(),
   }
-  // 主机名单只同步分区色。整张 PNG 缩略图放作品夹，不然心跳会把刚送来的动物写丢。
+  // 主机名单不塞整张 PNG，涂层走 kid-draw-coats-v1，心跳才不会把刚送来的动物写丢。
+  rememberCoat(placed.id, placed.thumb)
   room.animals = [...room.animals, { ...placed, thumb: '' }]
   room.animalsGen = (room.animalsGen ?? 0) + 1
   rooms[roomId] = room

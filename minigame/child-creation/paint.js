@@ -92,7 +92,7 @@ PaintSurface.prototype.averagePaintHex = function () {
 }
 
 PaintSurface.prototype.thumb = function () {
-  return JSON.stringify({ animalId: this.animalId, painted: this.sampleRegions() })
+  return JSON.stringify({ animalId: this.animalId, strokes: this.strokes.slice() })
 }
 
 function rgbToHex(r, g, b) {

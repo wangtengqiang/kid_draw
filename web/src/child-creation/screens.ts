@@ -162,7 +162,7 @@ export class ChildCreation {
       if (msg && (msg.textContent || '').includes('空白画纸')) {
         this.setMsg('paint-msg', '涂上啦。点「送进世界」就能进去。')
       }
-      this.tintPaintPet()
+      this.paintPetCoat()
     })
     this.paint.tool = 'brush'
     this.paint.brush = 36
@@ -174,7 +174,7 @@ export class ChildCreation {
           <button class="hit draft-hit" data-act="draft" type="button">保存草稿</button>
           <button class="hit scan-file-hit" data-act="drafts" type="button">我的草稿</button>
         </div>
-        <p class="lead paint-hint">正在画${ANIMAL_META[animalId].name}。拿蜡笔在纸上随便涂，线只是样子。旁边是立体样子。</p>
+        <p class="lead paint-hint">正在画${ANIMAL_META[animalId].name}。拿蜡笔在纸上随便涂条纹，线只是样子。旁边立体身上会原样出现你画的道道。</p>
         <div class="paint-split">
           <div class="paint-body" id="paint-body">
             <div class="loading-mask" id="paint-load">正在打开画纸…</div>
@@ -197,7 +197,8 @@ export class ChildCreation {
     if (petCanvas) {
       try {
         this.paintPet = new PreviewStage(petCanvas)
-        this.paintPet.show(animalId, { body: '#ffffff' })
+        this.paintPet.show(animalId, { body: '#ffffff' }, this.paint.color)
+        this.paintPetCoat()
         requestAnimationFrame(() => this.paintPet?.resize())
       } catch {
         this.root.querySelector('#paint-pet')?.setAttribute('hidden', '')
@@ -288,10 +289,9 @@ export class ChildCreation {
     }
   }
 
-  private tintPaintPet(): void {
+  private paintPetCoat(): void {
     if (!this.paint || !this.paintPet) return
-    const hex = this.paint.averagePaintHex() || '#ffffff'
-    this.paintPet.tint({ body: hex, head: hex, mane: hex, shell: hex })
+    this.paintPet.setCoat(this.paint.color)
   }
 
   private setMsg(id: string, text: string, kind: 'ok' | 'err' | '' = ''): void {
@@ -332,6 +332,7 @@ export class ChildCreation {
     if (!draftId && pending && this.paint) {
       try {
         await this.paint.restoreColor(pending.colorPng)
+        this.paintPetCoat()
         this.setMsg('paint-msg', '格子还是满的。再点「保存草稿」换一张旧的。', 'err')
       } catch {
         this.setMsg('paint-msg', '画纸打不开。', 'err')
@@ -356,6 +357,7 @@ export class ChildCreation {
     try {
       await this.paint.restoreColor(draft.colorPng)
       this.openDraftId = draft.id
+      this.paintPetCoat()
       this.setMsg('paint-msg', '已打开这张草稿。可以接着涂。', 'ok')
     } catch {
       this.setMsg('paint-msg', '草稿打不开，给你一张新画纸。', 'err')

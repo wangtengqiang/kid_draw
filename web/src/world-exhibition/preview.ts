@@ -3,6 +3,7 @@
  */
 import * as THREE from 'three'
 import type { AnimalId } from '../types'
+import { applyDrawingCoat, refreshDrawingCoat, type CoatSource } from './drawing-coat'
 import { createAnimalModel, tickWalk, tintAnimal } from './models'
 import { OrbitZoom, PREVIEW_ORBIT } from './orbit-zoom'
 
@@ -46,7 +47,7 @@ export class PreviewStage {
     this.loop()
   }
 
-  show(animal: AnimalId, colors: Record<string, string>, thumb?: string): void {
+  show(animal: AnimalId, colors: Record<string, string>, thumb?: CoatSource): void {
     if (this.model) this.scene.remove(this.model)
     this.model = createAnimalModel(animal, colors, thumb)
     this.scene.add(this.model)
@@ -54,6 +55,14 @@ export class PreviewStage {
 
   tint(colors: Record<string, string>): void {
     if (this.model) tintAnimal(this.model, colors)
+  }
+
+  setCoat(source: CoatSource): void {
+    if (this.model) applyDrawingCoat(this.model, source)
+  }
+
+  refreshCoat(): void {
+    if (this.model) refreshDrawingCoat(this.model)
   }
 
   resize(): void {
@@ -80,6 +89,7 @@ export class PreviewStage {
       if (!this.orbit.interacting) this.rot += 0.006
       this.model.rotation.y = this.rot
       tickWalk(this.model, t, false)
+      if (this.model.userData.drawing) refreshDrawingCoat(this.model)
     }
     this.renderer.render(this.scene, this.camera)
   }

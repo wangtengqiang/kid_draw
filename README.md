@@ -46,7 +46,7 @@ npm run dev
 **屏上涂色（网页预览）**
 
 1. 打开首页，点 **开始画画**。不用扫码、不用带 `?join=`。
-2. 选陆地上的小鹿 / 老虎 / 狮子，或海里的小鱼 / 海龟 / 海豚（卡片是 Kenney 3D 正面）→ **自由蜡笔**涂色（粗细 + 颜色，纸上随便涂）→ **送进世界**。线稿只是样子，不用点满色块。旁边能看到同一只立体动物。送到后点 **去看大世界** 进主机 3D。
+2. 选陆地上的小鹿 / 老虎 / 狮子，或海里的小鱼 / 海龟 / 海豚（卡片是 Kenney 3D 正面）→ **自由蜡笔**涂色（粗细 + 颜色，纸上随便涂条纹）→ **送进世界**。线稿只是样子，不用点满色块。你画的道道会原样出现在立体身上。送到后点 **去看大世界** 进主机 3D。
 3. 涂色页有大按钮 **重选动物**、**保存草稿**（最多 10 张）和 **我的草稿**。格子满了会让你点一张旧的换掉，不用输房号。首页也可进「我的草稿」。
 4. 真机 / 网页扫码：首页点 **扫码进入**。有摄像头就扫主机二维码；云桌面开不了摄像头时，点「选一张二维码图片」（可先在主机点「下载二维码」）。有 `?join=` 时仍进老师的房间。
 
@@ -59,7 +59,7 @@ npm run dev
 - 狮 / 鹿 / 虎 / 鱼 — [Kenney Cube Pets 2.0](https://kenney.nl/assets/cube-pets)（[CC0](https://creativecommons.org/publicdomain/zero/1.0/)）。zip：https://kenney.nl/media/pages/assets/cube-pets/44e58e945f-1774520254/kenney_cube-pets_1.0.zip
 - 海豚 / 海龟 — [Gobkit](https://gobkit.com/api/free) Whale / Seal（CC0）。
 
-孩子涂色乘在皮毛上（默认白色，Kenney 原画脸能看见）。免费包里没有更圆、又是真虎、又能免登录下载的 glTF；取舍见 [`docs/industry-animal-pipeline.md`](docs/industry-animal-pipeline.md)。不要把千图网 PNG 当模型。
+孩子在画板上画的条纹会**原样**投影到 3D 皮毛上（画纸像素 = 涂层纹素），不拉直、不按色块平均。识别只用来判断是哪只动物。免费包里没有更圆、又是真虎、又能免登录下载的 glTF；取舍见 [`docs/industry-animal-pipeline.md`](docs/industry-animal-pipeline.md)。不要把千图网 PNG 当模型。
 
 **纸上涂色**
 

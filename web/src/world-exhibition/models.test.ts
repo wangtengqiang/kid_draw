@@ -80,6 +80,24 @@ describe('Kenney Cube Pets as real-species lion/deer/tiger', () => {
     expect(mat.opacity).toBe(1)
   })
 
+  it('kid paintboard stripes become the body map, not a single averaged tint', async () => {
+    await loadShipped()
+    const data = new Uint8Array([204, 34, 68, 255, 17, 68, 170, 255, 204, 34, 68, 255, 17, 68, 170, 255])
+    const paper = new THREE.DataTexture(data, 2, 2)
+    paper.needsUpdate = true
+    const lion = createAnimalModel('lion', { body: '#e24b4b' }, paper)
+    const body = lion.getObjectByName('body') as THREE.Mesh
+    const mat = body.material as THREE.MeshLambertMaterial
+    expect(mat.color.getHexString()).toBe('ffffff')
+    expect(mat.map).toBe(lion.userData.drawing)
+    const uv = body.geometry.getAttribute('uv')
+    expect(uv).toBeTruthy()
+    expect(uv.count).toBeGreaterThan(8)
+    const pix = (mat.map as THREE.DataTexture).image.data
+    expect(pix[0]).toBe(204)
+    expect(pix[4]).toBe(17)
+  })
+
   it('Gobkit whale/seal remain marine stand-ins', async () => {
     await loadShipped()
     const dolphin = createAnimalModel('dolphin', { body: '#ffffff' })

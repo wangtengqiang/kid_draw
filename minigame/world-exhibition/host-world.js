@@ -18,11 +18,17 @@ HostWorld.prototype.syncAnimals = function (list) {
   const seen = {}
   ;(list || []).forEach((a, i) => {
     seen[a.id] = true
-    if (this.actors.filter((x) => x.id === a.id).length) return
+    if (this.actors.filter((x) => x.id === a.id).length) {
+      this.actors.forEach((x) => {
+        if (x.id === a.id && a.thumb) x.thumb = a.thumb
+      })
+      return
+    }
     this.actors.push({
       id: a.id,
       animalId: a.animalId,
       regionColors: a.regionColors,
+      thumb: a.thumb || '',
       t: i * 0.7,
     })
   })
@@ -47,7 +53,7 @@ HostWorld.prototype.render = function (ctx, box, now) {
     a.t += 0.012
     const px = box.x + box.w * (0.2 + 0.6 * ((Math.sin(a.t) + 1) / 2))
     const py = box.y + box.h * (0.45 + 0.15 * Math.sin(a.t * 0.8 + i))
-    drawAnimal(ctx, a.animalId, a.regionColors, { x: px - 50, y: py - 60, w: 100, h: 120 })
+    drawAnimal(ctx, a.animalId, a.regionColors, { x: px - 50, y: py - 60, w: 100, h: 120 }, { coat: a.thumb })
   })
 }
 

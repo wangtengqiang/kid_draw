@@ -6,6 +6,7 @@ import * as THREE from 'three'
 import type { AnimalId, EmoteId, PlacedAnimal, ThemeId, WorldAction } from '../types'
 import { isMarine } from '../types'
 import { createAnimalModel, tickAction } from './models'
+import { applyDrawingCoat, isBitmapCoat } from './drawing-coat'
 import { HOST_ORBIT, OrbitZoom } from './orbit-zoom'
 import { paintForestPanorama, paintGrassGround, paintWater } from './forest-art'
 
@@ -285,7 +286,13 @@ export class HostWorld {
       }
     }
     list.forEach((item, i) => {
-      if (this.actors.has(item.id)) return
+      const existing = this.actors.get(item.id)
+      if (existing) {
+        if (item.thumb && isBitmapCoat(item.thumb) && !existing.group.userData.drawing) {
+          applyDrawingCoat(existing.group, item.thumb)
+        }
+        return
+      }
       const group = createAnimalModel(item.animalId, item.regionColors, item.thumb || undefined)
       group.scale.setScalar(isMarine(item.animalId) ? 1.0 : 1.05)
       const marine = isMarine(item.animalId)

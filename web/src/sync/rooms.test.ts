@@ -11,6 +11,7 @@ import {
   submitAnimal,
   touchHost,
 } from './rooms.ts'
+import { coatOf, hydrateThumbs } from './coats.ts'
 
 describe('room codes', () => {
   beforeEach(() => localStorage.clear())
@@ -112,5 +113,7 @@ describe('host heartbeat', () => {
     for (let i = 0; i < 8; i++) touchHost('8888')
     expect(getRoom('8888')?.animals).toHaveLength(1)
     expect(getRoom('8888')?.animals[0]?.thumb).toBe('')
+    expect(coatOf(getRoom('8888')!.animals[0]!.id).length).toBeGreaterThan(20)
+    expect(hydrateThumbs(getRoom('8888')!.animals)[0]?.thumb.length).toBeGreaterThan(20)
   })
 })

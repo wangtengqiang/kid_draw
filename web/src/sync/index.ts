@@ -19,3 +19,4 @@ export {
   submitAnimal,
   touchHost,
 } from './rooms'
+export { coatOf, hydrateThumbs, rememberCoat } from './coats'

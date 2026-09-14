@@ -171,13 +171,43 @@ function drawLion(ctx, outlineOnly, c) {
   drawFace(ctx, outlineOnly)
 }
 
+function drawCoat(ctx, thumb, box) {
+  if (!thumb) return
+  if (thumb.charAt(0) !== '{') return
+  let data
+  try {
+    data = JSON.parse(thumb)
+  } catch (e) {
+    return
+  }
+  const strokes = data.strokes || []
+  if (!strokes.length) return
+  ctx.save()
+  ctx.beginPath()
+  ctx.rect(box.x, box.y, box.w, box.h)
+  ctx.clip()
+  const s = Math.min(box.w, box.h)
+  strokes.forEach((dot) => {
+    ctx.fillStyle = dot.hex
+    ctx.beginPath()
+    ctx.arc(box.x + dot.x * box.w, box.y + dot.y * box.h, Math.max(1. (dot.r || 0.04) * s), 0, Math.PI * 2)
+    ctx.fill()
+  })
+  ctx.restore()
+}
+
 /**
  * 在矩形里画一只能认出的方块宠物。
  * opts.outlineOnly 只描线，给涂色纸当样子，不锁分区。
+ * opts.coat 是小朋友画板上的原始笔迹，原样叠上去，不拉直。
  */
 function drawAnimal(ctx, animalId, painted, box, opts) {
   const outlineOnly = opts && opts.outlineOnly
-  if (!outlineOnly && drawSnapshot(ctx, animalId, painted, box)) return
+  const coat = opts && opts.coat
+  if (!outlineOnly && drawSnapshot(ctx, animalId, coat ? { body: '#ffffff' } : painted, box)) {
+    if (coat) drawCoat(ctx, coat, box)
+    return
+  }
   const c = colorsOf(animalId, painted)
   const s = Math.min(box.w, box.h) * 0.9
   const x = box.x + box.w / 2
@@ -192,6 +222,7 @@ function drawAnimal(ctx, animalId, painted, box, opts) {
   else if (animalId === 'tiger') drawTiger(ctx, outlineOnly, c)
   else drawLion(ctx, outlineOnly, c)
   ctx.restore()
+  if (!outlineOnly && coat) drawCoat(ctx, coat, box)
 }
 
 module.exports = { drawAnimal, colorsOf }

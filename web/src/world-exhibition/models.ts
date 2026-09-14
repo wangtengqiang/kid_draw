@@ -4,6 +4,7 @@
 import * as THREE from 'three'
 import type { AnimalId, WorldAction } from '../types'
 import { type Ring } from '../silhouettes'
+import { applyDrawingCoat, isBitmapCoat, type CoatSource } from './drawing-coat'
 import { instanceAnimal, playAnimalClip } from './gltf-kit'
 
 export { loadAnimalTemplates, setAnimalModelProvider, animalTemplatesReady } from './gltf-kit'
@@ -89,10 +90,13 @@ export function profileVolume(
 export function createAnimalModel(
   animal: AnimalId,
   painted: Record<string, string>,
-  thumb?: string,
+  thumb?: CoatSource,
 ): THREE.Group {
-  void thumb
-  return instanceAnimal(animal, painted)
+  const group = instanceAnimal(animal, painted)
+  if (thumb && (typeof thumb !== 'string' || isBitmapCoat(thumb))) {
+    applyDrawingCoat(group, thumb)
+  }
+  return group
 }
 
 export function tintAnimal(group: THREE.Group, painted: Record<string, string>): void {
