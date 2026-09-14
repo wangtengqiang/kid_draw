@@ -11,23 +11,23 @@ export function paintForestPanorama(): HTMLCanvasElement {
   if (!ctx) return c
 
   const sky = ctx.createLinearGradient(0, 0, 0, h)
-  sky.addColorStop(0, '#f4f7e4')
-  sky.addColorStop(0.18, '#d7e9a8')
-  sky.addColorStop(0.38, '#8eb86a')
-  sky.addColorStop(0.58, '#4e8a48')
-  sky.addColorStop(0.78, '#2f5e32')
-  sky.addColorStop(1, '#1c3a22')
+  sky.addColorStop(0, '#eaf4ff')
+  sky.addColorStop(0.22, '#d5e8f4')
+  sky.addColorStop(0.38, '#c5d6a8')
+  sky.addColorStop(0.52, '#7eab55')
+  sky.addColorStop(0.72, '#3f6f32')
+  sky.addColorStop(1, '#244a22')
   ctx.fillStyle = sky
   ctx.fillRect(0, 0, w, h)
 
-  const glow = ctx.createRadialGradient(w * 0.62, h * 0.22, 30, w * 0.62, h * 0.22, 520)
-  glow.addColorStop(0, 'rgba(255,236,170,0.62)')
+  const glow = ctx.createRadialGradient(w * 0.58, h * 0.16, 20, w * 0.58, h * 0.16, 480)
+  glow.addColorStop(0, 'rgba(255,236,170,0.55)')
   glow.addColorStop(1, 'rgba(255,236,170,0)')
   ctx.fillStyle = glow
   ctx.fillRect(0, 0, w, h)
 
-  paintRange(ctx, w, h * 0.4, 0.55, ['#7a9570', '#8aa57c', '#6d8668'])
-  paintRange(ctx, w, h * 0.46, 0.42, ['#5d7a52', '#6e8c5e', '#4e6a48'])
+  paintPeaks(ctx, w, h * 0.34, ['#8ea4b0', '#9bb3a4', '#7d927c'])
+  paintPeaks(ctx, w, h * 0.4, ['#6d8a72', '#5e7a62', '#7a9470'])
 
   const lake = ctx.createLinearGradient(0, h * 0.5, 0, h * 0.68)
   lake.addColorStop(0, 'rgba(140, 196, 214, 0.55)')
@@ -60,36 +60,27 @@ export function paintForestPanorama(): HTMLCanvasElement {
   return c
 }
 
-function paintRange(
-  ctx: CanvasRenderingContext2D,
-  w: number,
-  y: number,
-  amp: number,
-  colors: string[],
-): void {
-  ctx.beginPath()
-  ctx.moveTo(0, y + 80)
-  for (let i = 0; i <= 24; i++) {
-    const x = (i / 24) * w
-    const peak = y - (40 + ((i * 17) % 90) * amp)
-    ctx.lineTo(x, peak)
+function paintPeaks(ctx: CanvasRenderingContext2D, w: number, y: number, colors: string[]): void {
+  const peaks = [0.08, 0.22, 0.38, 0.52, 0.68, 0.82, 0.94]
+  for (let i = 0; i < peaks.length; i++) {
+    const cx = peaks[i]! * w
+    const hgt = 90 + (i % 3) * 46
+    const half = 140 + (i % 4) * 40
+    ctx.fillStyle = colors[i % colors.length]!
+    ctx.beginPath()
+    ctx.moveTo(cx - half, y + 70)
+    ctx.lineTo(cx, y - hgt)
+    ctx.lineTo(cx + half, y + 70)
+    ctx.closePath()
+    ctx.fill()
+    ctx.fillStyle = 'rgba(245,248,252,0.85)'
+    ctx.beginPath()
+    ctx.moveTo(cx - half * 0.22, y - hgt * 0.45)
+    ctx.lineTo(cx, y - hgt)
+    ctx.lineTo(cx + half * 0.22, y - hgt * 0.45)
+    ctx.closePath()
+    ctx.fill()
   }
-  ctx.lineTo(w, y + 120)
-  ctx.closePath()
-  ctx.fillStyle = colors[0]!
-  ctx.fill()
-  ctx.fillStyle = colors[1]!
-  ctx.beginPath()
-  ctx.moveTo(w * 0.15, y + 40)
-  ctx.lineTo(w * 0.28, y - 90 * amp)
-  ctx.lineTo(w * 0.42, y + 50)
-  ctx.fill()
-  ctx.fillStyle = colors[2]!
-  ctx.beginPath()
-  ctx.moveTo(w * 0.55, y + 50)
-  ctx.lineTo(w * 0.7, y - 110 * amp)
-  ctx.lineTo(w * 0.88, y + 40)
-  ctx.fill()
 }
 
 function paintMass(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, seed: number): void {
