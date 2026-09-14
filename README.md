@@ -58,7 +58,7 @@ npm run dev
 
 - 小鹿 — [Quaternius Ultimate Animated Animals](https://quaternius.com/packs/ultimateanimatedanimals.html) Stag（CC0，自带 `Walk` / `Idle` / `Eating`）。
 - 老虎 — 同一套 Quaternius 的 Wolf（包里没有老虎；这是带走路剪辑的最接近掠食四足）。
-- 狮子 — [Zsky Animal Pack](https://opengameart.org/content/animal-pack) `Lion.glb`（CC BY 4.0，署名 [Zsky](https://www.patreon.com/Zsky)）。真狮网格 + 原装 `Eyes_Lion`，不加贴纸瞳仁。
+- 狮子 — 同一套 Quaternius 的 Fox（包里没有狮子；带 `Walk` 的橙色四足）。Zsky `Lion.glb` 已下载，鬃毛仍像花瓣球，不当默认。
 - 鱼 — [Kenney Cube Pets](https://kenney.nl/assets/cube-pets)（CC0）。海豚 / 海龟 — [Gobkit](https://gobkit.com/api/free) Whale / Seal（CC0）。
 
 孩子分区色烤进 `coatTexture`，贴在皮毛 UV 上（`flipY = false`）。许可证：[`web/public/models/NOTICE.md`](web/public/models/NOTICE.md)。不要把千图网 PNG 当模型，也不要用圆球鬃毛当狮子。

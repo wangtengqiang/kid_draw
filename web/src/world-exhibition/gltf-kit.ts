@@ -211,8 +211,7 @@ function paintMesh(obj: THREE.Mesh, coat: THREE.CanvasTexture): void {
 }
 
 function packOf(animal: AnimalId): string {
-  if (animal === 'lion') return 'zsky'
-  if (animal === 'deer' || animal === 'tiger') return 'quaternius'
+  if (animal === 'lion' || animal === 'deer' || animal === 'tiger') return 'quaternius'
   if (animal === 'fish') return 'kenney-cube-pets'
   return 'gobkit'
 }

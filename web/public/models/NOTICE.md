@@ -9,19 +9,19 @@ UV albedo (museum/LED stack), not a generated body.
 - License: [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
 - `deer.glb` ← Stag (clips: `Walk`, `Idle`, `Eating`, …)
 - `tiger.glb` ← Wolf (closest CC0 stylized predator with Walk/Idle; pack has no tiger)
+- `lion.glb` ← Fox (closest CC0 orange quadruped with Walk/Idle; pack has no lion)
 - Vendored GLBs: https://github.com/danwahl/animasim/tree/main/assets/generated/glb
   - https://media.githubusercontent.com/media/danwahl/animasim/main/assets/generated/glb/stag.glb
   - https://media.githubusercontent.com/media/danwahl/animasim/main/assets/generated/glb/wolf.glb
+  - https://media.githubusercontent.com/media/danwahl/animasim/main/assets/generated/glb/fox.glb
 
-## Zsky Animal Pack — lion (CC BY 4.0)
+## Zsky Animal Pack — fetched, not the default lion
 
 - https://opengameart.org/content/animal-pack
 - Zip: https://opengameart.org/sites/default/files/animals_pack.zip
 - Credit: https://www.patreon.com/Zsky
-- `lion.glb` ← `Animals_Pack/GLTF/Lion.glb` (real lion mesh + `Eyes_Lion`; no walk clip)
-- See `ZSKY-LICENSE.txt`
-
-No sticker eyes, no icosphere mane overlay. Coat UV replaces fur maps only.
+- `Lion.glb` is a real lion mesh (CC BY 4.0) but the mane still reads as petal-spheres.
+  Kept off the default slot. See `ZSKY-LICENSE.txt`.
 
 ## Kenney Cube Pets 2.0 — fish only (CC0 1.0)
 

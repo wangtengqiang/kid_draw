@@ -40,17 +40,15 @@ describe('industry glTF pipeline (Quaternius + Zsky + Gobkit)', () => {
     await loadAnimalTemplates()
   }
 
-  it('loads Quaternius stag/wolf as deer/tiger with Walk clips and a skeleton', async () => {
-    const deer = glbJson('models/deer.glb')
-    const tiger = glbJson('models/tiger.glb')
-    expect(deer.asset?.generator ?? '').toMatch(/Khronos glTF Blender/i)
-    expect((deer.animations || []).map((c) => c.name)).toContain('Walk')
-    expect((deer.animations || []).map((c) => c.name)).toContain('Idle')
-    expect((deer.animations || []).map((c) => c.name)).toContain('Eating')
-    expect((tiger.animations || []).map((c) => c.name)).toContain('Walk')
-    expect((deer.skins || []).length).toBeGreaterThan(0)
-    expect((deer.nodes || []).map((n) => n.name)).toContain('FrontLowerLeg.L')
-    expect((tiger.nodes || []).map((n) => n.name)).toContain('FrontLowerLeg.L')
+  it('loads Quaternius stag/wolf/fox as deer/tiger/lion with Walk clips and a skeleton', async () => {
+    for (const file of ['deer', 'tiger', 'lion'] as const) {
+      const json = glbJson(`models/${file}.glb`)
+      expect(json.asset?.generator ?? '').toMatch(/Khronos glTF Blender/i)
+      expect((json.animations || []).map((c) => c.name)).toContain('Walk')
+      expect((json.animations || []).map((c) => c.name)).toContain('Idle')
+      expect((json.skins || []).length).toBeGreaterThan(0)
+      expect((json.nodes || []).map((n) => n.name)).toContain('FrontLowerLeg.L')
+    }
 
     await loadShipped()
     const group = createAnimalModel('deer', { body: '#c9965a' })
@@ -62,31 +60,15 @@ describe('industry glTF pipeline (Quaternius + Zsky + Gobkit)', () => {
     expect((group.userData.activeClip as THREE.AnimationAction).getClip().name).toBe('Walk')
     expect(playAnimalClip(group, 'eat', 0.016)).toBe(true)
 
+    const lion = createAnimalModel('lion', { body: '#e6c36a' })
+    expect(lion.userData.pack).toBe('quaternius')
+    expect(playAnimalClip(lion, 'walk', 0.016)).toBe(true)
+
     let skinned = false
     group.traverse((o) => {
       if ((o as THREE.SkinnedMesh).isSkinnedMesh) skinned = true
     })
     expect(skinned).toBe(true)
-  })
-
-  it('loads Zsky lion mesh with original eyes, no sticker pupils, no sphere mane overlay', async () => {
-    const json = glbJson('models/lion.glb')
-    const names = (json.nodes || []).map((n) => n.name || '')
-    expect(names).toContain('Lion')
-    expect(names).toContain('Eyes_Lion')
-    expect(names).not.toContain('iris-left')
-    expect(names).not.toContain('clay-body')
-    expect(json.asset?.generator ?? '').toMatch(/Khronos glTF Blender/i)
-    expect(json.asset?.generator ?? '').not.toMatch(/kid-draw-metaball|kid-draw-original/i)
-
-    await loadShipped()
-    const lion = createAnimalModel('lion', { body: '#e6c36a' })
-    expect(lion.userData.pack).toBe('zsky')
-    expect(lion.getObjectByName('Eyes_Lion')).toBeTruthy()
-    expect(lion.getObjectByName('iris-left')).toBeFalsy()
-    expect(lion.getObjectByName('outline')).toBeFalsy()
-    const eye = lion.getObjectByName('Eyes_Lion') as THREE.Mesh
-    expect(eye.geometry).not.toBeInstanceOf(THREE.SphereGeometry)
   })
 
   it('puts kid coloring on the coat UV map, not as a tinted primitive', async () => {

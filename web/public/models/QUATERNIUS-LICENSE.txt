@@ -5,8 +5,10 @@ https://creativecommons.org/publicdomain/zero/1.0/
 
 deer.glb = Stag.glb (Walk / Idle / Eating)
 tiger.glb = Wolf.glb (Walk / Idle / Eating)
+lion.glb = Fox.glb (Walk / Idle / Eating)
 
 Vendored GLB copies via AnimaSim (CC0 redistribution):
 https://github.com/danwahl/animasim/tree/main/assets/generated/glb
 https://media.githubusercontent.com/media/danwahl/animasim/main/assets/generated/glb/stag.glb
 https://media.githubusercontent.com/media/danwahl/animasim/main/assets/generated/glb/wolf.glb
+https://media.githubusercontent.com/media/danwahl/animasim/main/assets/generated/glb/fox.glb
