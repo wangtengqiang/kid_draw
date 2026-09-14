@@ -486,26 +486,26 @@ export class HostWorld {
     for (let i = 1; i < coast.length; i++) hole.lineTo(coast[i]![0], -coast[i]![1])
     hole.closePath()
     sand.holes.push(hole)
-    const beach = flattenXZ(new THREE.ShapeGeometry(sand, 2), 0.06, shared.shoreMat)
+    const beach = flattenXZ(new THREE.ShapeGeometry(sand, 2), 0.11, shared.shoreMat)
     this.decorations.add(beach)
 
     const basin = new THREE.ExtrudeGeometry(xzShape(coast), {
-      depth: 0.52,
+      depth: 0.62,
       bevelEnabled: true,
-      bevelThickness: 0.1,
-      bevelSize: 0.16,
+      bevelThickness: 0.14,
+      bevelSize: 0.2,
       bevelSegments: 2,
       steps: 1,
       curveSegments: 1,
     })
     basin.rotateX(-Math.PI / 2)
     const water = new THREE.Mesh(basin, shared.sideMat)
-    water.position.y = -0.44
+    water.position.y = -0.55
     this.decorations.add(water)
 
     const surface = flattenXZ(
       new THREE.ShapeGeometry(xzShape(coast), 2),
-      0.09,
+      0.04,
       new THREE.MeshLambertMaterial({
         color: '#4aa3c4',
         map: waterMap(),
@@ -516,8 +516,17 @@ export class HostWorld {
     )
     this.decorations.add(surface)
 
-    const deep = flattenXZ(new THREE.ShapeGeometry(xzShape(offsetRing(coast, -1.15)), 2), 0.1, shared.deepMat)
+    const deep = flattenXZ(new THREE.ShapeGeometry(xzShape(offsetRing(coast, -1.15)), 2), 0.05, shared.deepMat)
     this.decorations.add(deep)
+
+    const lip = offsetRing(coast, 0.55)
+    for (let i = 0; i < lip.length; i += 2) {
+      const [x, z] = lip[i]!
+      const bank = new THREE.Mesh(shared.hillGeo, i % 4 ? shared.shoreMat : shared.bankMat)
+      bank.position.set(x, 0.04, z)
+      bank.scale.set(0.85, 0.28, 0.62)
+      this.decorations.add(bank)
+    }
 
     for (const [x, z, s] of [
       [5.7, 3.5, 0.55],
