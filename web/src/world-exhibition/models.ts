@@ -1,12 +1,12 @@
 /**
- * 观展动物：仓库内原创卡通 glTF（大亮眼、鬃毛网格、蹄爪），不是运行时胶囊/球拼装。
- * 孩子分区色铺在 UV 皮毛上；眼、鬃毛、斑点保持雕塑色。
+ * 观展动物：Kenney / Gobkit 等可分发 glTF，不是运行时胶囊拼装。
+ * 孩子涂的色乘在身体网格上；原贴图atlas留在 map 里。
  */
 import * as THREE from 'three'
 import type { AnimalId, WorldAction } from '../types'
 import { ANIMAL_META } from '../types'
 import { type Ring } from '../silhouettes'
-import { instanceAnimal } from './gltf-kit'
+import { instanceAnimal, playAnimalClip } from './gltf-kit'
 
 export { loadAnimalTemplates, setAnimalModelProvider, animalTemplatesReady } from './gltf-kit'
 
@@ -101,13 +101,14 @@ export function recolorAnimal(
   animal: AnimalId,
   painted: Record<string, string>,
 ): void {
+  const bodyTint = painted.body || painted.shell || colorOf(animal, 'body', painted)
   group.traverse((obj) => {
-    if (obj instanceof THREE.Mesh && obj.userData.region) {
-      const mat = obj.material
-      if (mat instanceof THREE.MeshLambertMaterial && !mat.map) {
-        mat.color.set(colorOf(animal, obj.userData.region, painted))
-      }
-    }
+    if (!(obj instanceof THREE.Mesh)) return
+    const mat = obj.material
+    if (!(mat instanceof THREE.MeshLambertMaterial)) return
+    const n = String(obj.userData.region || obj.name).toLowerCase()
+    const keepFace = n.includes('eye') || n.includes('iris') || n.includes('pupil') || n.includes('shine') || n.includes('nose')
+    if (!keepFace) mat.color.set(bodyTint)
   })
 }
 
@@ -134,11 +135,24 @@ function resetPose(group: THREE.Group): void {
 
 /** 陆地走路/坐下/喝水/休息；海里游泳。陆地动物不会漂起来。 */
 export function tickAction(group: THREE.Group, action: WorldAction, t: number): void {
+  const last = group.userData._animT as number | undefined
+  const dt = last === undefined ? 0.016 : Math.max(0, Math.min(0.05, t - last))
+  group.userData._animT = t
+
   resetPose(group)
   const marine = Boolean(group.userData.marine)
   const legs = (group.userData.legs as THREE.Object3D[] | undefined) || []
   const flippers = (group.userData.flippers as THREE.Object3D[] | undefined) || []
   const tail = group.userData.tail as THREE.Object3D | undefined
+  const clips = group.userData.actions as Record<string, THREE.AnimationAction> | undefined
+
+  const clipFor = (): string => {
+    if (marine) return action === 'swim' || action === 'walk' ? 'walk' : 'idle'
+    if (action === 'walk') return t === 0 ? 'static' : 'walk'
+    if (action === 'drink') return 'eat'
+    return 'idle'
+  }
+  const usedClip = Boolean(clips && playAnimalClip(group, clipFor(), dt))
 
   if (marine) {
     const swim = action === 'swim' || action === 'walk'
@@ -151,13 +165,15 @@ export function tickAction(group: THREE.Group, action: WorldAction, t: number): 
   }
 
   if (action === 'walk') {
-    legs.forEach((leg, i) => {
-      const pair = i === 0 || i === 3 ? 1 : -1
-      const swing = Math.sin(t * 5.2) * 0.18 * pair
-      leg.rotation.z = swing
-      const knee = leg.userData.knee as THREE.Object3D | undefined
-      if (knee) knee.rotation.z = Math.abs(swing) * 0.4
-    })
+    if (!usedClip || t === 0) {
+      legs.forEach((leg, i) => {
+        const pair = i === 0 || i === 3 ? 1 : -1
+        const swing = Math.sin(t * 5.2) * 0.18 * pair
+        leg.rotation.z = swing
+        const knee = leg.userData.knee as THREE.Object3D | undefined
+        if (knee) knee.rotation.z = Math.abs(swing) * 0.4
+      })
+    }
     return
   }
   if (action === 'sit') {

@@ -284,7 +284,7 @@ export class HostWorld {
     list.forEach((item, i) => {
       if (this.actors.has(item.id)) return
       const group = createAnimalModel(item.animalId, item.regionColors, item.thumb || undefined)
-      group.scale.setScalar(isMarine(item.animalId) ? 1.05 : 1.42)
+      group.scale.setScalar(isMarine(item.animalId) ? 1.0 : 1.05)
       const marine = isMarine(item.animalId)
       const actor: Actor = {
         id: item.id,
