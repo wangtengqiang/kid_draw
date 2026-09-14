@@ -323,10 +323,17 @@ export class HostWorld {
     const tz = Math.cos(a)
     const target = new THREE.Vector3()
     const head = actor.group.getObjectByName('head')
-    if (head) head.getWorldPosition(target)
+    const body = actor.group.getObjectByName('body')
+    if (head && body) {
+      const hp = new THREE.Vector3()
+      const bp = new THREE.Vector3()
+      head.getWorldPosition(hp)
+      body.getWorldPosition(bp)
+      target.lerpVectors(bp, hp, 0.55)
+    } else if (head) head.getWorldPosition(target)
     else actor.group.getWorldPosition(target)
     this.orbit.target.copy(target)
-    this.camera.position.set(target.x + tx * 3.8, target.y + 0.42, target.z + tz * 3.8)
+    this.camera.position.set(target.x + tx * 5.1, target.y + 0.55, target.z + tz * 5.1)
     const ox = this.camera.position.x - this.orbit.target.x
     const oy = this.camera.position.y - this.orbit.target.y
     const oz = this.camera.position.z - this.orbit.target.z

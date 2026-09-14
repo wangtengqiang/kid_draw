@@ -91,7 +91,7 @@ function mergeGroup(name, hex, builders) {
   return mesh
 }
 
-function addEyes(head, { y = 0.06, z = 0.2, spread = 0.11, white = 0.12, iris = 0.065 }) {
+function addEyes(head, { y = 0.05, z = 0.18, spread = 0.1, white = 0.085, iris = 0.048 }) {
   const make = (side, sx) => {
     const eye = part(side === 'L' ? 'eyeL' : 'eyeR', ball(white, white * 1.12, white * 0.7), '#fffdf7', sx, y, z)
     const irisM = part(side === 'L' ? 'irisL' : 'irisR', ball(iris, iris * 1.05, iris * 0.52), '#3c9ee0', 0, -0.008, white * 0.52)
@@ -105,13 +105,8 @@ function addEyes(head, { y = 0.06, z = 0.2, spread = 0.11, white = 0.12, iris = 
   make('R', spread)
 }
 
-function addSmile(head, z = 0.26) {
-  const geo = new THREE.TorusGeometry(0.07, 0.011, 8, 16, Math.PI)
-  geo.rotateX(Math.PI)
-  const smile = part('nose-smile', geo, '#5a3318', 0, -0.1, z)
-  smile.rotation.x = 0.18
-  head.add(smile)
-  head.add(part('nose', ball(0.032, 0.026, 0.028), '#c45c4a', 0, -0.038, z + 0.05))
+function addFace(head, z = 0.24) {
+  head.add(part('nose', ball(0.03, 0.024, 0.026), '#c45c4a', 0, -0.04, z + 0.04))
 }
 
 function thickLeg(name, x, z, length = 0.44, r = 0.08, hex = '#e8b56a', pawHex = '#d9a066') {
@@ -133,40 +128,20 @@ function tintLegs(root, shaft, paw) {
   })
 }
 
-/** Neck ruff in 3D: rings around Y, bib down the chest, volume behind the head. */
+/** Neck ruff as overlapping volumes: depth in Z, hangs down the chest. Not face-plane petals. */
 function lionMane() {
   const MANE = '#d47828'
   const DARK = '#c26518'
-  const tufts = []
-  const rings = [
-    { y: 0.2, r: 0.3, z0: -0.06, n: 9, rx: 0.11, ry: 0.16, rz: 0.12 },
-    { y: 0.04, r: 0.34, z0: -0.02, n: 11, rx: 0.12, ry: 0.15, rz: 0.13 },
-    { y: -0.14, r: 0.3, z0: 0.04, n: 10, rx: 0.11, ry: 0.18, rz: 0.12 },
-    { y: 0.08, r: 0.26, z0: -0.2, n: 8, rx: 0.12, ry: 0.14, rz: 0.14 },
-  ]
-  rings.forEach((ring, ri) => {
-    for (let i = 0; i < ring.n; i++) {
-      const a = (i / ring.n) * Math.PI * 2 + ri * 0.17
-      const x = Math.sin(a) * ring.r
-      const z = Math.cos(a) * ring.r + ring.z0
-      if (z > 0.2 && ring.y > 0.02) continue
-      tufts.push(() => {
-        const t = part(`tuft-${ri}-${i}`, ball(ring.rx, ring.ry, ring.rz, 10), i % 2 ? DARK : MANE, x, ring.y, z)
-        t.rotation.z = Math.sin(a) * 0.35
-        t.rotation.x = -Math.cos(a) * 0.2
-        return t
-      })
-    }
-  })
   return mergeGroup('mane', MANE, [
-    () => part('maneCore', ball(0.36, 0.34, 0.3), MANE, 0, 0.02, -0.04),
-    () => part('maneBack', ball(0.3, 0.28, 0.22), DARK, 0, 0.06, -0.26),
-    () => part('maneBib', ball(0.24, 0.3, 0.16), MANE, 0, -0.24, 0.16),
-    () => part('maneChest', ball(0.2, 0.22, 0.14), DARK, 0, -0.32, 0.06),
-    () => part('maneShoulderL', ball(0.14, 0.18, 0.16), MANE, -0.28, -0.06, 0.0),
-    () => part('maneShoulderR', ball(0.14, 0.18, 0.16), MANE, 0.28, -0.06, 0.0),
-    () => part('maneCrown', ball(0.2, 0.14, 0.16), MANE, 0, 0.28, -0.1),
-    ...tufts,
+    () => part('maneCore', ball(0.42, 0.38, 0.34), MANE, 0, 0.0, -0.08),
+    () => part('maneBack', ball(0.36, 0.32, 0.28), DARK, 0, 0.04, -0.3),
+    () => part('maneBib', ball(0.28, 0.36, 0.2), MANE, 0, -0.3, 0.16),
+    () => part('maneChest', ball(0.22, 0.26, 0.16), DARK, 0, -0.4, 0.04),
+    () => part('maneL', ball(0.22, 0.3, 0.22), MANE, -0.3, -0.04, -0.04),
+    () => part('maneR', ball(0.22, 0.3, 0.22), MANE, 0.3, -0.04, -0.04),
+    () => part('maneCrown', ball(0.24, 0.16, 0.2), MANE, 0, 0.28, -0.12),
+    () => part('maneLowerL', ball(0.16, 0.24, 0.16), DARK, -0.18, -0.24, 0.08),
+    () => part('maneLowerR', ball(0.16, 0.24, 0.16), DARK, 0.18, -0.24, 0.08),
   ])
 }
 
@@ -189,8 +164,8 @@ function makeLion() {
   head.position.set(0, 0.86, 0.54)
   head.add(part('face', ball(0.24, 0.22, 0.22), CREAM))
   head.add(part('muzzle', ball(0.13, 0.1, 0.14), CREAM, 0, -0.07, 0.18))
-  addEyes(head, { y: 0.04, z: 0.18, spread: 0.11, white: 0.118, iris: 0.064 })
-  addSmile(head, 0.24)
+  addEyes(head, { y: 0.03, z: 0.17, spread: 0.1, white: 0.088, iris: 0.05 })
+  addFace(head, 0.22)
   head.add(part('browL', ball(0.06, 0.02, 0.03), '#c48a48', -0.1, 0.12, 0.16))
   head.add(part('browR', ball(0.06, 0.02, 0.03), '#c48a48', 0.1, 0.12, 0.16))
   const earL = part('earL', ball(0.07, 0.08, 0.055), GOLD, -0.18, 0.16, -0.04)
@@ -225,7 +200,7 @@ function deerAntler(name, sx) {
   g.name = name
   g.position.set(sx * 0.08, 0.2, -0.02)
   const wood = '#8b5a2b'
-  const beamGeo = new THREE.CylinderGeometry(0.016, 0.024, 0.22, 8)
+  const beamGeo = new THREE.CylinderGeometry(0.02, 0.03, 0.24, 8)
   beamGeo.translate(0, 0.11, 0)
   const beam = part(`${name}-beam`, beamGeo, wood)
   beam.rotation.z = sx * 0.28
@@ -275,8 +250,8 @@ function makeDeer() {
   head.position.set(0, 1.08, 0.5)
   head.add(part('face', ball(0.16, 0.16, 0.16), '#e8b98a'))
   head.add(part('muzzle', ball(0.08, 0.07, 0.12), CREAM, 0, -0.06, 0.14))
-  addEyes(head, { y: 0.03, z: 0.13, spread: 0.08, white: 0.09, iris: 0.05 })
-  addSmile(head, 0.18)
+  addEyes(head, { y: 0.02, z: 0.12, spread: 0.075, white: 0.07, iris: 0.04 })
+  addFace(head, 0.16)
   const earL = part('earL', ball(0.045, 0.11, 0.035), COAT, -0.12, 0.16, -0.04)
   const earR = part('earR', ball(0.045, 0.11, 0.035), COAT, 0.12, 0.16, -0.04)
   earL.rotation.z = -0.25
@@ -350,8 +325,8 @@ function makeTiger() {
   head.position.set(0, 0.84, 0.52)
   head.add(part('face', ball(0.22, 0.2, 0.2), ORANGE))
   head.add(part('muzzle', ball(0.14, 0.1, 0.15), CREAM, 0, -0.08, 0.16))
-  addEyes(head, { y: 0.04, z: 0.16, spread: 0.1, white: 0.112, iris: 0.06 })
-  addSmile(head, 0.22)
+  addEyes(head, { y: 0.03, z: 0.15, spread: 0.095, white: 0.082, iris: 0.046 })
+  addFace(head, 0.2)
   head.add(pointedEar('earL', -1, ORANGE), pointedEar('earR', 1, ORANGE))
   head.add(part('cheekL', ball(0.07, 0.045, 0.035, 8), STRIPE, -0.16, -0.02, 0.12))
   head.add(part('cheekR', ball(0.07, 0.045, 0.035, 8), STRIPE, 0.16, -0.02, 0.12))

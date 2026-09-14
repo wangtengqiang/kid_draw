@@ -54,8 +54,8 @@ function litScene(): THREE.Scene {
 
 function frontCamera(aspect: number): THREE.PerspectiveCamera {
   const camera = new THREE.PerspectiveCamera(36, aspect, 0.1, 40)
-  camera.position.set(-2.55, 1.32, 1.55)
-  camera.lookAt(0.15, 0.82, 0)
+  camera.position.set(-2.9, 1.15, 2.15)
+  camera.lookAt(0.05, 0.72, 0)
   return camera
 }
 
