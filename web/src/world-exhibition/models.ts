@@ -42,7 +42,7 @@ function toon(color: string, map?: THREE.Texture): THREE.MeshLambertMaterial {
 function mesh(geo: THREE.BufferGeometry, color: string, map?: THREE.Texture): THREE.Mesh {
   const m = new THREE.Mesh(geo, toon(color, map))
   m.castShadow = true
-  m.receiveShadow = true
+  m.receiveShadow = false
   return m
 }
 
