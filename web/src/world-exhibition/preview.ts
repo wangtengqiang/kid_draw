@@ -20,7 +20,7 @@ export class PreviewStage {
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true })
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true })
     this.renderer.setPixelRatio(Math.min(devicePixelRatio, 2))
     this.camera = new THREE.PerspectiveCamera(40, 1, 0.1, 40)
     this.camera.position.set(0, 1.6, 4.2)

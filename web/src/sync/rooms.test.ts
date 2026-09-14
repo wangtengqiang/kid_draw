@@ -1,6 +1,14 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { ROOM_CAP } from '../types.ts'
-import { animalLabel, createRoom, getRoom, newRoomCode, submitAnimal } from './rooms.ts'
+import {
+  animalLabel,
+  commitRooms,
+  createRoom,
+  getRoom,
+  newRoomCode,
+  submitAnimal,
+  touchHost,
+} from './rooms.ts'
 
 describe('room codes', () => {
   beforeEach(() => localStorage.clear())
@@ -53,5 +61,37 @@ describe('submit gate', () => {
 describe('copy', () => {
   it('labels animals in Chinese', () => {
     expect(animalLabel('deer')).toBe('小朋友的小鹿')
+  })
+})
+
+describe('host heartbeat', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('does not drop animals when a stale empty snapshot is saved', () => {
+    createRoom('7777')
+    const stale = JSON.parse(localStorage.getItem('kid-draw-rooms-v1') || '{}')
+    submitAnimal('7777', {
+      animalId: 'deer',
+      creatorId: 'c',
+      label: 'x',
+      thumb: 't',
+      regionColors: { body: '#e24b4b' },
+    })
+    expect(getRoom('7777')?.animals).toHaveLength(1)
+    commitRooms(stale)
+    expect(getRoom('7777')?.animals).toHaveLength(1)
+  })
+
+  it('keeps animals across a live host heartbeat', () => {
+    createRoom('8888')
+    submitAnimal('8888', {
+      animalId: 'lion',
+      creatorId: 'c',
+      label: 'x',
+      thumb: 't',
+      regionColors: {},
+    })
+    touchHost('8888')
+    expect(getRoom('8888')?.animals).toHaveLength(1)
   })
 })

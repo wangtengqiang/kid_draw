@@ -34,7 +34,7 @@ export class HostWorld {
   private orbit: OrbitZoom
 
   constructor(canvas: HTMLCanvasElement) {
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false })
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, preserveDrawingBuffer: true })
     this.renderer.setPixelRatio(Math.min(devicePixelRatio, 2))
     this.renderer.shadowMap.enabled = true
     this.camera = new THREE.PerspectiveCamera(42, 1, 0.1, 80)
@@ -66,6 +66,7 @@ export class HostWorld {
   }
 
   applyTheme(theme: ThemeId): void {
+    if (theme === this.theme && this.decorations.children.length > 0) return
     this.theme = theme
     this.decorations.clear()
     this.lights.forEach((l) => this.scene.remove(l))

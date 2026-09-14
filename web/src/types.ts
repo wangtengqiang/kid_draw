@@ -115,6 +115,8 @@ export interface RoomState {
   ended: boolean
   hostAliveAt: number
   animals: PlacedAnimal[]
+  /** 名单版本。心跳只改 hostAliveAt，不能盖掉更新的动物列表。 */
+  animalsGen: number
   emotes: { id: string; animalId: string; emote: EmoteId; at: number }[]
 }
 

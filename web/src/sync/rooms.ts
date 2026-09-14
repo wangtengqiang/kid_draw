@@ -18,8 +18,47 @@ function loadRooms(): Record<string, RoomState> {
 }
 
 function saveRooms(rooms: Record<string, RoomState>): void {
-  localStorage.setItem(LOCAL_ROOMS_KEY, JSON.stringify(rooms))
+  const disk = loadRooms()
+  const merged: Record<string, RoomState> = { ...disk }
+  for (const [id, room] of Object.entries(rooms)) {
+    merged[id] = disk[id] ? mergeRoom(disk[id], room) : normalizeRoom(room)
+  }
+  localStorage.setItem(LOCAL_ROOMS_KEY, JSON.stringify(merged))
   channel?.postMessage({ kind: 'rooms' })
+}
+
+/** 测试与调试用：走同一套合并写入。 */
+export function commitRooms(rooms: Record<string, RoomState>): void {
+  saveRooms(rooms)
+}
+
+function normalizeRoom(room: RoomState): RoomState {
+  return { ...room, animalsGen: room.animalsGen ?? 0 }
+}
+
+function mergeById<T extends { id: string }>(a: T[], b: T[]): T[] {
+  const map = new Map<string, T>()
+  for (const x of a) map.set(x.id, x)
+  for (const x of b) map.set(x.id, x)
+  return [...map.values()]
+}
+
+/** 磁盘上更新的名单优先；同版本则并集，避免主机心跳把刚送来的动物写丢。 */
+export function mergeRoom(disk: RoomState, incoming: RoomState): RoomState {
+  const a = normalizeRoom(disk)
+  const b = normalizeRoom(incoming)
+  const animals =
+    b.animalsGen > a.animalsGen ? b.animals : a.animalsGen > b.animalsGen ? a.animals : mergeById(a.animals, b.animals)
+  const newer = b.hostAliveAt >= a.hostAliveAt ? b : a
+  return {
+    ...a,
+    ...newer,
+    id: a.id,
+    animals,
+    animalsGen: Math.max(a.animalsGen, b.animalsGen),
+    emotes: mergeById(a.emotes, b.emotes).filter((e) => Date.now() - e.at < 8000),
+    ended: a.ended || b.ended,
+  }
 }
 
 export function creatorId(): string {
@@ -52,6 +91,7 @@ export function createRoom(id: string): RoomState {
     ended: false,
     hostAliveAt: Date.now(),
     animals: [],
+    animalsGen: 0,
     emotes: [],
   }
   rooms[id] = room
@@ -89,11 +129,27 @@ export function setTheme(id: string, theme: ThemeId): RoomState | null {
 }
 
 export function endRoom(id: string): void {
-  patchRoom(id, { ended: true, animals: [] })
+  const rooms = loadRooms()
+  const room = rooms[id]
+  if (!room) return
+  room.ended = true
+  room.animals = []
+  room.emotes = []
+  room.animalsGen = (room.animalsGen ?? 0) + 1
+  rooms[id] = room
+  saveRooms(rooms)
 }
 
 export function clearAnimals(id: string): RoomState | null {
-  return patchRoom(id, { animals: [], emotes: [] })
+  const rooms = loadRooms()
+  const room = rooms[id]
+  if (!room || room.ended) return null
+  room.animals = []
+  room.emotes = []
+  room.animalsGen = (room.animalsGen ?? 0) + 1
+  rooms[id] = room
+  saveRooms(rooms)
+  return room
 }
 
 export function submitAnimal(
@@ -111,6 +167,7 @@ export function submitAnimal(
     createdAt: Date.now(),
   }
   room.animals = [...room.animals, placed]
+  room.animalsGen = (room.animalsGen ?? 0) + 1
   rooms[roomId] = room
   saveRooms(rooms)
   return { ok: true, placed }

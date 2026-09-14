@@ -19,8 +19,44 @@ function loadRooms() {
   }
 }
 
+function normalizeRoom(room) {
+  return Object.assign({}, room, { animalsGen: room.animalsGen || 0 })
+}
+
+function mergeById(a, b) {
+  const map = {}
+  ;(a || []).forEach((x) => {
+    map[x.id] = x
+  })
+  ;(b || []).forEach((x) => {
+    map[x.id] = x
+  })
+  return Object.keys(map).map((k) => map[k])
+}
+
+function mergeRoom(disk, incoming) {
+  const a = normalizeRoom(disk)
+  const b = normalizeRoom(incoming)
+  const animals =
+    b.animalsGen > a.animalsGen ? b.animals : a.animalsGen > b.animalsGen ? a.animals : mergeById(a.animals, b.animals)
+  const newer = b.hostAliveAt >= a.hostAliveAt ? b : a
+  return Object.assign({}, a, newer, {
+    id: a.id,
+    animals: animals,
+    animalsGen: Math.max(a.animalsGen, b.animalsGen),
+    emotes: mergeById(a.emotes, b.emotes),
+    ended: a.ended || b.ended,
+  })
+}
+
 function saveRooms(rooms) {
-  if (store()) wx.setStorageSync(LOCAL_ROOMS_KEY, JSON.stringify(rooms))
+  if (!store()) return
+  const disk = loadRooms()
+  const merged = Object.assign({}, disk)
+  Object.keys(rooms).forEach((id) => {
+    merged[id] = disk[id] ? mergeRoom(disk[id], rooms[id]) : normalizeRoom(rooms[id])
+  })
+  wx.setStorageSync(LOCAL_ROOMS_KEY, JSON.stringify(merged))
 }
 
 function creatorId() {
@@ -51,6 +87,7 @@ function createRoom(id) {
     ended: false,
     hostAliveAt: Date.now(),
     animals: [],
+    animalsGen: 0,
     emotes: [],
   }
   rooms[id] = room
@@ -87,11 +124,27 @@ function setTheme(id, theme) {
 }
 
 function endRoom(id) {
-  patchRoom(id, { ended: true, animals: [] })
+  const rooms = loadRooms()
+  const room = rooms[id]
+  if (!room) return
+  room.ended = true
+  room.animals = []
+  room.emotes = []
+  room.animalsGen = (room.animalsGen || 0) + 1
+  rooms[id] = room
+  saveRooms(rooms)
 }
 
 function clearAnimals(id) {
-  return patchRoom(id, { animals: [], emotes: [] })
+  const rooms = loadRooms()
+  const room = rooms[id]
+  if (!room || room.ended) return null
+  room.animals = []
+  room.emotes = []
+  room.animalsGen = (room.animalsGen || 0) + 1
+  rooms[id] = room
+  saveRooms(rooms)
+  return room
 }
 
 function submitAnimal(roomId, animal) {
@@ -105,6 +158,7 @@ function submitAnimal(roomId, animal) {
     createdAt: Date.now(),
   })
   room.animals = room.animals.concat([placed])
+  room.animalsGen = (room.animalsGen || 0) + 1
   rooms[roomId] = room
   saveRooms(rooms)
   return { ok: true, placed: placed }
