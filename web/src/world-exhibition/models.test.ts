@@ -1,14 +1,30 @@
-import { Box3, FrontSide, Group, Mesh, MeshLambertMaterial, Vector3 } from 'three'
-import { describe, expect, it } from 'vitest'
-import { ANIMAL_IDS, LAND_IDS } from '../types'
-import { createAnimalModel, profileVolume, tickAction, tickWalk } from './models'
+import { readFileSync } from 'node:fs'
+import { Box3, BufferGeometry, FrontSide, Group, Mesh, MeshLambertMaterial, Vector3 } from 'three'
+import { beforeAll, describe, expect, it } from 'vitest'
+import { ANIMAL_IDS, LAND_IDS, type AnimalId } from '../types'
+import { createAnimalModel, loadAnimalTemplates, profileVolume, setAnimalModelProvider, tickAction, tickWalk } from './models'
 import { DEER_BODY } from '../silhouettes'
+
+setAnimalModelProvider(async (id: AnimalId) => Uint8Array.from(readFileSync(`public/models/${id}.glb`)))
 
 function sizeOf(group: Group): Vector3 {
   return new Box3().setFromObject(group).getSize(new Vector3())
 }
 
+function bodyGeo(group: Group): BufferGeometry {
+  let geo: BufferGeometry | undefined
+  group.traverse((obj) => {
+    if (obj instanceof Mesh && obj.userData.region === 'body') geo = obj.geometry as BufferGeometry
+  })
+  if (!geo) throw new Error('missing body')
+  return geo
+}
+
 describe('3D animal volumes', () => {
+  beforeAll(async () => {
+    await loadAnimalTemplates()
+  }, 30000)
+
   it('builds a deer that is long, tall, and has chest depth', () => {
     const g = createAnimalModel('deer', { body: '#e24b4b' })
     const s = sizeOf(g)
@@ -23,7 +39,8 @@ describe('3D animal volumes', () => {
     expect(spots).toBeGreaterThan(5)
     g.traverse((obj) => {
       if (!(obj instanceof Mesh) || !String(obj.userData.region || '').startsWith('spot')) return
-      expect(obj.geometry.type).toBe('ExtrudeGeometry')
+      expect(obj.geometry.type).toBe('BufferGeometry')
+      expect(obj.geometry.type).not.toBe('SphereGeometry')
     })
   })
 
@@ -35,21 +52,23 @@ describe('3D animal volumes', () => {
     expect((g.userData.legs as Group[]).length).toBe(4)
   })
 
-  it('builds a lion with a mane mesh', () => {
+  it('builds a lion with a fused mane mesh, not a torus of capsules', () => {
     const g = createAnimalModel('lion', {})
     let mane = 0
-    g.traverse((obj) => {
-      if (obj.userData.region === 'mane') mane += 1
-    })
-    expect(mane).toBeGreaterThan(18)
-    expect(sizeOf(g).y).toBeGreaterThan(1.2)
-    expect(sizeOf(g).z).toBeGreaterThan(0.5)
+    let maneVerts = 0
     g.traverse((obj) => {
       if (!(obj instanceof Mesh) || obj.userData.region !== 'mane') return
+      mane += 1
+      maneVerts += obj.geometry.getAttribute('position').count
       expect(obj.geometry.type).not.toBe('TorusGeometry')
       expect(obj.geometry.type).not.toBe('CapsuleGeometry')
       expect(obj.geometry.type).not.toBe('CylinderGeometry')
+      expect(obj.geometry.type).not.toBe('SphereGeometry')
     })
+    expect(mane).toBe(1)
+    expect(maneVerts).toBeGreaterThan(200)
+    expect(sizeOf(g).y).toBeGreaterThan(1.2)
+    expect(sizeOf(g).z).toBeGreaterThan(0.5)
     const eyes = g.userData.eyes as Group[]
     expect(eyes.length).toBe(2)
     for (const eye of eyes) {
@@ -58,20 +77,16 @@ describe('3D animal volumes', () => {
     }
   })
 
-  it('builds land bodies as sculpted beans, not stretched spheres', () => {
+  it('instances land bodies from triangle glTF, not runtime primitives', () => {
     for (const id of LAND_IDS) {
       const g = createAnimalModel(id, {})
-      let beans = 0
-      g.traverse((obj) => {
-        if (!(obj instanceof Mesh) || obj.userData.region !== 'body') return
-        expect(obj.geometry.type).not.toBe('SphereGeometry')
-        expect(obj.geometry.type).not.toBe('CapsuleGeometry')
-        expect(obj.geometry.type).not.toBe('CylinderGeometry')
-        beans += 1
-      })
-      expect(beans).toBeGreaterThan(0)
-      const knees = (g.userData.legs as Group[]).filter((leg) => leg.userData.knee)
-      expect(knees).toHaveLength(4)
+      const geo = bodyGeo(g)
+      expect(geo.type).toBe('BufferGeometry')
+      expect(geo.type).not.toBe('SphereGeometry')
+      expect(geo.type).not.toBe('CapsuleGeometry')
+      expect(geo.type).not.toBe('CylinderGeometry')
+      expect(geo.getAttribute('position').count).toBeGreaterThan(400)
+      expect((g.userData.legs as Group[]).length).toBe(4)
     }
   })
 
@@ -130,9 +145,10 @@ describe('3D animal volumes', () => {
         expect(mat.opacity).toBe(1)
         expect(mat.depthWrite).toBe(true)
         expect(mat.side).toBe(FrontSide)
+        expect(obj.geometry.getAttribute('position').count).toBeGreaterThan(80)
         shafts += 1
       })
-      expect(shafts).toBeGreaterThan(2)
+      expect(shafts).toBeGreaterThan(0)
     }
   })
 

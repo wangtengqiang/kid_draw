@@ -12,6 +12,7 @@ import { createRoom, ensurePreviewRoom, getRoom, isHostQuery, joinQuery, newRoom
 import { ROOM_CAP } from './types'
 import { WorldExhibition } from './world-exhibition'
 import type { ExhibitionGo } from './world-exhibition'
+import { loadAnimalTemplates } from './world-exhibition/models'
 
 type Screen = { name: 'home' } | ChildGo | ExhibitionGo | PaperGo
 
@@ -29,7 +30,9 @@ export class App {
     this.paper = new PaperColoring(root, (s) => this.go(s))
   }
 
-  start(): void {
+  async start(): Promise<void> {
+    this.root.innerHTML = `<main class="page home"><p class="lead">正在打开小动物…</p></main>`
+    await loadAnimalTemplates()
     const join = joinQuery()
     if (isHostQuery()) {
       const roomId = new URLSearchParams(location.search).get('room') || newRoomCode()

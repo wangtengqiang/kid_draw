@@ -7,7 +7,8 @@
     "dev": "vite --host 0.0.0.0 --port 43187 --strictPort",
     "build": "tsc && vite build",
     "preview": "vite preview --host 0.0.0.0 --port 43187 --strictPort",
-    "test": "vitest run"
+    "test": "vitest run",
+    "author-animals": "node scripts/author-animals.mjs"
   },
   "dependencies": {
     "jsqr": "^1.4.0",
