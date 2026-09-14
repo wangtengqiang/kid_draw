@@ -32,10 +32,10 @@ export class PaintSurface {
     this.lines.className = 'paint-lines'
     this.wrap.append(this.color, this.lines)
 
-    const size = 720
+    const size = 800
     for (const c of [this.color, this.lines, this.region]) {
       c.width = size
-      c.height = Math.round(size * 1.15)
+      c.height = Math.round(size * 0.72)
     }
     this.rebuild()
     this.bind()
@@ -220,7 +220,7 @@ export class PaintSurface {
   thumb(): string {
     const out = document.createElement('canvas')
     out.width = 360
-    out.height = 414
+    out.height = 260
     const ctx = out.getContext('2d')
     if (!ctx) return ''
     ctx.fillStyle = '#fffaf1'

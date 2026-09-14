@@ -3,6 +3,7 @@
  * 不把 3D 身子的重叠分区再描一遍，避免叠线 / 透视双线 / 躺平的团子鹿。
  */
 import type { AnimalId } from '../types'
+import { sampleClosed } from '../silhouettes'
 
 export type Ring = [number, number][]
 
@@ -57,6 +58,10 @@ function poly(ctx: Ctx, pts: Ring): void {
   ctx.moveTo(pts[0]![0], pts[0]![1])
   for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i]![0], pts[i]![1])
   ctx.closePath()
+}
+
+function smoothPoly(ctx: Ctx, pts: Ring): void {
+  poly(ctx, pts.length > 6 ? sampleClosed(pts, 64) : pts)
 }
 
 function sideFace(ctx: Ctx, ex: number, ey: number, nx: number, ny: number): void {
@@ -125,29 +130,28 @@ export const DEER_OUTLINE: Ring = [
   [1.16, 1.66],
   [1.12, 1.48],
   [1.26, 1.46],
-  [1.38, 1.4],
 ]
 
 const DEER_ANTLER_L: Ring = [
-  [0.72, 1.54],
-  [0.58, 1.96],
-  [0.5, 2.12],
-  [0.62, 2.1],
-  [0.68, 1.88],
-  [0.64, 2.08],
-  [0.76, 2.06],
-  [0.8, 1.56],
+  [0.7, 1.62],
+  [0.56, 1.98],
+  [0.5, 2.14],
+  [0.62, 2.12],
+  [0.68, 1.92],
+  [0.66, 2.1],
+  [0.78, 2.08],
+  [0.8, 1.62],
 ]
 
 const DEER_ANTLER_R: Ring = [
-  [0.88, 1.56],
-  [0.92, 1.98],
-  [0.86, 2.14],
-  [0.98, 2.12],
-  [1.0, 1.9],
-  [1.08, 2.08],
-  [1.18, 2.04],
-  [1.0, 1.56],
+  [0.9, 1.62],
+  [0.94, 2.0],
+  [0.88, 2.16],
+  [1.0, 2.14],
+  [1.02, 1.92],
+  [1.1, 2.1],
+  [1.2, 2.06],
+  [1.02, 1.62],
 ]
 
 export function drawDeerRegions(ctx: Ctx): void {
@@ -170,7 +174,7 @@ export function drawDeerRegions(ctx: Ctx): void {
 }
 
 export function drawDeerLines(ctx: Ctx): void {
-  ink(ctx, 0.038, () => poly(ctx, DEER_OUTLINE))
+  ink(ctx, 0.038, () => smoothPoly(ctx, DEER_OUTLINE))
   ink(ctx, 0.032, () => poly(ctx, DEER_ANTLER_L))
   ink(ctx, 0.032, () => poly(ctx, DEER_ANTLER_R))
   ink(ctx, 0.02, () => {
@@ -227,7 +231,6 @@ export const TIGER_OUTLINE: Ring = [
   [1.16, 1.46],
   [1.08, 1.16],
   [1.28, 1.12],
-  [1.4, 0.98],
 ]
 
 export function drawTigerRegions(ctx: Ctx): void {
@@ -253,7 +256,7 @@ export function drawTigerRegions(ctx: Ctx): void {
 }
 
 export function drawTigerLines(ctx: Ctx): void {
-  ink(ctx, 0.038, () => poly(ctx, TIGER_OUTLINE))
+  ink(ctx, 0.038, () => smoothPoly(ctx, TIGER_OUTLINE))
   ink(ctx, 0.02, () => {
     ctx.beginPath()
     ctx.moveTo(0.42, 0.8)
@@ -309,7 +312,6 @@ export const LION_OUTLINE: Ring = [
   [0.62, 1.12],
   [0.7, 0.98],
   [0.92, 1.02],
-  [1.18, 1.0],
 ]
 
 const LION_MANE: Ring = [
@@ -349,8 +351,8 @@ export function drawLionRegions(ctx: Ctx): void {
 }
 
 export function drawLionLines(ctx: Ctx): void {
-  ink(ctx, 0.038, () => poly(ctx, LION_OUTLINE))
-  ink(ctx, 0.034, () => poly(ctx, LION_MANE))
+  ink(ctx, 0.038, () => smoothPoly(ctx, LION_OUTLINE))
+  ink(ctx, 0.034, () => smoothPoly(ctx, LION_MANE))
   ink(ctx, 0.028, () => oval(ctx, 1.0, 1.18, 0.24, 0.22))
   ink(ctx, 0.02, () => {
     ctx.beginPath()
