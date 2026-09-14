@@ -27,6 +27,7 @@ export class PreviewStage {
     this.camera.lookAt(0, 0.95, 0)
     this.orbit = new OrbitZoom(canvas, this.camera, new THREE.Vector3(0, 0.95, 0), PREVIEW_ORBIT)
     this.scene.background = new THREE.Color('#e7f0d4')
+    this.scene.add(new THREE.AmbientLight('#ffe9c8', 0.65))
     this.scene.add(new THREE.HemisphereLight('#fff6e8', '#5c7a48', 1.15))
     const key = new THREE.DirectionalLight('#fff1cc', 1)
     key.position.set(3, 5, 2)

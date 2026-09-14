@@ -310,8 +310,8 @@ function drawTigerRegions(ctx: Ctx): void {
   fillPoly(ctx, 8, TIGER_BELLY)
   fillPoly(ctx, 1, TIGER_EAR_L)
   fillPoly(ctx, 2, TIGER_EAR_R)
-  fillRegion(ctx, 3, () => ellipse(ctx, 0.84, 1.18, 0.05, 0.06))
-  fillRegion(ctx, 4, () => ellipse(ctx, 1.0, 1.16, 0.05, 0.06))
+  fillRegion(ctx, 3, () => ellipse(ctx, 0.82, 1.3, 0.055, 0.07))
+  fillRegion(ctx, 4, () => ellipse(ctx, 1.06, 1.28, 0.055, 0.07))
   fillPoly(ctx, 5, TIGER_HEAD)
   fillPoly(ctx, 6, TIGER_MUZZLE)
 }
@@ -329,7 +329,7 @@ function drawTigerLines(ctx: Ctx): void {
   strokePoly(ctx, TIGER_EAR_R)
   strokePoly(ctx, TIGER_HEAD)
   strokePoly(ctx, TIGER_MUZZLE)
-  face(ctx, 1.0, 0.96, 0.22)
+  face(ctx, 1.06, 0.92, 0.24)
   ctx.save()
   ctx.strokeStyle = '#1a120c'
   ctx.lineWidth = 0.028

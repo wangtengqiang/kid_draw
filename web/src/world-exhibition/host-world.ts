@@ -174,6 +174,7 @@ export class HostWorld {
     this.scene.fog = new THREE.Fog('#c5d6a0', 22, 42)
     const grassMat = this.ground.material as THREE.MeshLambertMaterial
     grassMat.color.set('#7da85a')
+    this.addLight(new THREE.AmbientLight('#ffe6b8', 0.45))
     this.addLight(new THREE.HemisphereLight('#fff4d4', '#3d5c32', 1.12))
     const sun = new THREE.DirectionalLight('#ffe6b0', 1.15)
     sun.position.set(5, 9, 6)

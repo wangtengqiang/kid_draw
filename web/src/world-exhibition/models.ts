@@ -9,12 +9,10 @@ import { coatTexture } from './coat'
 import {
   DEER_ANTLER_L_BEAM,
   DEER_ANTLER_R_BEAM,
-  DEER_BELLY,
   DEER_BODY,
   DEER_EAR_L,
   DEER_EAR_R,
   DEER_TAIL,
-  LION_BELLY,
   LION_BODY,
   LION_EAR_L,
   LION_EAR_R,
@@ -22,7 +20,6 @@ import {
   LION_MANE,
   LION_MUZZLE,
   LION_TUFT,
-  TIGER_BELLY,
   TIGER_BODY,
   TIGER_EAR_L,
   TIGER_EAR_R,
@@ -39,7 +36,6 @@ function toon(color: string, map?: THREE.Texture): THREE.MeshLambertMaterial {
   return new THREE.MeshLambertMaterial({
     color,
     map: map ?? null,
-    side: THREE.DoubleSide,
   })
 }
 
@@ -183,8 +179,6 @@ function deer(painted: Record<string, string>, coat: THREE.Texture): THREE.Group
   })
   addBody(g, part(bodyGeo, 'body', a, painted, coat))
   addInk(g, DEER_BODY, 0.012)
-
-  addBody(g, part(profileVolume(DEER_BELLY, 0.12), 'belly', a, painted))
   addBody(g, part(profileVolume(DEER_EAR_L, 0.03), 'earL', a, painted))
   addBody(g, part(profileVolume(DEER_EAR_R, 0.03), 'earR', a, painted))
   addBody(g, part(profileVolume(DEER_TAIL, 0.04), 'tail', a, painted))
@@ -199,10 +193,10 @@ function deer(painted: Record<string, string>, coat: THREE.Texture): THREE.Group
   }
 
   const legs = placeLegs(g, a, painted, [
-    ['legFL', 0.42, 0.09, 0.58, 0.024, [0.08, -0.28, 0.16]],
-    ['legFR', 0.46, -0.09, 0.58, 0.024, [0.02, -0.26, 0.08]],
-    ['legBL', -0.4, 0.1, 0.6, 0.03, [-0.06, -0.22, -0.16, 0.06]],
-    ['legBR', -0.34, -0.1, 0.6, 0.03, [0.04, -0.2, -0.1, 0.12]],
+    ['legFL', 0.42, 0.09, 0.58, 0.038, [0.08, -0.28, 0.16]],
+    ['legFR', 0.46, -0.09, 0.58, 0.038, [0.02, -0.26, 0.08]],
+    ['legBL', -0.4, 0.1, 0.6, 0.042, [-0.06, -0.22, -0.16, 0.06]],
+    ['legBR', -0.34, -0.1, 0.6, 0.042, [0.04, -0.2, -0.1, 0.12]],
   ])
   addSideEyes(g, 1.02, 1.38, 0.1)
   g.userData.legs = legs
@@ -215,7 +209,6 @@ function tiger(painted: Record<string, string>, coat: THREE.Texture): THREE.Grou
   const bodyGeo = profileVolume(TIGER_BODY, 0.28, (x) => (x < -0.5 ? 0.85 : 1))
   addBody(g, part(bodyGeo, 'body', a, painted, coat))
   addInk(g, TIGER_BODY, 0.014)
-  addBody(g, part(profileVolume(TIGER_BELLY, 0.18), 'belly', a, painted))
 
   const headGeo = profileVolume(TIGER_HEAD, 0.22, (x) => (x > 1.05 ? 0.7 : 1))
   addBody(g, part(headGeo, 'head', a, painted, coat))
@@ -260,7 +253,6 @@ function lion(painted: Record<string, string>, coat: THREE.Texture): THREE.Group
   const a: AnimalId = 'lion'
   addBody(g, part(profileVolume(LION_BODY, 0.26), 'body', a, painted, coat))
   addInk(g, LION_BODY, 0.014)
-  addBody(g, part(profileVolume(LION_BELLY, 0.16), 'belly', a, painted))
 
   const manePts: THREE.Vector2[] = []
   for (let i = 0; i <= 20; i++) {
