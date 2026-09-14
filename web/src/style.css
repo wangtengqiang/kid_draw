@@ -349,18 +349,6 @@ h1 {
   font-weight: 700;
 }
 .theme-btn.on { outline: 4px solid var(--ink); background: var(--sun); }
-.action-lead { font-size: 16px; margin: 0; }
-.action-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
-.action-btn {
-  min-height: 44px;
-  border: 0;
-  border-radius: 16px;
-  background: #fffaf1;
-  cursor: pointer;
-  font-size: 18px;
-  font-weight: 800;
-}
-.action-btn.on { background: var(--sky); outline: 3px solid var(--ink); }
 .pick-section {
   margin: 12px 0 4px;
   font-size: 22px;

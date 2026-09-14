@@ -17,9 +17,41 @@ interface Actor {
   radius: number
   speed: number
   lane: number
+  phase: number
   marine: boolean
   emote: THREE.Sprite | null
   emoteUntil: number
+}
+
+export type LandAction = Exclude<WorldAction, 'swim'>
+
+/** 陆生动物自己轮换的节拍，错开相位后不会同时做一个姿势。 */
+export const LAND_BEATS: { action: LandAction; duration: number }[] = [
+  { action: 'walk', duration: 9 },
+  { action: 'drink', duration: 3.2 },
+  { action: 'walk', duration: 6.5 },
+  { action: 'sit', duration: 3.6 },
+  { action: 'walk', duration: 7.5 },
+  { action: 'rest', duration: 4 },
+]
+
+export const LAND_CYCLE = LAND_BEATS.reduce((sum, beat) => sum + beat.duration, 0)
+
+export function actorPhase(index: number): number {
+  return index * 11.3
+}
+
+export function autoLandAction(t: number, phase: number): LandAction {
+  let u = ((t + phase) % LAND_CYCLE + LAND_CYCLE) % LAND_CYCLE
+  for (const beat of LAND_BEATS) {
+    if (u < beat.duration) return beat.action
+    u -= beat.duration
+  }
+  return 'walk'
+}
+
+export function autoActorAction(marine: boolean, t: number, phase: number): WorldAction {
+  return marine ? 'swim' : autoLandAction(t, phase)
 }
 
 /**
@@ -177,7 +209,6 @@ export class HostWorld {
   private lights: THREE.Light[] = []
   private particles: THREE.Points | null = null
   private theme: ThemeId = 'forest'
-  private action: WorldAction = 'walk'
   private clock = new THREE.Clock()
   private running = true
   private raf = 0
@@ -242,14 +273,6 @@ export class HostWorld {
     else this.buildUnderwater()
   }
 
-  setAction(action: WorldAction): void {
-    this.action = action
-  }
-
-  getAction(): WorldAction {
-    return this.action
-  }
-
   syncAnimals(list: PlacedAnimal[]): void {
     const seen = new Set(list.map((a) => a.id))
     for (const [id, actor] of this.actors) {
@@ -271,6 +294,7 @@ export class HostWorld {
         radius: marine ? 1.45 + (i % 3) * 0.32 : 3.35 + (i % 3) * 0.55,
         speed: (marine ? 0.28 : 0.18) + Math.random() * 0.12,
         lane: (i % 5) - 2,
+        phase: actorPhase(i),
         marine,
         emote: null,
         emoteUntil: 0,
@@ -326,35 +350,35 @@ export class HostWorld {
   private placeActor(actor: Actor, t: number, dt: number): void {
     const step = Math.min(dt, 0.05)
     if (actor.marine) {
-      const swimming = this.action === 'swim' || this.action === 'walk' || this.action === 'drink'
-      actor.angle += (swimming ? actor.speed : 0.03) * step
+      actor.angle += actor.speed * step
       let x = OCEAN.x + Math.cos(actor.angle) * actor.radius
       let z = OCEAN.z + Math.sin(actor.angle) * actor.radius * 0.82
       if (!pointInRing(x, z, this.coast)) {
         x = OCEAN.x + Math.cos(actor.angle) * 1.2
         z = OCEAN.z + Math.sin(actor.angle) * 1.1
       }
-      const bob = swimming ? Math.sin(t * 3.1 + actor.angle) * 0.08 : 0.02
+      const bob = Math.sin(t * 3.1 + actor.angle) * 0.08
       actor.group.position.set(x, 0.1 + bob, z)
       actor.group.rotation.y = -actor.angle + Math.PI / 2
-      tickAction(actor.group, swimming ? 'swim' : this.action, t + actor.angle)
+      tickAction(actor.group, 'swim', t + actor.angle)
       return
     }
 
-    if (this.action === 'drink') {
+    const action = autoLandAction(t, actor.phase)
+    if (action === 'drink') {
       actor.group.position.set(SHORE_DRINK.x, 0.02, SHORE_DRINK.z + actor.lane * 1.15)
       actor.group.rotation.y = 0
       tickAction(actor.group, 'drink', t)
       return
     }
-    if (this.action === 'rest') {
+    if (action === 'rest') {
       const a = actor.angle
       actor.group.position.set(Math.cos(a) * 1.35, 0.42, Math.sin(a) * 1.35)
       actor.group.rotation.y = a
       tickAction(actor.group, 'rest', t)
       return
     }
-    if (this.action === 'sit') {
+    if (action === 'sit') {
       const a = actor.angle
       actor.group.position.set(Math.cos(a) * 3.05, 0, Math.sin(a) * 3.05)
       actor.group.rotation.y = a + Math.PI
