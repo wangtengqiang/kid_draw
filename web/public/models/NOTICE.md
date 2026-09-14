@@ -4,7 +4,7 @@ Shipped models are **not** 千图网 / stock illustrations. Do not replace these
 
 ## Kenney Cube Pets 2.0 — lion, deer, tiger, fish
 
-- Files: `lion.glb`, `deer.glb`, `tiger.glb`, `fish.glb` (copied from `Models/GLB format/animal-*.glb`)
+- Files: `lion.glb`, `deer.glb`, `tiger.glb`, `fish.glb` (copied from `Models/GLB format/animal-*.glb`) plus shared atlas `Textures/colormap.png`
 - Source: https://kenney.nl/assets/cube-pets
 - Download: https://kenney.nl/media/pages/assets/cube-pets/44e58e945f-1774520254/kenney_cube-pets_1.0.zip
 - License: [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) (see `KENNEY-LICENSE.txt`)
@@ -32,8 +32,13 @@ Tried: Kenney Cube Pets (no turtle), Gobkit free packs (no turtle), Quaternius /
 
 ```bash
 cd web
-# Kenney
-curl -L -o /tmp/kenney_cube-pets.zip 'https://kenney.nl/media/pages/assets/cube-pets/44e58e945f-1774520254/kenney_cube-pets_1.0.zip'
+unzip -o /tmp/kenney_cube-pets.zip -d /tmp/kenney
+cp /tmp/kenney/Models/GLB\ format/animal-lion.glb public/models/lion.glb
+cp /tmp/kenney/Models/GLB\ format/animal-deer.glb public/models/deer.glb
+cp /tmp/kenney/Models/GLB\ format/animal-tiger.glb public/models/tiger.glb
+cp /tmp/kenney/Models/GLB\ format/animal-fish.glb public/models/fish.glb
+mkdir -p public/models/Textures
+cp /tmp/kenney/Models/GLB\ format/Textures/colormap.png public/models/Textures/
 # Gobkit whale
 curl -L -o public/models/dolphin.glb 'https://gobkit.com/freebies/animalB/Whale.glb'
 ```

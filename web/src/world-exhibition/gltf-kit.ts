@@ -152,6 +152,10 @@ function collectLegs(root: THREE.Object3D): THREE.Object3D[] {
 
 function toonKeepMap(src: THREE.Material, tint: string): THREE.MeshLambertMaterial {
   const map = 'map' in src && src.map instanceof THREE.Texture ? src.map : null
+  if (map) {
+    map.colorSpace = THREE.SRGBColorSpace
+    map.needsUpdate = true
+  }
   const color = new THREE.Color(tint)
   return new THREE.MeshLambertMaterial({
     color,

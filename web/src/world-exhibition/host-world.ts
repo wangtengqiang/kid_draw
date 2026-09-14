@@ -230,6 +230,9 @@ export class HostWorld {
     this.camera.position.set(4.8, 3.35, 8.6)
     this.camera.lookAt(0.2, 0.72, 0.5)
     this.orbit = new OrbitZoom(canvas, this.camera, new THREE.Vector3(0.35, 0.7, 0.35), HOST_ORBIT)
+    if (typeof window !== 'undefined') {
+      ;(window as Window & { __kidDrawFrameHost?: () => boolean }).__kidDrawFrameHost = () => this.frameFirstAnimal()
+    }
     const grass = new THREE.CanvasTexture(paintGrassGround())
     grass.wrapS = grass.wrapT = THREE.RepeatWrapping
     grass.repeat.set(8, 8)
@@ -302,6 +305,19 @@ export class HostWorld {
       this.scene.add(group)
       this.actors.set(item.id, actor)
     })
+  }
+
+  /** Point the host camera at the first animal (preview screenshots / pinch-to-see). */
+  frameFirstAnimal(): boolean {
+    const actor = this.actors.values().next().value as Actor | undefined
+    if (!actor) return false
+    const p = actor.group.position
+    this.orbit.target.set(p.x, 0.9, p.z)
+    this.orbit.radius = 4.4
+    this.orbit.phi = (50 * Math.PI) / 180
+    this.orbit.theta = Math.PI / 5
+    this.orbit.apply()
+    return true
   }
 
   showEmote(animalId: string, emote: EmoteId): void {
