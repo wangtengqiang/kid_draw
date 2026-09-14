@@ -178,7 +178,6 @@ function deer(painted: Record<string, string>, coat: THREE.Texture): THREE.Group
     return 1
   })
   addBody(g, part(bodyGeo, 'body', a, painted, coat))
-  addInk(g, DEER_BODY, 0.012)
   addBody(g, part(profileVolume(DEER_EAR_L, 0.03), 'earL', a, painted))
   addBody(g, part(profileVolume(DEER_EAR_R, 0.03), 'earR', a, painted))
   addBody(g, part(profileVolume(DEER_TAIL, 0.04), 'tail', a, painted))
@@ -208,11 +207,9 @@ function tiger(painted: Record<string, string>, coat: THREE.Texture): THREE.Grou
   const a: AnimalId = 'tiger'
   const bodyGeo = profileVolume(TIGER_BODY, 0.28, (x) => (x < -0.5 ? 0.85 : 1))
   addBody(g, part(bodyGeo, 'body', a, painted, coat))
-  addInk(g, TIGER_BODY, 0.014)
 
   const headGeo = profileVolume(TIGER_HEAD, 0.22, (x) => (x > 1.05 ? 0.7 : 1))
   addBody(g, part(headGeo, 'head', a, painted, coat))
-  addInk(g, TIGER_HEAD, 0.01)
   addBody(g, part(profileVolume(TIGER_MUZZLE, 0.14), 'muzzle', a, painted))
   addBody(g, part(profileVolume(TIGER_EAR_L, 0.04), 'earL', a, painted))
   addBody(g, part(profileVolume(TIGER_EAR_R, 0.04), 'earR', a, painted))
@@ -252,7 +249,6 @@ function lion(painted: Record<string, string>, coat: THREE.Texture): THREE.Group
   const g = new THREE.Group()
   const a: AnimalId = 'lion'
   addBody(g, part(profileVolume(LION_BODY, 0.26), 'body', a, painted, coat))
-  addInk(g, LION_BODY, 0.014)
 
   const manePts: THREE.Vector2[] = []
   for (let i = 0; i <= 20; i++) {
@@ -266,7 +262,6 @@ function lion(painted: Record<string, string>, coat: THREE.Texture): THREE.Group
   const mane = part(maneLathe, 'mane', a, painted)
   mane.position.x = 0.62
   addBody(g, mane)
-  addInk(g, LION_MANE, 0.012)
   addBody(g, part(profileVolume(LION_MANE, 0.16), 'mane', a, painted))
 
   addBody(g, part(profileVolume(LION_HEAD, 0.18), 'head', a, painted, coat))
@@ -331,15 +326,6 @@ function placeLegs(
     legs.push(hip)
   }
   return legs
-}
-
-function addInk(g: THREE.Group, pts: Ring, radius: number): void {
-  const contour = smoothRing(pts, 64)
-  const curve = new THREE.CatmullRomCurve3(
-    contour.map((p) => new THREE.Vector3(p.x, p.y, 0)),
-    true,
-  )
-  g.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 48, radius, 8, true), new THREE.MeshBasicMaterial({ color: '#1a140c' })))
 }
 
 function addSideEyes(g: THREE.Group, x: number, y: number, z: number): void {
