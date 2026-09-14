@@ -29,7 +29,7 @@ function glbJson(file: string): {
   }
 }
 
-describe('Kenney Cube Pets as real-species lion/deer/tiger', () => {
+describe('authored cartoon cubs as default land lion/deer/tiger', () => {
   afterEach(() => {
     setAnimalModelProvider(null)
   })
@@ -39,7 +39,7 @@ describe('Kenney Cube Pets as real-species lion/deer/tiger', () => {
     await loadAnimalTemplates()
   }
 
-  it('loads Kenney animal-lion/deer/tiger GLBs, not fox or wolf stand-ins', async () => {
+  it('loads round cartoon cubs, not Kenney cubes or fox/wolf stand-ins', async () => {
     await loadShipped()
     for (const kind of ['lion', 'deer', 'tiger'] as AnimalId[]) {
       const json = glbJson(`models/${kind}.glb`)
@@ -47,37 +47,45 @@ describe('Kenney Cube Pets as real-species lion/deer/tiger', () => {
       expect(nodes).toContain(`animal-${kind}`)
       expect(nodes).toContain('body')
       expect(nodes).toContain('leg-front-left')
+      expect(nodes).toContain('eyeL')
+      expect(nodes).not.toContain('fox')
+      expect(nodes).not.toContain('wolf')
       expect((json.animations || []).map((c) => c.name)).toContain('walk')
-      expect(json.asset?.generator ?? '').toMatch(/UnityGLTF/i)
+      expect(json.asset?.generator ?? '').toMatch(/GLTFExporter/i)
 
       const group = createAnimalModel(kind, { body: '#ffffff' })
-      expect(group.userData.pack).toBe('kenney-cube-pets')
+      expect(group.userData.pack).toBe('cartoon-cub')
       expect(group.getObjectByName(`animal-${kind}`)).toBeTruthy()
-      expect(group.getObjectByName('iris-left')).toBeFalsy()
+      expect(group.getObjectByName('eyeL')).toBeTruthy()
       const body = group.getObjectByName('body') as THREE.Mesh
+      expect(body.geometry).not.toBeInstanceOf(THREE.BoxGeometry)
       expect(body.geometry).not.toBeInstanceOf(THREE.CapsuleGeometry)
-      expect(body.geometry).not.toBeInstanceOf(THREE.SphereGeometry)
       const mat = body.material as THREE.MeshLambertMaterial
-      expect(mat.map).toBeTruthy()
       expect(mat.transparent).toBe(false)
+      expect(mat.color.getHexString()).not.toBe('ffffff')
     }
+    const lion = createAnimalModel('lion', { body: '#ffffff' })
+    expect(lion.getObjectByName('mane')).toBeTruthy()
+    const deer = createAnimalModel('deer', { body: '#ffffff' })
+    expect(deer.getObjectByName('antler-left')).toBeTruthy()
   })
 
-  it('plays the Kenney walk clip on the lion', async () => {
+  it('plays the walk clip on the lion', async () => {
     await loadShipped()
     const lion = createAnimalModel('lion', { body: '#ffffff' })
     expect(playAnimalClip(lion, 'walk', 0.016)).toBe(true)
     expect((lion.userData.activeClip as THREE.AnimationAction).getClip().name).toBe('walk')
   })
 
-  it('kid coloring tints the Kenney coat and keeps it opaque', async () => {
+  it('kid coloring tints the cub coat and keeps eyes authored', async () => {
     await loadShipped()
     const lion = createAnimalModel('lion', { body: '#e24b4b' })
     const body = lion.getObjectByName('body') as THREE.Mesh
     const mat = body.material as THREE.MeshLambertMaterial
     expect(mat.color.getHexString()).toBe('e24b4b')
-    expect(mat.map).toBeTruthy()
     expect(mat.opacity).toBe(1)
+    const iris = lion.getObjectByName('irisL') as THREE.Mesh
+    expect((iris.material as THREE.MeshLambertMaterial).color.getHexString()).not.toBe('e24b4b')
   })
 
   it('kid paintboard stripes become the body map, not a single averaged tint', async () => {

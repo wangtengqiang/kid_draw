@@ -1,5 +1,5 @@
 /**
- * 世界观展：把孩子的颜色画成 Kenney 方块宠物（正脸）。
+ * 世界观展：把孩子的颜色画在卡通幼崽正面快照上。
  * 不是叠椭圆雪人，也不是兔子耳朵鹿。网页 3D 在 web/src/world-exhibition/models.ts。
  */
 const { DEFAULTS } = require('../types.js')

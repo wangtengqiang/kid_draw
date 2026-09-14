@@ -1,5 +1,5 @@
 /**
- * 同一套 Kenney / Gobkit glTF 的正面快照。
+ * 同一套卡通幼崽 / Gobkit glTF 的正面快照。
  * 选动物卡片、画廊缩略图、小游戏 2D 都用这里，避免再画椭圆。
  * 运行时仍是 Three.js GLTFLoader；不打阴影。
  */

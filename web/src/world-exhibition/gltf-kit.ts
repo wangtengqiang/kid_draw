@@ -1,6 +1,6 @@
 /**
- * Museum/LED stack: premade Kenney/Gobkit glTF + kid coat tint on the pack atlas.
- * GLTFLoader + AnimationMixer. No CapsuleGeometry bodies, no fox-as-lion.
+ * Museum/LED stack: authored cartoon cubs (lion/deer/tiger) + Kenney fish + Gobkit marine.
+ * GLTFLoader + AnimationMixer. Kid paintboard stays the coat UV.
  */
 import * as THREE from 'three'
 import { AnimationUtils } from 'three'
@@ -195,7 +195,17 @@ function paintMesh(obj: THREE.Mesh, bodyTint: string): void {
   const keep = keepFaceName(label) || keepFaceName(matName)
   const next = srcs.map((src) => {
     const map = 'map' in src && src.map instanceof THREE.Texture ? src.map : null
-    const color = keep ? new THREE.Color('#ffffff') : new THREE.Color(bodyTint)
+    const authored = 'color' in src && src.color ? (src.color as THREE.Color).clone() : new THREE.Color('#ffffff')
+    const tint = new THREE.Color(bodyTint)
+    const color = keep
+      ? map
+        ? new THREE.Color('#ffffff')
+        : authored
+      : map
+        ? tint
+        : bodyTint === '#ffffff' || bodyTint === '#fffdf7'
+          ? authored
+          : tint
     return opaqueLambert(src, map, color)
   })
   obj.material = next.length === 1 ? next[0]! : next
@@ -208,7 +218,8 @@ function paintMesh(obj: THREE.Mesh, bodyTint: string): void {
 }
 
 function packOf(animal: AnimalId): string {
-  if (animal === 'lion' || animal === 'deer' || animal === 'tiger' || animal === 'fish') return 'kenney-cube-pets'
+  if (animal === 'lion' || animal === 'deer' || animal === 'tiger') return 'cartoon-cub'
+  if (animal === 'fish') return 'kenney-cube-pets'
   return 'gobkit'
 }
 

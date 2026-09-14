@@ -46,7 +46,7 @@ npm run dev
 **屏上涂色（网页预览）**
 
 1. 打开首页，点 **开始画画**。不用扫码、不用带 `?join=`。
-2. 选陆地上的小鹿 / 老虎 / 狮子，或海里的小鱼 / 海龟 / 海豚（卡片是 Kenney 3D 正面）→ **自由蜡笔**涂色（粗细 + 颜色，纸上随便涂条纹）→ **送进世界**。线稿只是样子，不用点满色块。你画的道道会原样出现在立体身上。送到后点 **去看大世界** 进主机 3D。
+2. 选陆地上的小鹿 / 老虎 / 狮子，或海里的小鱼 / 海龟 / 海豚 → **自由蜡笔**涂色（粗细 + 颜色，纸上随便涂条纹）→ **送进世界**。线稿只是样子，不用点满色块。你画的道道会原样出现在立体身上。送到后点 **去看大世界** 进主机 3D。
 3. 涂色页有大按钮 **重选动物**、**保存草稿**（最多 10 张）和 **我的草稿**。格子满了会让你点一张旧的换掉，不用输房号。首页也可进「我的草稿」。
 4. 真机 / 网页扫码：首页点 **扫码进入**。有摄像头就扫主机二维码；云桌面开不了摄像头时，点「选一张二维码图片」（可先在主机点「下载二维码」）。有 `?join=` 时仍进老师的房间。
 
@@ -54,12 +54,13 @@ npm run dev
 
 点 **打开世界**。大森林能看出远近：高树干、层层树冠、弯岸大海，小路会伸进林子。捏合 / 滚轮可以拉近看动物、拉远看深处。侧栏可换 **森林 / 雪原 / 海底**。陆地动物会自己走路、喝水、休息、坐下（错开节拍，不会一起摆同一个姿势）；海洋动物一直在湾里游，不会走上小路。
 
-**3D 动物**（仅网页）是下载的 **Kenney Cube Pets** glTF，狮 / 鹿 / 虎是真物种、画好的卡通脸、文件里有 `walk`，不是狐狸冒充狮子、也不是狼冒充老虎：
+**3D 动物**（仅网页）陆地狮 / 鹿 / 虎是仓库里原创的圆滚卡通幼崽 glTF（按小朋友的狮子画风扩出来：大头、蓬松鬃、大眼睛，会走路）。不是 Kenney 方块、不是狐狸冒充狮子。海里仍是 Kenney 小鱼 + Gobkit 鲸/海豹：
 
-- 狮 / 鹿 / 虎 / 鱼 — [Kenney Cube Pets 2.0](https://kenney.nl/assets/cube-pets)（[CC0](https://creativecommons.org/publicdomain/zero/1.0/)）。zip：https://kenney.nl/media/pages/assets/cube-pets/44e58e945f-1774520254/kenney_cube-pets_1.0.zip
+- 狮 / 鹿 / 虎 — 本仓库 `web/scripts/author-cartoon-cubs.mjs` 写出的卡通幼崽（`walk` / `idle` 在文件里）
+- 鱼 — [Kenney Cube Pets 2.0](https://kenney.nl/assets/cube-pets)（[CC0](https://creativecommons.org/publicdomain/zero/1.0/)）
 - 海豚 / 海龟 — [Gobkit](https://gobkit.com/api/free) Whale / Seal（CC0）。
 
-孩子在画板上画的条纹会**原样**投影到 3D 皮毛上（画纸像素 = 涂层纹素），不拉直、不按色块平均。识别只用来判断是哪只动物。免费包里没有更圆、又是真虎、又能免登录下载的 glTF；取舍见 [`docs/industry-animal-pipeline.md`](docs/industry-animal-pipeline.md)。不要把千图网 PNG 当模型。
+孩子在画板上画的条纹会**原样**投影到 3D 皮毛上（画纸像素 = 涂层纹素），不拉直、不按色块平均。识别只用来判断是哪只动物。取舍见 [`docs/industry-animal-pipeline.md`](docs/industry-animal-pipeline.md)。不要把千图网 PNG 当模型或贴图。
 
 **纸上涂色**
 
