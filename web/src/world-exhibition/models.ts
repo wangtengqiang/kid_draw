@@ -197,7 +197,7 @@ function deer(painted: Record<string, string>, coat: THREE.Texture): THREE.Group
   })
   addBody(g, part(bodyGeo, 'body', a, painted, coat))
   const cheek = mesh(new THREE.SphereGeometry(0.14, 16, 14), colorOf(a, 'head', painted))
-  cheek.position.set(1.06, 1.32, 0)
+  cheek.position.set(1.14, 1.34, 0)
   cheek.scale.set(1.2, 1.05, 1.15)
   cheek.userData.region = 'head'
   g.add(cheek)
@@ -220,7 +220,7 @@ function deer(painted: Record<string, string>, coat: THREE.Texture): THREE.Group
     { name: 'legBL', x:  -0.36, z: 0.26, hipY: 0.72, radius: 0.06, foot: 'hoof' },
     { name: 'legBR', x: -0.36, z: -0.26, hipY: 0.72, radius: 0.06, foot: 'hoof' },
   ])
-  cuteFace(g, 1.14, 1.34, 0.12, 1.08)
+  cuteFace(g, 1.18, 1.36, 0.12, 1.08)
   g.userData.legs = legs
   return g
 }
@@ -267,7 +267,7 @@ function tiger(painted: Record<string, string>, coat: THREE.Texture): THREE.Grou
     { name: 'legBL', x: -0.44, z: 0.34, hipY: 0.66, radius: 0.06, foot: 'paw' },
     { name: 'legBR', x: -0.44, z: -0.34, hipY: 0.66, radius: 0.06, foot: 'paw' },
   ])
-  cuteFace(g, 1.08, 0.92, 0.2, 1.12)
+  cuteFace(g, 1.12, 0.98, 0.22, 1.15)
   g.userData.legs = legs
   return g
 }
