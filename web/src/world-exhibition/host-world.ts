@@ -96,7 +96,7 @@ export class HostWorld {
         id: item.id,
         animalId: item.animalId,
         group,
-        angle: (i / Math.max(list.length, 1)) * Math.PI * 2 + Math.random(),
+        angle: Math.PI / 2 + i * 0.85,
         radius: 3.2 + (i % 3) * 0.7,
         speed: 0.18 + Math.random() * 0.12,
         emote: null,

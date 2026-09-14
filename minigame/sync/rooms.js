@@ -51,12 +51,24 @@ function mergeRoom(disk, incoming) {
 
 function saveRooms(rooms) {
   if (!store()) return
-  const disk = loadRooms()
-  const merged = Object.assign({}, disk)
-  Object.keys(rooms).forEach((id) => {
-    merged[id] = disk[id] ? mergeRoom(disk[id], rooms[id]) : normalizeRoom(rooms[id])
-  })
-  wx.setStorageSync(LOCAL_ROOMS_KEY, JSON.stringify(merged))
+  for (var attempt = 0; attempt < 6; attempt++) {
+    var raw = wx.getStorageSync(LOCAL_ROOMS_KEY) || ''
+    var disk = {}
+    try {
+      disk = raw ? JSON.parse(raw) : {}
+    } catch (e) {
+      disk = {}
+    }
+    var merged = Object.assign({}, disk)
+    Object.keys(rooms).forEach(function (id) {
+      merged[id] = disk[id] ? mergeRoom(disk[id], rooms[id]) : normalizeRoom(rooms[id])
+    })
+    var next = JSON.stringify(merged)
+    var now = wx.getStorageSync(LOCAL_ROOMS_KEY) || ''
+    if (now !== raw) continue
+    wx.setStorageSync(LOCAL_ROOMS_KEY, next)
+    return
+  }
 }
 
 function creatorId() {

@@ -18,13 +18,24 @@ function loadRooms(): Record<string, RoomState> {
 }
 
 function saveRooms(rooms: Record<string, RoomState>): void {
-  const disk = loadRooms()
-  const merged: Record<string, RoomState> = { ...disk }
-  for (const [id, room] of Object.entries(rooms)) {
-    merged[id] = disk[id] ? mergeRoom(disk[id], room) : normalizeRoom(room)
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const raw = localStorage.getItem(LOCAL_ROOMS_KEY)
+    let disk: Record<string, RoomState> = {}
+    try {
+      disk = JSON.parse(raw || '{}') as Record<string, RoomState>
+    } catch {
+      disk = {}
+    }
+    const merged: Record<string, RoomState> = { ...disk }
+    for (const [id, room] of Object.entries(rooms)) {
+      merged[id] = disk[id] ? mergeRoom(disk[id], room) : normalizeRoom(room)
+    }
+    const next = JSON.stringify(merged)
+    if (localStorage.getItem(LOCAL_ROOMS_KEY) !== raw) continue
+    localStorage.setItem(LOCAL_ROOMS_KEY, next)
+    channel?.postMessage({ kind: 'rooms' })
+    return
   }
-  localStorage.setItem(LOCAL_ROOMS_KEY, JSON.stringify(merged))
-  channel?.postMessage({ kind: 'rooms' })
 }
 
 /** 测试与调试用：走同一套合并写入。 */
