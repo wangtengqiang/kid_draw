@@ -199,9 +199,13 @@ function whenPaintReady(source: CoatSource, use: (img: HTMLCanvasElement | HTMLI
 }
 
 function multiplyCutoutCoat(root: THREE.Group, source: CoatSource): boolean {
-  const sprite = root.userData.spriteMap as THREE.Texture | undefined
   const body = root.getObjectByName('body') as THREE.Mesh | undefined
-  if (!sprite || !body || !(body.material instanceof THREE.MeshLambertMaterial)) return false
+  if (!body || !(body.material instanceof THREE.MeshLambertMaterial)) return false
+  const sprite =
+    (root.userData.spriteMap as THREE.Texture | undefined) ||
+    body.material.map ||
+    undefined
+  if (!sprite?.image) return false
   const art = sprite.image as { width?: number; height?: number; naturalWidth?: number; naturalHeight?: number } | undefined
   const w = art?.width || art?.naturalWidth || 0
   const h = art?.height || art?.naturalHeight || 0
@@ -216,7 +220,12 @@ function multiplyCutoutCoat(root: THREE.Group, source: CoatSource): boolean {
   } catch {
     return false
   }
-  const base = ctx.getImageData(0, 0, w, h)
+  let base: ImageData
+  try {
+    base = ctx.getImageData(0, 0, w, h)
+  } catch {
+    return false
+  }
   const paint = paintImage(source)
   if (!paint) return false
   ctx.save()
@@ -229,7 +238,12 @@ function multiplyCutoutCoat(root: THREE.Group, source: CoatSource): boolean {
   }
   ctx.restore()
   ctx.globalCompositeOperation = 'source-over'
-  const mixed = ctx.getImageData(0, 0, w, h)
+  let mixed: ImageData
+  try {
+    mixed = ctx.getImageData(0, 0, w, h)
+  } catch {
+    return false
+  }
   for (let i = 0; i < base.data.length; i += 4) {
     mixed.data[i + 3] = base.data[i + 3]!
     if (keepArtPixel(base.data[i]!, base.data[i + 1]!, base.data[i + 2]!)) {

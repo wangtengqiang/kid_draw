@@ -260,6 +260,8 @@ export function instanceAnimal(animal: AnimalId, painted: Record<string, string>
   if (!tpl) throw new Error(`模型未加载：${animal}`)
   const cloned = tpl.skinned ? SkeletonUtils.clone(tpl.scene) : tpl.scene.clone(true)
   const inner = cloned as THREE.Group
+  const spriteMap = tpl.scene.userData.spriteMap as THREE.Texture | undefined
+  if (spriteMap) inner.userData.spriteMap = spriteMap
   const bodyTint = painted.body || painted.shell || '#ffffff'
   inner.traverse((obj) => {
     if (obj instanceof THREE.Mesh) paintMesh(obj, bodyTint)
