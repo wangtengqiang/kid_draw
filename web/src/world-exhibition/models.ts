@@ -243,12 +243,12 @@ function deer(painted: Record<string, string>, coat: THREE.Texture): THREE.Group
   g.add(ball(GEO.fluffy, 'tail', a, painted, -0.5, 0.78, 0, 0.12, 0.16, 0.1))
 
   const antlers: [readonly [number, number, number], readonly [number, number, number], number, string][] = [
-    [[0.58, 1.26, 0.1], [0.46, 1.72, 0.14], 0.038, 'antlerL'],
-    [[0.5, 1.5, 0.12], [0.3, 1.7, 0.18], 0.03, 'antlerL'],
-    [[0.48, 1.58, 0.12], [0.62, 1.82, 0.1], 0.028, 'antlerL'],
-    [[0.58, 1.26, -0.1], [0.5, 1.74, -0.14], 0.038, 'antlerR'],
-    [[0.52, 1.52, -0.12], [0.68, 1.84, -0.1], 0.03, 'antlerR'],
-    [[0.5, 1.56, -0.12], [0.34, 1.76, -0.18], 0.028, 'antlerR'],
+    [[0.58, 1.26, 0.1], [0.46, 1.72, 0.14], 0.05, 'antlerL'],
+    [[0.5, 1.5, 0.12], [0.28, 1.72, 0.2], 0.04, 'antlerL'],
+    [[0.48, 1.58, 0.12], [0.64, 1.86, 0.1], 0.038, 'antlerL'],
+    [[0.58, 1.26, -0.1], [0.5, 1.74, -0.14], 0.05, 'antlerR'],
+    [[0.52, 1.52, -0.12], [0.7, 1.86, -0.1], 0.04, 'antlerR'],
+    [[0.5, 1.56, -0.12], [0.32, 1.78, -0.2], 0.038, 'antlerR'],
   ]
   for (const [from, to, r, region] of antlers) g.add(stick(from, to, r, region, a, painted))
 
@@ -282,7 +282,7 @@ function tiger(painted: Record<string, string>, coat: THREE.Texture): THREE.Grou
   const a: AnimalId = 'tiger'
   g.add(ball(GEO.sphere, 'body', a, painted, 0.04, 0.56, 0, 0.62, 0.38, 0.46, coat))
   g.add(ball(GEO.sphere, 'belly', a, painted, 0.08, 0.4, 0, 0.44, 0.2, 0.34))
-  g.add(ball(GEO.sphere, 'head', a, painted, 0.72, 0.94, 0, 0.4, 0.38, 0.38, coat))
+  g.add(ball(GEO.sphere, 'head', a, painted, 0.72, 0.94, 0, 0.4, 0.38, 0.38))
   g.add(ball(GEO.sphere, 'muzzle', a, painted, 1.06, 0.8, 0, 0.22, 0.16, 0.22))
 
   const earL = ball(GEO.fluffy, 'earL', a, painted, 0.58, 1.26, 0.2, 0.1, 0.12, 0.06)
@@ -311,15 +311,17 @@ function tiger(painted: Record<string, string>, coat: THREE.Texture): THREE.Grou
       g.add(band)
     }
   }
-  for (const [x, z] of [
-    [0.78, 0.28],
-    [0.62, 0.32],
-    [0.78, -0.28],
-    [0.62, -0.32],
+  for (const [x, y, z, sx, sy] of [
+    [0.78, 0.98, 0.28, 0.035, 0.12],
+    [0.62, 0.98, 0.32, 0.035, 0.12],
+    [0.78, 0.98, -0.28, 0.035, 0.12],
+    [0.62, 0.98, -0.32, 0.035, 0.12],
+    [0.86, 1.12, 0.08, 0.03, 0.1],
+    [0.86, 1.12, -0.08, 0.03, 0.1],
   ] as const) {
     const mark = mesh(GEO.fluffy, stripe)
-    mark.position.set(x, 0.98, z)
-    mark.scale.set(0.035, 0.12, 0.04)
+    mark.position.set(x, y, z)
+    mark.scale.set(sx, sy, 0.04)
     g.add(mark)
   }
 
