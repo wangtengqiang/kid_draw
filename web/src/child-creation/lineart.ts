@@ -1,8 +1,36 @@
 /**
  * 儿童创作：官方线稿 + 填色分区。不是主机 3D 世界。
+ * 侧视真动物轮廓，和 3D 身子同一套点，卡片里留边，不把头角裁掉。
  */
 import type { AnimalId } from '../types'
 import { ANIMAL_META } from '../types'
+import {
+  DEER_ANTLER_L,
+  DEER_ANTLER_R,
+  DEER_BELLY,
+  DEER_EAR_L,
+  DEER_EAR_R,
+  DEER_HEAD,
+  DEER_NECK,
+  DEER_TAIL,
+  DEER_TORSO,
+  FRAME,
+  LION_BELLY,
+  LION_BODY,
+  LION_EAR_L,
+  LION_EAR_R,
+  LION_HEAD,
+  LION_MANE,
+  LION_MUZZLE,
+  LION_TUFT,
+  TIGER_BELLY,
+  TIGER_BODY,
+  TIGER_EAR_L,
+  TIGER_EAR_R,
+  TIGER_HEAD,
+  TIGER_MUZZLE,
+  type Ring,
+} from '../silhouettes'
 
 type Ctx = CanvasRenderingContext2D
 
@@ -83,7 +111,7 @@ function fillRegion(ctx: Ctx, id: number, draw: () => void): void {
   ctx.restore()
 }
 
-function strokeLine(ctx: Ctx, draw: () => void, width = 7): void {
+function strokeLine(ctx: Ctx, draw: () => void, width = 0.03): void {
   ctx.save()
   ctx.strokeStyle = '#1a120c'
   ctx.lineWidth = width
@@ -94,35 +122,85 @@ function strokeLine(ctx: Ctx, draw: () => void, width = 7): void {
   ctx.restore()
 }
 
+function poly(ctx: Ctx, pts: Ring): void {
+  if (!pts.length) return
+  ctx.beginPath()
+  ctx.moveTo(pts[0]![0], pts[0]![1])
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i]![0], pts[i]![1])
+  ctx.closePath()
+}
+
+function fillPoly(ctx: Ctx, id: number, pts: Ring): void {
+  fillRegion(ctx, id, () => poly(ctx, pts))
+}
+
+function strokePoly(ctx: Ctx, pts: Ring, width = 0.03): void {
+  strokeLine(ctx, () => poly(ctx, pts), width)
+}
+
+function fillStroke(ctx: Ctx, id: number, draw: () => void, width: number): void {
+  ctx.save()
+  ctx.strokeStyle = regionIdColor(id)
+  ctx.lineWidth = width
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+  draw()
+  ctx.stroke()
+  ctx.restore()
+}
+
+function path(ctx: Ctx, pts: Ring): void {
+  if (!pts.length) return
+  ctx.beginPath()
+  ctx.moveTo(pts[0]![0], pts[0]![1])
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i]![0], pts[i]![1])
+}
+
 function face(ctx: Ctx, hx: number, hy: number, s: number): void {
   ctx.save()
   ctx.fillStyle = '#1a120c'
-  ellipse(ctx, hx - s * 0.22, hy - s * 0.05, s * 0.07, s * 0.09)
+  ellipse(ctx, hx - s * 0.22, hy + s * 0.04, s * 0.07, s * 0.09)
   ctx.fill()
-  ellipse(ctx, hx + s * 0.22, hy - s * 0.05, s * 0.07, s * 0.09)
+  ellipse(ctx, hx + s * 0.22, hy + s * 0.04, s * 0.07, s * 0.09)
   ctx.fill()
   ctx.beginPath()
-  ctx.arc(hx, hy + s * 0.16, s * 0.07, 0.15 * Math.PI, 0.85 * Math.PI)
+  ctx.arc(hx, hy - s * 0.12, s * 0.07, 1.15 * Math.PI, 1.85 * Math.PI)
   ctx.strokeStyle = '#1a120c'
-  ctx.lineWidth = 5
+  ctx.lineWidth = 0.02
   ctx.stroke()
+  ctx.restore()
+}
+
+function animalFrame(ctx: Ctx, w: number, h: number, animal: AnimalId, fn: () => void): void {
+  const b = FRAME[animal]
+  const pad = Math.min(w, h) * 0.08
+  const scale = Math.min((w - pad * 2) / (b.maxX - b.minX), (h - pad * 2) / (b.maxY - b.minY))
+  const mx = (b.minX + b.maxX) / 2
+  const my = (b.minY + b.maxY) / 2
+  ctx.save()
+  ctx.translate(w / 2, h / 2)
+  ctx.scale(scale, -scale)
+  ctx.translate(-mx, -my)
+  fn()
   ctx.restore()
 }
 
 export function drawRegions(animal: AnimalId, ctx: Ctx, w: number, h: number): void {
   ctx.clearRect(0, 0, w, h)
-  const cx = w / 2
-  if (animal === 'deer') drawDeerRegions(ctx, cx, h)
-  if (animal === 'tiger') drawTigerRegions(ctx, cx, h)
-  if (animal === 'lion') drawLionRegions(ctx, cx, h)
+  animalFrame(ctx, w, h, animal, () => {
+    if (animal === 'deer') drawDeerRegions(ctx)
+    if (animal === 'tiger') drawTigerRegions(ctx)
+    if (animal === 'lion') drawLionRegions(ctx)
+  })
 }
 
 export function drawLineArt(animal: AnimalId, ctx: Ctx, w: number, h: number): void {
   ctx.clearRect(0, 0, w, h)
-  const cx = w / 2
-  if (animal === 'deer') drawDeerLines(ctx, cx, h)
-  if (animal === 'tiger') drawTigerLines(ctx, cx, h)
-  if (animal === 'lion') drawLionLines(ctx, cx, h)
+  animalFrame(ctx, w, h, animal, () => {
+    if (animal === 'deer') drawDeerLines(ctx)
+    if (animal === 'tiger') drawTigerLines(ctx)
+    if (animal === 'lion') drawLionLines(ctx)
+  })
 }
 
 export function drawPreview(
@@ -162,202 +240,145 @@ export function drawPreview(
 
 function hexToRgb(hex: string): [number, number, number] {
   const h = hex.replace('#', '')
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]
+}
+
+function deerLegs(): { id: number; pts: Ring }[] {
   return [
-    parseInt(h.slice(0, 2), 16),
-    parseInt(h.slice(2, 4), 16),
-    parseInt(h.slice(4, 6), 16),
+    { id: 14, pts: [[-0.46, 0.62], [-0.5, 0.02]] },
+    { id: 15, pts: [[-0.32, 0.62], [-0.26, 0.02]] },
+    { id: 12, pts: [[0.4, 0.56], [0.48, 0.02]] },
+    { id: 13, pts: [[0.52, 0.56], [0.5, 0.02]] },
   ]
 }
 
-function drawDeerRegions(ctx: Ctx, cx: number, h: number): void {
-  const y = h * 0.56
-  fillRegion(ctx, 14, () => ellipse(ctx, cx - 78, y + 100, 11, 60))
-  fillRegion(ctx, 15, () => ellipse(ctx, cx - 48, y + 108, 11, 54))
-  fillRegion(ctx, 12, () => ellipse(ctx, cx + 42, y + 104, 10, 58))
-  fillRegion(ctx, 13, () => ellipse(ctx, cx + 70, y + 94, 10, 64))
-  fillRegion(ctx, 16, () => ellipse(ctx, cx - 118, y - 6, 18, 12))
-  fillRegion(ctx, 7, () => ellipse(ctx, cx - 8, y + 10, 122, 54))
-  fillRegion(ctx, 8, () => ellipse(ctx, cx + 6, y + 32, 72, 30))
-  fillRegion(ctx, 9, () => ellipse(ctx, cx - 36, y - 2, 11, 9))
-  fillRegion(ctx, 10, () => ellipse(ctx, cx + 8, y - 10, 10, 8))
-  fillRegion(ctx, 11, () => ellipse(ctx, cx + 40, y + 8, 9, 7))
-  ctx.save()
-  ctx.translate(cx + 78, y - 36)
-  ctx.rotate(-0.75)
-  fillRegion(ctx, 6, () => ellipse(ctx, 0, 0, 20, 52))
-  ctx.restore()
-  fillRegion(ctx, 3, () => ellipse(ctx, cx + 92, y - 124, 12, 24))
-  fillRegion(ctx, 4, () => ellipse(ctx, cx + 114, y - 128, 12, 22))
-  ctx.save()
-  ctx.translate(cx + 118, y - 88)
-  ctx.rotate(-0.28)
-  fillRegion(ctx, 5, () => ellipse(ctx, 0, 0, 46, 28))
-  ctx.restore()
-  ctx.save()
-  ctx.translate(cx + 96, y - 132)
-  fillRegion(ctx, 1, () => {
-    ellipse(ctx, -6, -28, 7, 36)
-    ellipse(ctx, -26, -44, 6, 20)
-    ellipse(ctx, 6, -52, 5, 18)
-  })
-  ctx.restore()
-  ctx.save()
-  ctx.translate(cx + 116, y - 134)
-  fillRegion(ctx, 2, () => {
-    ellipse(ctx, 10, -30, 7, 38)
-    ellipse(ctx, 28, -48, 6, 20)
-    ellipse(ctx, 6, -54, 5, 16)
-  })
-  ctx.restore()
+function drawDeerRegions(ctx: Ctx): void {
+  for (const leg of deerLegs()) {
+    fillStroke(ctx, leg.id, () => path(ctx, leg.pts), 0.07)
+  }
+  fillPoly(ctx, 16, DEER_TAIL)
+  fillPoly(ctx, 7, DEER_TORSO)
+  fillPoly(ctx, 8, DEER_BELLY)
+  fillRegion(ctx, 9, () => ellipse(ctx, 0.05, 0.95, 0.06, 0.045))
+  fillRegion(ctx, 10, () => ellipse(ctx, 0.28, 1.02, 0.05, 0.04))
+  fillRegion(ctx, 11, () => ellipse(ctx, -0.12, 1.08, 0.05, 0.038))
+  fillPoly(ctx, 6, DEER_NECK)
+  fillPoly(ctx, 5, DEER_HEAD)
+  fillPoly(ctx, 3, DEER_EAR_L)
+  fillPoly(ctx, 4, DEER_EAR_R)
+  for (const ring of DEER_ANTLER_L) fillPoly(ctx, 1, ring)
+  for (const ring of DEER_ANTLER_R) fillPoly(ctx, 2, ring)
 }
 
-function drawDeerLines(ctx: Ctx, cx: number, h: number): void {
-  const y = h * 0.56
-  const line = (d: () => void) => strokeLine(ctx, d, 7)
-  line(() => ellipse(ctx, cx - 78, y + 100, 11, 60))
-  line(() => ellipse(ctx, cx - 48, y + 108, 11, 54))
-  line(() => ellipse(ctx, cx + 42, y + 104, 10, 58))
-  line(() => ellipse(ctx, cx + 70, y + 94, 10, 64))
-  line(() => ellipse(ctx, cx - 118, y - 6, 18, 12))
-  line(() => ellipse(ctx, cx - 8, y + 10, 122, 54))
-  line(() => ellipse(ctx, cx + 6, y + 32, 72, 30))
-  ctx.save()
-  ctx.translate(cx + 78, y - 36)
-  ctx.rotate(-0.75)
-  line(() => ellipse(ctx, 0, 0, 20, 52))
-  ctx.restore()
-  line(() => ellipse(ctx, cx + 92, y - 124, 12, 24))
-  line(() => ellipse(ctx, cx + 114, y - 128, 12, 22))
-  ctx.save()
-  ctx.translate(cx + 118, y - 88)
-  ctx.rotate(-0.28)
-  line(() => ellipse(ctx, 0, 0, 46, 28))
-  ctx.restore()
-  ctx.save()
-  ctx.translate(cx + 96, y - 132)
-  line(() => {
-    ellipse(ctx, -6, -28, 7, 36)
-    ellipse(ctx, -26, -44, 6, 20)
-    ellipse(ctx, 6, -52, 5, 18)
-  })
-  ctx.restore()
-  ctx.save()
-  ctx.translate(cx + 116, y - 134)
-  line(() => {
-    ellipse(ctx, 10, -30, 7, 38)
-    ellipse(ctx, 28, -48, 6, 20)
-    ellipse(ctx, 6, -54, 5, 16)
-  })
-  ctx.restore()
-  face(ctx, cx + 122, y - 92, 36)
+function drawDeerLines(ctx: Ctx): void {
+  const line = (d: () => void, w = 0.03) => strokeLine(ctx, d, w)
+  for (const leg of deerLegs()) line(() => path(ctx, leg.pts), 0.055)
+  strokePoly(ctx, DEER_TAIL)
+  strokePoly(ctx, DEER_TORSO, 0.032)
+  strokePoly(ctx, DEER_BELLY, 0.022)
+  line(() => ellipse(ctx, 0.05, 0.95, 0.06, 0.045), 0.02)
+  line(() => ellipse(ctx, 0.28, 1.02, 0.05, 0.04), 0.02)
+  line(() => ellipse(ctx, -0.12, 1.08, 0.05, 0.038), 0.02)
+  strokePoly(ctx, DEER_NECK)
+  strokePoly(ctx, DEER_HEAD)
+  strokePoly(ctx, DEER_EAR_L)
+  strokePoly(ctx, DEER_EAR_R)
+  for (const ring of DEER_ANTLER_L) strokePoly(ctx, ring, 0.026)
+  for (const ring of DEER_ANTLER_R) strokePoly(ctx, ring, 0.026)
+  face(ctx, 1.02, 1.36, 0.16)
 }
 
-function drawTigerRegions(ctx: Ctx, cx: number, h: number): void {
-  const y = h * 0.58
-  ctx.save()
-  ctx.translate(cx - 120, y + 8)
-  ctx.rotate(-0.9)
-  fillRegion(ctx, 13, () => ellipse(ctx, 0, 0, 12, 72))
-  ctx.restore()
-  fillRegion(ctx, 11, () => ellipse(ctx, cx - 70, y + 100, 16, 52))
-  fillRegion(ctx, 12, () => ellipse(ctx, cx - 38, y + 108, 16, 48))
-  fillRegion(ctx, 9, () => ellipse(ctx, cx + 48, y + 102, 16, 54))
-  fillRegion(ctx, 10, () => ellipse(ctx, cx + 78, y + 94, 16, 58))
-  fillRegion(ctx, 7, () => ellipse(ctx, cx, y + 16, 130, 58))
-  fillRegion(ctx, 8, () => ellipse(ctx, cx + 10, y + 36, 78, 34))
-  fillRegion(ctx, 1, () => ellipse(ctx, cx + 108, y - 108, 18, 26))
-  fillRegion(ctx, 2, () => ellipse(ctx, cx + 138, y - 104, 18, 26))
-  fillRegion(ctx, 3, () => ellipse(ctx, cx + 108, y - 104, 10, 14))
-  fillRegion(ctx, 4, () => ellipse(ctx, cx + 138, y - 100, 10, 14))
-  fillRegion(ctx, 5, () => ellipse(ctx, cx + 122, y - 70, 58, 52))
-  fillRegion(ctx, 6, () => ellipse(ctx, cx + 148, y - 52, 32, 22))
+function catLegs(backShift = 0): { id: number; pts: Ring }[] {
+  return [
+    { id: 11, pts: [[-0.52 + backShift, 0.48], [-0.56 + backShift, 0.02]] },
+    { id: 12, pts: [[-0.36 + backShift, 0.48], [-0.3 + backShift, 0.02]] },
+    { id: 9, pts: [[0.46, 0.44], [0.52, 0.02]] },
+    { id: 10, pts: [[0.6, 0.44], [0.58, 0.02]] },
+  ]
 }
 
-function drawTigerLines(ctx: Ctx, cx: number, h: number): void {
-  const y = h * 0.58
-  const line = (d: () => void) => strokeLine(ctx, d, 7)
-  ctx.save()
-  ctx.translate(cx - 120, y + 8)
-  ctx.rotate(-0.9)
-  line(() => ellipse(ctx, 0, 0, 12, 72))
-  ctx.restore()
-  line(() => ellipse(ctx, cx - 70, y + 100, 16, 52))
-  line(() => ellipse(ctx, cx - 38, y + 108, 16, 48))
-  line(() => ellipse(ctx, cx + 48, y + 102, 16, 54))
-  line(() => ellipse(ctx, cx + 78, y + 94, 16, 58))
-  line(() => ellipse(ctx, cx, y + 16, 130, 58))
-  line(() => ellipse(ctx, cx + 10, y + 36, 78, 34))
-  line(() => ellipse(ctx, cx + 108, y - 108, 18, 26))
-  line(() => ellipse(ctx, cx + 138, y - 104, 18, 26))
-  line(() => ellipse(ctx, cx + 122, y - 70, 58, 52))
-  line(() => ellipse(ctx, cx + 148, y - 52, 32, 22))
-  face(ctx, cx + 128, y - 74, 44)
+function drawTigerRegions(ctx: Ctx): void {
+  fillStroke(ctx, 13, () => {
+    ctx.beginPath()
+    ctx.moveTo(-0.74, 0.72)
+    ctx.quadraticCurveTo(-1.05, 0.98, -1.26, 0.48)
+  }, 0.08)
+  for (const leg of catLegs()) fillStroke(ctx, leg.id, () => path(ctx, leg.pts), 0.1)
+  fillPoly(ctx, 7, TIGER_BODY)
+  fillPoly(ctx, 8, TIGER_BELLY)
+  fillPoly(ctx, 1, TIGER_EAR_L)
+  fillPoly(ctx, 2, TIGER_EAR_R)
+  fillRegion(ctx, 3, () => ellipse(ctx, 0.84, 1.18, 0.05, 0.06))
+  fillRegion(ctx, 4, () => ellipse(ctx, 1.0, 1.16, 0.05, 0.06))
+  fillPoly(ctx, 5, TIGER_HEAD)
+  fillPoly(ctx, 6, TIGER_MUZZLE)
+}
+
+function drawTigerLines(ctx: Ctx): void {
+  strokeLine(ctx, () => {
+    ctx.beginPath()
+    ctx.moveTo(-0.74, 0.72)
+    ctx.quadraticCurveTo(-1.05, 0.98, -1.26, 0.48)
+  }, 0.045)
+  for (const leg of catLegs()) strokeLine(ctx, () => path(ctx, leg.pts), 0.07)
+  strokePoly(ctx, TIGER_BODY, 0.032)
+  strokePoly(ctx, TIGER_BELLY, 0.022)
+  strokePoly(ctx, TIGER_EAR_L)
+  strokePoly(ctx, TIGER_EAR_R)
+  strokePoly(ctx, TIGER_HEAD)
+  strokePoly(ctx, TIGER_MUZZLE)
+  face(ctx, 1.0, 0.96, 0.22)
   ctx.save()
   ctx.strokeStyle = '#1a120c'
-  ctx.lineWidth = 6
+  ctx.lineWidth = 0.028
   ctx.lineCap = 'round'
-  for (const [x0, y0, x1, y1] of [
-    [cx - 40, y - 8, cx - 20, y + 18],
-    [cx - 8, y - 16, cx + 8, y + 20],
-    [cx + 24, y - 10, cx + 36, y + 16],
-    [cx + 52, y - 4, cx + 60, y + 18],
-  ]) {
+  for (const x of [-0.4, -0.18, 0.04, 0.26, 0.44]) {
     ctx.beginPath()
-    ctx.moveTo(x0, y0)
-    ctx.quadraticCurveTo((x0 + x1) / 2 + 8, (y0 + y1) / 2, x1, y1)
+    ctx.moveTo(x, 0.92)
+    ctx.quadraticCurveTo(x + 0.06, 0.7, x - 0.02, 0.52)
     ctx.stroke()
   }
   ctx.restore()
 }
 
-function drawLionRegions(ctx: Ctx, cx: number, h: number): void {
-  const y = h * 0.56
-  ctx.save()
-  ctx.translate(cx - 118, y + 24)
-  ctx.rotate(-0.7)
-  fillRegion(ctx, 12, () => ellipse(ctx, 0, 0, 12, 64))
-  ctx.restore()
-  fillRegion(ctx, 13, () => ellipse(ctx, cx - 148, y + 70, 22, 16))
-  fillRegion(ctx, 10, () => ellipse(ctx, cx - 64, y + 108, 16, 50))
-  fillRegion(ctx, 11, () => ellipse(ctx, cx - 32, y + 114, 16, 46))
-  fillRegion(ctx, 8, () => ellipse(ctx, cx + 36, y + 106, 16, 52))
-  fillRegion(ctx, 9, () => ellipse(ctx, cx + 64, y + 98, 16, 56))
-  fillRegion(ctx, 6, () => ellipse(ctx, cx - 8, y + 28, 108, 58))
-  fillRegion(ctx, 7, () => ellipse(ctx, cx, y + 46, 64, 32))
-  fillRegion(ctx, 1, () => {
-    ellipse(ctx, cx + 108, y - 78, 92, 88)
-    ellipse(ctx, cx + 70, y - 110, 36, 36)
-    ellipse(ctx, cx + 148, y - 108, 34, 34)
-    ellipse(ctx, cx + 108, y - 140, 40, 28)
-  })
-  fillRegion(ctx, 2, () => ellipse(ctx, cx + 88, y - 128, 14, 18))
-  fillRegion(ctx, 3, () => ellipse(ctx, cx + 126, y - 128, 14, 18))
-  fillRegion(ctx, 4, () => ellipse(ctx, cx + 108, y - 78, 48, 44))
-  fillRegion(ctx, 5, () => ellipse(ctx, cx + 128, y - 58, 28, 20))
+function lionLegs(): { id: number; pts: Ring }[] {
+  return [
+    { id: 10, pts: [[-0.48, 0.48], [-0.52, 0.02]] },
+    { id: 11, pts: [[-0.32, 0.48], [-0.26, 0.02]] },
+    { id: 8, pts: [[0.4, 0.46], [0.46, 0.02]] },
+    { id: 9, pts: [[0.54, 0.46], [0.52, 0.02]] },
+  ]
 }
 
-function drawLionLines(ctx: Ctx, cx: number, h: number): void {
-  const y = h * 0.56
-  const line = (d: () => void) => strokeLine(ctx, d, 7)
-  ctx.save()
-  ctx.translate(cx - 118, y + 24)
-  ctx.rotate(-0.7)
-  line(() => ellipse(ctx, 0, 0, 12, 64))
-  ctx.restore()
-  line(() => ellipse(ctx, cx - 148, y + 70, 22, 16))
-  line(() => ellipse(ctx, cx - 64, y + 108, 16, 50))
-  line(() => ellipse(ctx, cx - 32, y + 114, 16, 46))
-  line(() => ellipse(ctx, cx + 36, y + 106, 16, 52))
-  line(() => ellipse(ctx, cx + 64, y + 98, 16, 56))
-  line(() => ellipse(ctx, cx - 8, y + 28, 108, 58))
-  line(() => ellipse(ctx, cx, y + 46, 64, 32))
-  line(() => {
-    ellipse(ctx, cx + 108, y - 78, 92, 88)
-    ellipse(ctx, cx + 70, y - 110, 36, 36)
-    ellipse(ctx, cx + 148, y - 108, 34, 34)
-    ellipse(ctx, cx + 108, y - 140, 40, 28)
-  })
-  line(() => ellipse(ctx, cx + 108, y - 78, 48, 44))
-  line(() => ellipse(ctx, cx + 128, y - 58, 28, 20))
-  face(ctx, cx + 112, y - 82, 42)
+function drawLionRegions(ctx: Ctx): void {
+  fillStroke(ctx, 12, () => {
+    ctx.beginPath()
+    ctx.moveTo(-0.68, 0.72)
+    ctx.quadraticCurveTo(-0.98, 0.94, -1.16, 0.62)
+  }, 0.07)
+  fillPoly(ctx, 13, LION_TUFT)
+  for (const leg of lionLegs()) fillStroke(ctx, leg.id, () => path(ctx, leg.pts), 0.1)
+  fillPoly(ctx, 6, LION_BODY)
+  fillPoly(ctx, 7, LION_BELLY)
+  fillPoly(ctx, 1, LION_MANE)
+  fillPoly(ctx, 2, LION_EAR_L)
+  fillPoly(ctx, 3, LION_EAR_R)
+  fillPoly(ctx, 4, LION_HEAD)
+  fillPoly(ctx, 5, LION_MUZZLE)
+}
+
+function drawLionLines(ctx: Ctx): void {
+  strokeLine(ctx, () => {
+    ctx.beginPath()
+    ctx.moveTo(-0.68, 0.72)
+    ctx.quadraticCurveTo(-0.98, 0.94, -1.16, 0.62)
+  }, 0.04)
+  strokePoly(ctx, LION_TUFT)
+  for (const leg of lionLegs()) strokeLine(ctx, () => path(ctx, leg.pts), 0.07)
+  strokePoly(ctx, LION_BODY, 0.032)
+  strokePoly(ctx, LION_BELLY, 0.022)
+  strokePoly(ctx, LION_MANE, 0.034)
+  strokePoly(ctx, LION_HEAD)
+  strokePoly(ctx, LION_MUZZLE)
+  face(ctx, 0.94, 0.96, 0.2)
 }

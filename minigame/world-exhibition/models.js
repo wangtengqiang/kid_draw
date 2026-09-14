@@ -1,6 +1,6 @@
 /**
- * 世界观展：把已送出的分区色画成 2D 动物。
- * 不读涂色画布。网页 3D 低模在 web/src/world-exhibition/models.ts。
+ * 世界观展：把已送出的分区色画成侧视动物。
+ * 不读涂色画布。网页 3D 在 web/src/world-exhibition/models.ts。
  */
 const { DEFAULTS } = require('../types.js')
 
@@ -13,44 +13,73 @@ function colorsOf(animalId, painted) {
   return out
 }
 
+function poly(ctx, pts, fill, stroke) {
+  ctx.beginPath()
+  ctx.moveTo(pts[0][0], pts[0][1])
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1])
+  ctx.closePath()
+  ctx.fillStyle = fill
+  ctx.fill()
+  ctx.strokeStyle = stroke || '#1a120c'
+  ctx.lineWidth = 3
+  ctx.stroke()
+}
+
 function drawAnimal(ctx, animalId, painted, box) {
   const c = colorsOf(animalId, painted)
   const x = box.x + box.w / 2
-  const y = box.y + box.h * 0.55
-  const s = Math.min(box.w, box.h) * 0.42
-
-  function blob(name, bx, by, bw, bh) {
-    ctx.fillStyle = c[name] || '#e7d3b0'
-    ctx.beginPath()
-    ctx.ellipse(bx, by, bw / 2, bh / 2, 0, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.strokeStyle = '#1a120c'
-    ctx.lineWidth = 3
-    ctx.stroke()
-  }
+  const y = box.y + box.h * 0.62
+  const s = Math.min(box.w, box.h) * 0.38
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.scale(s, s)
 
   if (animalId === 'deer') {
-    blob('antler', x - s * 0.35, y - s * 1.15, s * 0.25, s * 0.7)
-    blob('antler', x + s * 0.35, y - s * 1.15, s * 0.25, s * 0.7)
-    blob('head', x, y - s * 0.7, s * 0.7, s * 0.55)
-    blob('body', x, y, s * 1.3, s * 0.9)
-    blob('belly', x, y + s * 0.1, s * 0.8, s * 0.5)
-    blob('leg', x - s * 0.35, y + s * 0.7, s * 0.22, s * 0.7)
-    blob('leg', x + s * 0.35, y + s * 0.7, s * 0.22, s * 0.7)
+    ctx.strokeStyle = '#1a120c'
+    ctx.lineWidth = 0.08
+    ctx.lineCap = 'round'
+    ;[
+      [-0.45, 0.05, -0.5, 0.7],
+      [-0.28, 0.05, -0.22, 0.7],
+      [0.35, 0.0, 0.42, 0.7],
+      [0.5, 0.0, 0.48, 0.7],
+    ].forEach((p) => {
+      ctx.beginPath()
+      ctx.moveTo(p[0], p[1])
+      ctx.lineTo(p[2], p[3])
+      ctx.stroke()
+    })
+    poly(ctx, [[-0.7, -0.05], [-0.55, -0.25], [-0.35, -0.2], [0.15, -0.28], [0.45, -0.15], [0.5, 0.05], [0.35, 0.2], [-0.4, 0.18]], c.body)
+    poly(ctx, [[0.35, -0.15], [0.55, -0.45], [0.72, -0.55], [0.62, -0.28], [0.42, -0.08]], c.head || c.body)
+    ctx.strokeStyle = c.antler || '#8b6914'
+    ctx.lineWidth = 0.07
+    ctx.beginPath()
+    ctx.moveTo(0.55, -0.5)
+    ctx.lineTo(0.48, -0.85)
+    ctx.moveTo(0.52, -0.65)
+    ctx.lineTo(0.35, -0.82)
+    ctx.stroke()
   } else if (animalId === 'tiger') {
-    blob('head', x, y - s * 0.65, s * 0.85, s * 0.7)
-    blob('body', x, y, s * 1.4, s * 0.85)
-    blob('belly', x, y + s * 0.05, s * 0.85, s * 0.45)
-    blob('leg', x - s * 0.4, y + s * 0.65, s * 0.28, s * 0.65)
-    blob('leg', x + s * 0.4, y + s * 0.65, s * 0.28, s * 0.65)
+    poly(ctx, [[-0.75, 0.05], [-0.55, -0.28], [0.35, -0.3], [0.55, -0.1], [0.5, 0.18], [-0.5, 0.2]], c.body)
+    poly(ctx, [[0.4, -0.15], [0.48, -0.48], [0.78, -0.42], [0.85, -0.18], [0.7, 0.02]], c.head || c.body)
+    ctx.strokeStyle = '#1a120c'
+    ctx.lineWidth = 0.05
+    ;[-0.4, -0.15, 0.1].forEach((sx) => {
+      ctx.beginPath()
+      ctx.moveTo(sx, -0.22)
+      ctx.lineTo(sx + 0.08, 0.12)
+      ctx.stroke()
+    })
   } else {
-    blob('mane', x, y - s * 0.55, s * 1.15, s * 0.95)
-    blob('head', x, y - s * 0.55, s * 0.7, s * 0.6)
-    blob('body', x, y + s * 0.1, s * 1.25, s * 0.85)
-    blob('belly', x, y + s * 0.15, s * 0.75, s * 0.45)
-    blob('leg', x - s * 0.35, y + s * 0.7, s * 0.26, s * 0.6)
-    blob('leg', x + s * 0.35, y + s * 0.7, s * 0.26, s * 0.6)
+    poly(ctx, [[-0.65, 0.08], [-0.45, -0.22], [0.3, -0.24], [0.5, 0.0], [0.4, 0.2], [-0.4, 0.22]], c.body)
+    ctx.beginPath()
+    ctx.arc(0.55, -0.28, 0.42, 0, Math.PI * 2)
+    ctx.fillStyle = c.mane || '#d4922a'
+    ctx.fill()
+    ctx.stroke()
+    poly(ctx, [[0.4, -0.18], [0.5, -0.42], [0.75, -0.38], [0.8, -0.15], [0.62, 0.0]], c.head || c.body)
   }
+  ctx.restore()
 }
 
 module.exports = { drawAnimal }

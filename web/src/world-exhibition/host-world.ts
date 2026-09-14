@@ -6,7 +6,7 @@ import * as THREE from 'three'
 import type { AnimalId, EmoteId, PlacedAnimal, ThemeId } from '../types'
 import { createAnimalModel, tickWalk } from './models'
 import { HOST_ORBIT, OrbitZoom } from './orbit-zoom'
-import { paintForestPanorama, paintGrassGround, paintTreeSprite } from './forest-art'
+import { paintBushSprite, paintForestPanorama, paintGrassGround, paintTreeSprite } from './forest-art'
 
 interface Actor {
   id: string
@@ -95,13 +95,13 @@ export class HostWorld {
     list.forEach((item, i) => {
       if (this.actors.has(item.id)) return
       const group = createAnimalModel(item.animalId, item.regionColors, item.thumb || undefined)
-      group.scale.setScalar(0.92)
+      group.scale.setScalar(1.05)
       const actor: Actor = {
         id: item.id,
         animalId: item.animalId,
         group,
         angle: Math.PI / 2 + i * 0.85,
-        radius: 3.2 + (i % 3) * 0.7,
+        radius: 3.35 + (i % 3) * 0.55,
         speed: 0.18 + Math.random() * 0.12,
         emote: null,
         emoteUntil: 0,
@@ -170,12 +170,12 @@ export class HostWorld {
   }
 
   private buildForest(): void {
-    this.scene.background = new THREE.Color('#c3d6a4')
-    this.scene.fog = new THREE.Fog('#c3d6a4', 10, 22)
+    this.scene.background = new THREE.Color('#c5d6a0')
+    this.scene.fog = new THREE.Fog('#c5d6a0', 16, 34)
     const grassMat = this.ground.material as THREE.MeshLambertMaterial
-    grassMat.color.set('#8fb56a')
-    this.addLight(new THREE.HemisphereLight('#fff1d0', '#3d5c32', 1.05))
-    const sun = new THREE.DirectionalLight('#ffe6b0', 1.05)
+    grassMat.color.set('#7da85a')
+    this.addLight(new THREE.HemisphereLight('#fff4d4', '#3d5c32', 1.12))
+    const sun = new THREE.DirectionalLight('#ffe6b0', 1.15)
     sun.position.set(5, 9, 6)
     sun.castShadow = true
     sun.shadow.mapSize.set(1024, 1024)
@@ -184,42 +184,53 @@ export class HostWorld {
     const woods = new THREE.CanvasTexture(paintForestPanorama())
     woods.colorSpace = THREE.SRGBColorSpace
     const backdrop = new THREE.Mesh(
-      new THREE.CylinderGeometry(16, 16, 11, 48, 1, true),
+      new THREE.CylinderGeometry(18, 18, 12, 48, 1, true),
       new THREE.MeshBasicMaterial({ map: woods, side: THREE.BackSide }),
     )
-    backdrop.position.y = 4.4
+    backdrop.position.y = 4.8
     this.decorations.add(backdrop)
 
-    for (let i = 0; i < 72; i++) {
-      const a = (i / 72) * Math.PI * 2
-      const r = 3.5 + (i % 5) * 0.22
+    const dirt = new THREE.Mesh(
+      new THREE.RingGeometry(3.05, 5.05, 64),
+      new THREE.MeshLambertMaterial({ color: '#b79a72' }),
+    )
+    dirt.rotation.x = -Math.PI / 2
+    dirt.position.y = 0.012
+    this.decorations.add(dirt)
+
+    for (let i = 0; i < 96; i++) {
+      const a = (i / 96) * Math.PI * 2 + (i % 7) * 0.01
+      const r = 3.35 + (i % 6) * 0.22
+      const sides = 5 + (i % 3)
       const stone = new THREE.Mesh(
-        new THREE.BoxGeometry(0.38 + (i % 3) * 0.1, 0.1, 0.3 + (i % 2) * 0.12),
-        new THREE.MeshLambertMaterial({ color: i % 2 ? '#9a9084' : '#b7aea2' }),
+        new THREE.CylinderGeometry(0.18 + (i % 4) * 0.05, 0.2 + (i % 3) * 0.04, 0.07, sides),
+        new THREE.MeshLambertMaterial({ color: i % 3 ? '#a3988c' : '#cfc4b6' }),
       )
-      stone.position.set(Math.cos(a) * r, 0.05, Math.sin(a) * r)
-      stone.rotation.y = a
+      stone.position.set(Math.cos(a) * r, 0.04, Math.sin(a) * r)
+      stone.rotation.y = a * 0.7
       stone.receiveShadow = true
       this.decorations.add(stone)
     }
 
-    for (let i = 0; i < 10; i++) {
-      const tree = billboardTree(i)
-      const a = (i / 10) * Math.PI * 2 + 0.12
-      tree.position.set(Math.cos(a) * 8.4, 0, Math.sin(a) * 8.4)
+    for (let i = 0; i < 22; i++) {
+      const tree = woodTree(i)
+      const a = (i / 22) * Math.PI * 2 + 0.05
+      tree.position.set(Math.cos(a) * 6.6, 0, Math.sin(a) * 6.6)
+      tree.scale.setScalar(1.05 + (i % 4) * 0.08)
       this.decorations.add(tree)
     }
-
-    for (let i = 0; i < 90; i++) {
-      const blade = new THREE.Mesh(
-        new THREE.PlaneGeometry(0.08, 0.28),
-        new THREE.MeshLambertMaterial({ color: i % 2 ? '#3f7a32' : '#5b9a44', side: THREE.DoubleSide }),
-      )
-      const a = Math.random() * Math.PI * 2
-      const r = 1.2 + Math.random() * 8
-      blade.position.set(Math.cos(a) * r, 0.14, Math.sin(a) * r)
-      blade.rotation.y = Math.random() * Math.PI
-      this.decorations.add(blade)
+    for (let i = 0; i < 16; i++) {
+      const tree = woodTree(i + 30)
+      const a = (i / 16) * Math.PI * 2 + 0.28
+      tree.position.set(Math.cos(a) * 9.2, 0, Math.sin(a) * 9.2)
+      tree.scale.setScalar(1.35)
+      this.decorations.add(tree)
+    }
+    for (let i = 0; i < 14; i++) {
+      const bush = bushSprite(i)
+      const a = (i / 14) * Math.PI * 2 + 0.4
+      bush.position.set(Math.cos(a) * 5.35, 0, Math.sin(a) * 5.35)
+      this.decorations.add(bush)
     }
   }
 
@@ -279,19 +290,54 @@ export class HostWorld {
   }
 }
 
-function billboardTree(seed: number): THREE.Group {
+function woodTree(seed: number): THREE.Group {
   const g = new THREE.Group()
+  const h = 2.2 + (seed % 5) * 0.28
+  const trunk = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.06 + (seed % 3) * 0.015, 0.11 + (seed % 3) * 0.02, h, 7),
+    new THREE.MeshLambertMaterial({ color: seed % 2 ? '#4a321c' : '#5c3a22' }),
+  )
+  trunk.position.y = h / 2
+  trunk.castShadow = true
+  g.add(trunk)
   const tex = new THREE.CanvasTexture(paintTreeSprite(seed))
   tex.colorSpace = THREE.SRGBColorSpace
-  const mat = new THREE.MeshLambertMaterial({ map: tex, transparent: true, alphaTest: 0.2, side: THREE.DoubleSide })
-  const a = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 3.6), mat)
+  const mat = new THREE.MeshLambertMaterial({
+    map: tex,
+    transparent: true,
+    alphaTest: 0.28,
+    side: THREE.DoubleSide,
+  })
+  const a = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 3.1), mat)
   const b = a.clone()
   b.rotation.y = Math.PI / 2
-  a.position.y = 1.8
-  b.position.y = 1.8
-  a.castShadow = true
+  a.position.y = h * 0.72
+  b.position.y = h * 0.72
   g.add(a, b)
   return g
+}
+
+function bushSprite(seed: number): THREE.Group {
+  const g = new THREE.Group()
+  const tex = new THREE.CanvasTexture(paintBushSprite(seed))
+  tex.colorSpace = THREE.SRGBColorSpace
+  const mat = new THREE.MeshLambertMaterial({
+    map: tex,
+    transparent: true,
+    alphaTest: 0.28,
+    side: THREE.DoubleSide,
+  })
+  const a = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.9), mat)
+  const b = a.clone()
+  b.rotation.y = Math.PI / 2
+  a.position.y = 0.4
+  b.position.y = 0.4
+  g.add(a, b)
+  return g
+}
+
+function billboardTree(seed: number): THREE.Group {
+  return woodTree(seed)
 }
 
 function makePoints(color: string, count: number, spread: number): THREE.Points {
