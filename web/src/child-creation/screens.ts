@@ -155,7 +155,12 @@ export class ChildCreation {
 
   paintScreen(roomId: string, animalId: AnimalId, draftId?: string): void {
     this.openDraftId = draftId || null
-    this.paint = new PaintSurface(animalId, () => undefined)
+    this.paint = new PaintSurface(animalId, () => {
+      const msg = this.root.querySelector('#paint-msg')
+      if (msg && (msg.textContent || '').includes('空白画纸')) {
+        this.setMsg('paint-msg', '涂上啦。点「送进世界」就能进去。')
+      }
+    })
     this.paint.tool = 'brush'
     this.paint.brush = 36
     this.paint.colorHex = PALETTE[3]!.hex
