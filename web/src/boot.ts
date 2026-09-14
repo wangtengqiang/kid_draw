@@ -37,11 +37,7 @@ export class App {
       this.go({ name: 'host', roomId })
       return
     }
-    if (join && getRoom(join)) {
-      this.go({ name: 'pick', roomId: join })
-      return
-    }
-    if (join) {
+    if (join && !getRoom(join)) {
       this.go({ name: 'ended' })
       return
     }

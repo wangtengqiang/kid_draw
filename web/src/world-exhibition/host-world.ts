@@ -5,6 +5,7 @@
 import * as THREE from 'three'
 import type { AnimalId, EmoteId, PlacedAnimal, ThemeId } from '../types'
 import { createAnimalModel, tickWalk } from './models'
+import { HOST_ORBIT, OrbitZoom } from './orbit-zoom'
 
 interface Actor {
   id: string
@@ -30,6 +31,7 @@ export class HostWorld {
   private clock = new THREE.Clock()
   private running = true
   private raf = 0
+  private orbit: OrbitZoom
 
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false })
@@ -38,6 +40,7 @@ export class HostWorld {
     this.camera = new THREE.PerspectiveCamera(42, 1, 0.1, 80)
     this.camera.position.set(0, 8.2, 11.5)
     this.camera.lookAt(0, 0.4, 0)
+    this.orbit = new OrbitZoom(canvas, this.camera, new THREE.Vector3(0, 0.4, 0), HOST_ORBIT)
     this.ground = new THREE.Mesh(
       new THREE.CircleGeometry(9, 48),
       new THREE.MeshLambertMaterial({ color: '#3d6b3a' }),
@@ -116,6 +119,7 @@ export class HostWorld {
   dispose(): void {
     this.running = false
     cancelAnimationFrame(this.raf)
+    this.orbit.dispose()
     this.renderer.dispose()
   }
 

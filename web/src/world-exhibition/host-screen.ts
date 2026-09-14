@@ -48,6 +48,7 @@ export class HostScreen {
       <div class="host-layout">
         <div class="world-pane">
           <canvas id="world-canvas" aria-label="共享世界"></canvas>
+          <p class="world-hint">单指转转看 · 捏一捏或滚轮拉近</p>
           <p class="world-empty" id="world-empty">等小朋友把动物送进来</p>
         </div>
         <aside class="host-panel">

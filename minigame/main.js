@@ -51,11 +51,7 @@ function start() {
     go({ name: 'host', roomId: roomId })
     return
   }
-  if (join && sync.getRoom(join)) {
-    go({ name: 'pick', roomId: join })
-    return
-  }
-  if (join) {
+  if (join && !sync.getRoom(join)) {
     go({ name: 'ended' })
     return
   }

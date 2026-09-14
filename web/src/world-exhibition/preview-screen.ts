@@ -26,7 +26,7 @@ export class PreviewScreen {
       <main class="page">
         <button class="back" data-act="gallery" type="button">← 作品夹</button>
         <h1>${ANIMAL_META[item.animalId].name}</h1>
-        <p class="lead">这是你的小舞台，不是主机那片森林。左右拖可以转一转。</p>
+        <p class="lead">这是你的小舞台，不是主机那片森林。拖一拖能转，捏一捏或滚轮能拉近。</p>
         <div class="preview-frame tall"><canvas id="preview-canvas"></canvas></div>
       </main>`
     const canvas = this.root.querySelector<HTMLCanvasElement>('#preview-canvas')
