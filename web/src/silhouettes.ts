@@ -6,6 +6,34 @@ import type { AnimalId } from './types'
 
 export type Ring = [number, number][]
 
+export function sampleClosed(pts: Ring, count = 48): Ring {
+  const n = pts.length
+  if (n < 2) return pts.slice()
+  const out: Ring = []
+  for (let i = 0; i < count; i++) {
+    const t = (i / count) * n
+    const i1 = Math.floor(t) % n
+    const i0 = (i1 - 1 + n) % n
+    const i2 = (i1 + 1) % n
+    const i3 = (i1 + 2) % n
+    const lt = t - Math.floor(t)
+    out.push(catmull(pts[i0]!, pts[i1]!, pts[i2]!, pts[i3]!, lt))
+  }
+  return out
+}
+
+function catmull(p0: Ring[0], p1: Ring[0], p2: Ring[0], p3: Ring[0], t: number): [number, number] {
+  const t2 = t * t
+  const t3 = t2 * t
+  const axis = (a: 0 | 1) =>
+    0.5 *
+    (2 * p1[a] +
+      (-p0[a] + p2[a]) * t +
+      (2 * p0[a] - 5 * p1[a] + 4 * p2[a] - p3[a]) * t2 +
+      (-p0[a] + 3 * p1[a] - 3 * p2[a] + p3[a]) * t3)
+  return [axis(0), axis(1)]
+}
+
 export const FRAME: Record<AnimalId, { minX: number; maxX: number; minY: number; maxY: number }> = {
   deer: { minX: -0.92, maxX: 1.32, minY: -0.04, maxY: 2.12 },
   tiger: { minX: -1.42, maxX: 1.46, minY: -0.04, maxY: 1.46 },

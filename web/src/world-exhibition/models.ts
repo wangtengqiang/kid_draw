@@ -31,38 +31,15 @@ import {
   type Ring,
 } from '../silhouettes'
 
-const RAMP = makeRamp()
-
-function makeRamp(): THREE.CanvasTexture {
-  const c = document.createElement('canvas')
-  c.width = 4
-  c.height = 1
-  const ctx = c.getContext('2d')
-  if (ctx) {
-    ctx.fillStyle = '#2a2a2a'
-    ctx.fillRect(0, 0, 1, 1)
-    ctx.fillStyle = '#7a7a7a'
-    ctx.fillRect(1, 0, 1, 1)
-    ctx.fillStyle = '#bcbcbc'
-    ctx.fillRect(2, 0, 1, 1)
-    ctx.fillStyle = '#ffffff'
-    ctx.fillRect(3, 0, 1, 1)
-  }
-  const tex = new THREE.CanvasTexture(c)
-  tex.minFilter = THREE.NearestFilter
-  tex.magFilter = THREE.NearestFilter
-  return tex
-}
-
 function colorOf(animal: AnimalId, region: string, painted: Record<string, string>): string {
   return painted[region] || ANIMAL_META[animal].defaults[region] || '#d9b48a'
 }
 
-function toon(color: string, map?: THREE.Texture): THREE.MeshToonMaterial {
-  return new THREE.MeshToonMaterial({
+function toon(color: string, map?: THREE.Texture): THREE.MeshLambertMaterial {
+  return new THREE.MeshLambertMaterial({
     color,
-    gradientMap: RAMP,
     map: map ?? null,
+    side: THREE.DoubleSide,
   })
 }
 
@@ -86,17 +63,7 @@ function part(
   return m
 }
 
-function outline(geo: THREE.BufferGeometry, inflate = 1.016): THREE.Mesh {
-  const m = new THREE.Mesh(
-    geo,
-    new THREE.MeshBasicMaterial({ color: '#1a140c', side: THREE.BackSide }),
-  )
-  m.scale.setScalar(inflate)
-  return m
-}
-
-function addBody(g: THREE.Group, m: THREE.Mesh, inflate = 1.016): void {
-  m.add(outline(m.geometry, inflate))
+function addBody(g: THREE.Group, m: THREE.Mesh): void {
   g.add(m)
 }
 
@@ -153,7 +120,7 @@ export function profileVolume(
       const i1 = s * n + ((i + 1) % n)
       const i2 = (s + 1) * n + i
       const i3 = (s + 1) * n + ((i + 1) % n)
-      indices.push(i0, i2, i1, i1, i2, i3)
+      indices.push(i0, i1, i2, i1, i3, i2)
     }
   }
   const tris = THREE.ShapeUtils.triangulateShape(contour, [])
@@ -198,7 +165,7 @@ export function recolorAnimal(
   group.traverse((obj) => {
     if (obj instanceof THREE.Mesh && obj.userData.region) {
       const mat = obj.material
-      if (mat instanceof THREE.MeshToonMaterial && !mat.map) {
+      if (mat instanceof THREE.MeshLambertMaterial && !mat.map) {
         mat.color.set(colorOf(animal, obj.userData.region, painted))
       }
     }
@@ -214,9 +181,10 @@ function deer(painted: Record<string, string>, coat: THREE.Texture): THREE.Group
     if (x > 0.48 && y > 1.05) return 0.62
     return 1
   })
-  addBody(g, part(bodyGeo, 'body', a, painted, coat), 1.014)
+  addBody(g, part(bodyGeo, 'body', a, painted, coat))
+  addInk(g, DEER_BODY, 0.012)
 
-  addBody(g, part(profileVolume(DEER_BELLY, 0.12), 'belly', a, painted), 1.012)
+  addBody(g, part(profileVolume(DEER_BELLY, 0.12), 'belly', a, painted))
   addBody(g, part(profileVolume(DEER_EAR_L, 0.03), 'earL', a, painted))
   addBody(g, part(profileVolume(DEER_EAR_R, 0.03), 'earR', a, painted))
   addBody(g, part(profileVolume(DEER_TAIL, 0.04), 'tail', a, painted))
@@ -245,11 +213,13 @@ function tiger(painted: Record<string, string>, coat: THREE.Texture): THREE.Grou
   const g = new THREE.Group()
   const a: AnimalId = 'tiger'
   const bodyGeo = profileVolume(TIGER_BODY, 0.28, (x) => (x < -0.5 ? 0.85 : 1))
-  addBody(g, part(bodyGeo, 'body', a, painted, coat), 1.012)
+  addBody(g, part(bodyGeo, 'body', a, painted, coat))
+  addInk(g, TIGER_BODY, 0.014)
   addBody(g, part(profileVolume(TIGER_BELLY, 0.18), 'belly', a, painted))
 
   const headGeo = profileVolume(TIGER_HEAD, 0.22, (x) => (x > 1.05 ? 0.7 : 1))
-  addBody(g, part(headGeo, 'head', a, painted, coat), 1.014)
+  addBody(g, part(headGeo, 'head', a, painted, coat))
+  addInk(g, TIGER_HEAD, 0.01)
   addBody(g, part(profileVolume(TIGER_MUZZLE, 0.14), 'muzzle', a, painted))
   addBody(g, part(profileVolume(TIGER_EAR_L, 0.04), 'earL', a, painted))
   addBody(g, part(profileVolume(TIGER_EAR_R, 0.04), 'earR', a, painted))
@@ -288,7 +258,8 @@ function tiger(painted: Record<string, string>, coat: THREE.Texture): THREE.Grou
 function lion(painted: Record<string, string>, coat: THREE.Texture): THREE.Group {
   const g = new THREE.Group()
   const a: AnimalId = 'lion'
-  addBody(g, part(profileVolume(LION_BODY, 0.26), 'body', a, painted, coat), 1.012)
+  addBody(g, part(profileVolume(LION_BODY, 0.26), 'body', a, painted, coat))
+  addInk(g, LION_BODY, 0.014)
   addBody(g, part(profileVolume(LION_BELLY, 0.16), 'belly', a, painted))
 
   const manePts: THREE.Vector2[] = []
@@ -302,8 +273,9 @@ function lion(painted: Record<string, string>, coat: THREE.Texture): THREE.Group
   const maneLathe = new THREE.LatheGeometry(manePts, 28)
   const mane = part(maneLathe, 'mane', a, painted)
   mane.position.x = 0.62
-  addBody(g, mane, 1.01)
-  addBody(g, part(profileVolume(LION_MANE, 0.22), 'mane', a, painted), 1.01)
+  addBody(g, mane)
+  addInk(g, LION_MANE, 0.012)
+  addBody(g, part(profileVolume(LION_MANE, 0.16), 'mane', a, painted))
 
   addBody(g, part(profileVolume(LION_HEAD, 0.18), 'head', a, painted, coat))
   addBody(g, part(profileVolume(LION_MUZZLE, 0.12), 'muzzle', a, painted))
@@ -369,6 +341,15 @@ function placeLegs(
   return legs
 }
 
+function addInk(g: THREE.Group, pts: Ring, radius: number): void {
+  const contour = smoothRing(pts, 64)
+  const curve = new THREE.CatmullRomCurve3(
+    contour.map((p) => new THREE.Vector3(p.x, p.y, 0)),
+    true,
+  )
+  g.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 48, radius, 8, true), new THREE.MeshBasicMaterial({ color: '#1a140c' })))
+}
+
 function addSideEyes(g: THREE.Group, x: number, y: number, z: number): void {
   const white = new THREE.MeshBasicMaterial({ color: '#fff8ee' })
   const ink = new THREE.MeshBasicMaterial({ color: '#1a120c' })
@@ -390,7 +371,7 @@ function addSideEyes(g: THREE.Group, x: number, y: number, z: number): void {
 export function tickWalk(group: THREE.Group, t: number, moving: boolean): void {
   const legs = group.userData.legs as THREE.Group[] | undefined
   if (!legs) return
-  const amp = moving ? 0.34 : 0.05
+  const amp = moving ? 0.18 : 0.04
   legs.forEach((leg, i) => {
     const dir = i % 2 === 0 ? 1 : -1
     leg.rotation.z = Math.sin(t * 6 + i) * amp * dir

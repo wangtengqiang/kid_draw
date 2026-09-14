@@ -171,7 +171,7 @@ export class HostWorld {
 
   private buildForest(): void {
     this.scene.background = new THREE.Color('#c5d6a0')
-    this.scene.fog = new THREE.Fog('#c5d6a0', 16, 34)
+    this.scene.fog = new THREE.Fog('#c5d6a0', 22, 42)
     const grassMat = this.ground.material as THREE.MeshLambertMaterial
     grassMat.color.set('#7da85a')
     this.addLight(new THREE.HemisphereLight('#fff4d4', '#3d5c32', 1.12))
@@ -183,9 +183,10 @@ export class HostWorld {
 
     const woods = new THREE.CanvasTexture(paintForestPanorama())
     woods.colorSpace = THREE.SRGBColorSpace
+    const woodsMat = new THREE.MeshBasicMaterial({ map: woods, side: THREE.BackSide, fog: false })
     const backdrop = new THREE.Mesh(
       new THREE.CylinderGeometry(18, 18, 12, 48, 1, true),
-      new THREE.MeshBasicMaterial({ map: woods, side: THREE.BackSide }),
+      woodsMat,
     )
     backdrop.position.y = 4.8
     this.decorations.add(backdrop)

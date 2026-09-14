@@ -5,15 +5,15 @@
 import type { AnimalId } from '../types'
 import { ANIMAL_META } from '../types'
 import {
-  DEER_ANTLER_L,
-  DEER_ANTLER_R,
+  DEER_ANTLER_L_BEAM,
+  DEER_ANTLER_R_BEAM,
   DEER_BELLY,
+  DEER_BODY,
   DEER_EAR_L,
   DEER_EAR_R,
   DEER_HEAD,
   DEER_NECK,
   DEER_TAIL,
-  DEER_TORSO,
   FRAME,
   LION_BELLY,
   LION_BODY,
@@ -29,6 +29,7 @@ import {
   TIGER_EAR_R,
   TIGER_HEAD,
   TIGER_MUZZLE,
+  sampleClosed,
   type Ring,
 } from '../silhouettes'
 
@@ -123,10 +124,11 @@ function strokeLine(ctx: Ctx, draw: () => void, width = 0.03): void {
 }
 
 function poly(ctx: Ctx, pts: Ring): void {
-  if (!pts.length) return
+  const s = pts.length > 4 ? sampleClosed(pts, 56) : pts
+  if (!s.length) return
   ctx.beginPath()
-  ctx.moveTo(pts[0]![0], pts[0]![1])
-  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i]![0], pts[i]![1])
+  ctx.moveTo(s[0]![0], s[0]![1])
+  for (let i = 1; i < s.length; i++) ctx.lineTo(s[i]![0], s[i]![1])
   ctx.closePath()
 }
 
@@ -257,7 +259,7 @@ function drawDeerRegions(ctx: Ctx): void {
     fillStroke(ctx, leg.id, () => path(ctx, leg.pts), 0.07)
   }
   fillPoly(ctx, 16, DEER_TAIL)
-  fillPoly(ctx, 7, DEER_TORSO)
+  fillPoly(ctx, 7, DEER_BODY)
   fillPoly(ctx, 8, DEER_BELLY)
   fillRegion(ctx, 9, () => ellipse(ctx, 0.05, 0.95, 0.06, 0.045))
   fillRegion(ctx, 10, () => ellipse(ctx, 0.28, 1.02, 0.05, 0.04))
@@ -266,25 +268,25 @@ function drawDeerRegions(ctx: Ctx): void {
   fillPoly(ctx, 5, DEER_HEAD)
   fillPoly(ctx, 3, DEER_EAR_L)
   fillPoly(ctx, 4, DEER_EAR_R)
-  for (const ring of DEER_ANTLER_L) fillPoly(ctx, 1, ring)
-  for (const ring of DEER_ANTLER_R) fillPoly(ctx, 2, ring)
+  for (const beam of DEER_ANTLER_L_BEAM) fillStroke(ctx, 1, () => path(ctx, beam), 0.05)
+  for (const beam of DEER_ANTLER_R_BEAM) fillStroke(ctx, 2, () => path(ctx, beam), 0.05)
 }
 
 function drawDeerLines(ctx: Ctx): void {
   const line = (d: () => void, w = 0.03) => strokeLine(ctx, d, w)
   for (const leg of deerLegs()) line(() => path(ctx, leg.pts), 0.055)
   strokePoly(ctx, DEER_TAIL)
-  strokePoly(ctx, DEER_TORSO, 0.032)
-  strokePoly(ctx, DEER_BELLY, 0.022)
-  line(() => ellipse(ctx, 0.05, 0.95, 0.06, 0.045), 0.02)
-  line(() => ellipse(ctx, 0.28, 1.02, 0.05, 0.04), 0.02)
-  line(() => ellipse(ctx, -0.12, 1.08, 0.05, 0.038), 0.02)
-  strokePoly(ctx, DEER_NECK)
-  strokePoly(ctx, DEER_HEAD)
+  strokePoly(ctx, DEER_BODY, 0.034)
+  strokePoly(ctx, DEER_BELLY, 0.02)
+  line(() => ellipse(ctx, 0.05, 0.95, 0.06, 0.045), 0.018)
+  line(() => ellipse(ctx, 0.28, 1.02, 0.05, 0.04), 0.018)
+  line(() => ellipse(ctx, -0.12, 1.08, 0.05, 0.038), 0.018)
+  strokePoly(ctx, DEER_NECK, 0.024)
+  strokePoly(ctx, DEER_HEAD, 0.028)
   strokePoly(ctx, DEER_EAR_L)
   strokePoly(ctx, DEER_EAR_R)
-  for (const ring of DEER_ANTLER_L) strokePoly(ctx, ring, 0.026)
-  for (const ring of DEER_ANTLER_R) strokePoly(ctx, ring, 0.026)
+  for (const beam of DEER_ANTLER_L_BEAM) line(() => path(ctx, beam), 0.04)
+  for (const beam of DEER_ANTLER_R_BEAM) line(() => path(ctx, beam), 0.04)
   face(ctx, 1.02, 1.36, 0.16)
 }
 
