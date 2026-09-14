@@ -1,15 +1,15 @@
 /**
- * Load shipped third-party animal glTF (Zsky / Quaternius / Gobkit).
- * Kid paint tints coat materials; eyes/nose stay on the model.
+ * Load shipped third-party animal glTF (Kenney Cube Pets + Gobkit marine).
+ * Keep the pack atlas / vertex colors. Kid paint only multiplies coat tint.
+ * No sphere eyes, no icosphere manes, no ink hulls.
  */
 import * as THREE from 'three'
 import { AnimationUtils } from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js'
 import type { AnimalId } from '../types'
-import { ANIMAL_IDS, isMarine, ANIMAL_META } from '../types'
+import { ANIMAL_IDS, isMarine } from '../types'
 import { coatTexture } from './coat'
-import { addInkOutline, attachCartoonEyes, ensureBoxUv, makeToonMaterial } from './cartoon-look'
 
 type AnimalTemplate = {
   scene: THREE.Group
@@ -50,10 +50,6 @@ const LEG_ALIASES: [string, string][] = [
   ['legFR', 'leg-front-right'],
   ['legBL', 'leg-back-left'],
   ['legBR', 'leg-back-right'],
-  ['legFL', 'FrontLowerLeg.L'],
-  ['legFR', 'FrontLowerLeg.R'],
-  ['legBL', 'BackLowerLeg.L'],
-  ['legBR', 'BackLowerLeg.R'],
   ['legFL', 'FrontLowerLegL'],
   ['legFR', 'FrontLowerLegR'],
   ['legBL', 'BackLowerLegL'],
@@ -66,16 +62,18 @@ const LEG_ALIASES: [string, string][] = [
 
 const FLIPPER_ALIASES = ['flipperFR', 'flipperFL', 'flipperBR', 'flipperBL', 'wing-right', 'wing-left', 'LeftHand', 'RightHand']
 const TAIL_ALIASES = ['tail', 'Tail', 'Tail1']
-const EYE_ALIASES = ['eyeL', 'eyeR', 'LeftEye', 'RightEye', 'Eyes_Lion', 'Eyes_Cat', 'Eyes_Fox']
+const EYE_ALIASES = ['eyeL', 'eyeR', 'LeftEye', 'RightEye', 'Eyes_Lion', 'Eyes_Cat']
 
 const CLIP_ALIASES: Record<string, string[]> = {
-  walk: ['walk', 'Walk', 'Gallop'],
-  idle: ['idle', 'Idle', 'Idle_2', 'static'],
-  static: ['static', 'Idle', 'idle'],
+  walk: ['walk', 'Walk'],
+  idle: ['idle', 'Idle', 'static'],
+  static: ['static', 'idle', 'Idle'],
   eat: ['eat', 'Eating', 'Idle'],
 }
 
-export function setAnimalModelProvider(fn: (id: AnimalId) => Promise<ArrayBuffer | Uint8Array>): void {
+export function setAnimalModelProvider(
+  fn: ((id: AnimalId) => Promise<ArrayBuffer | Uint8Array>) | null,
+): void {
   bufferProvider = fn
   templates.clear()
   loading = null
@@ -97,7 +95,7 @@ async function readModel(id: AnimalId): Promise<ArrayBuffer> {
 
 function clipsFor(id: AnimalId, raw: THREE.AnimationClip[]): THREE.AnimationClip[] {
   if (raw.length !== 1) return raw
-  if (id !== 'dolphin' && id !== 'fish' && id !== 'turtle') return raw
+  if (id !== 'dolphin' && id !== 'turtle') return raw
   const master = raw[0]!
   return [AnimationUtils.subclip(master, 'idle', 0, 30, 24), AnimationUtils.subclip(master, 'walk', 90, 120, 24)]
 }
@@ -119,7 +117,6 @@ export async function loadAnimalTemplates(): Promise<void> {
         let skinned = false
         scene.traverse((obj) => {
           if ((obj as THREE.SkinnedMesh).isSkinnedMesh) skinned = true
-          if (obj instanceof THREE.Mesh) ensureBoxUv(obj.geometry)
         })
         templates.set(id, {
           scene,
@@ -165,63 +162,47 @@ function collectLegs(root: THREE.Object3D): THREE.Object3D[] {
   return found
 }
 
-function collectEyes(root: THREE.Object3D): THREE.Object3D[] {
-  const found: THREE.Object3D[] = []
-  root.traverse((obj) => {
-    if (obj.name.toLowerCase().includes('eye')) found.push(obj)
-  })
-  if (found.length) return found
-  return EYE_ALIASES.map((n) => named(root, [n])).filter((o): o is THREE.Object3D => Boolean(o))
-}
-
 function keepFaceName(name: string): boolean {
   const n = name.toLowerCase()
-  return (
-    n.includes('eye') ||
-    n.includes('iris') ||
-    n.includes('pupil') ||
-    n.includes('shine') ||
-    n.includes('nose') ||
-    n === 'material.010' ||
-    n === 'material.011' ||
-    n === 'cube_3' ||
-    n === 'cube_4'
-  )
+  return n.includes('eye') || n.includes('iris') || n.includes('pupil') || n.includes('shine') || n.includes('nose')
 }
 
-function toonKeepMap(src: THREE.Material, tint: string, coat: THREE.Texture | null, face: 'eye' | 'nose' | null): THREE.MeshToonMaterial {
-  const map = 'map' in src && src.map instanceof THREE.Texture ? src.map : face ? null : coat
+function coatMaterial(src: THREE.Material, tint: string): THREE.MeshLambertMaterial {
+  const map = 'map' in src && src.map instanceof THREE.Texture ? src.map : null
   if (map) {
     map.colorSpace = THREE.SRGBColorSpace
     map.needsUpdate = true
   }
-  const color = new THREE.Color(face === 'eye' ? '#fff8ee' : face === 'nose' ? '#5a3820' : tint)
-  if (!face && tint === '#ffffff' && 'color' in src && src.color instanceof THREE.Color) {
+  const color = new THREE.Color(tint)
+  if (tint === '#ffffff' && 'color' in src && src.color instanceof THREE.Color) {
     color.copy(src.color)
   }
-  const mat = makeToonMaterial(color, map, Boolean('vertexColors' in src && src.vertexColors))
+  const mat = new THREE.MeshLambertMaterial({
+    color,
+    map,
+    vertexColors: Boolean('vertexColors' in src && src.vertexColors),
+    side: THREE.FrontSide,
+    transparent: false,
+    opacity: 1,
+    depthWrite: true,
+    depthTest: true,
+  })
   mat.name = src.name
   return mat
 }
 
-function paintMesh(obj: THREE.Mesh, bodyTint: string, coat: THREE.Texture): void {
+function paintMesh(obj: THREE.Mesh, bodyTint: string): void {
   const srcs = Array.isArray(obj.material) ? obj.material : [obj.material]
   const label = `${obj.name} ${obj.parent?.name || ''}`
   const matName = srcs.map((s) => s.name || '').join(' ')
-  const next = srcs.map((src) => {
-    const keep = keepFaceName(src.name || label)
-    const face = keep ? (/nose/i.test(src.name || label) ? 'nose' : 'eye') : null
-    return toonKeepMap(src, bodyTint, coat, face)
-  })
+  const keep = keepFaceName(label) || keepFaceName(matName)
+  const next = srcs.map((src) => coatMaterial(src, keep ? '#ffffff' : bodyTint))
   obj.material = next.length === 1 ? next[0]! : next
-  if (keepFaceName(label) || keepFaceName(matName)) {
-    obj.userData.region = /nose/i.test(matName + label) ? 'nose' : 'eye'
-  } else if (/body|torso|cube|lion|cat|stag|fugu|whale|seal|retopo|fur|horn/i.test(label + matName)) {
-    obj.userData.region = /horn/i.test(label) ? 'antler' : 'body'
-  } else obj.userData.region = obj.name
+  if (keep) obj.userData.region = /nose/i.test(matName + label) ? 'nose' : 'eye'
+  else if (/body|leg|tail|wing|fugu|whale|seal|cube/i.test(label + obj.name)) obj.userData.region = /leg/i.test(obj.name) ? 'leg' : 'body'
+  else obj.userData.region = obj.name
   obj.castShadow = false
   obj.receiveShadow = false
-  if (obj.userData.region === 'body' || obj.userData.region === 'antler') addInkOutline(obj)
 }
 
 export function instanceAnimal(animal: AnimalId, painted: Record<string, string>): THREE.Group {
@@ -230,11 +211,10 @@ export function instanceAnimal(animal: AnimalId, painted: Record<string, string>
   const cloned = tpl.skinned ? SkeletonUtils.clone(tpl.scene) : tpl.scene.clone(true)
   const inner = cloned as THREE.Group
   const coat = coatTexture(animal, painted)
-  const bodyTint = painted.body || painted.shell || ANIMAL_META[animal].defaults.body || '#ffffff'
+  const bodyTint = painted.body || painted.shell || '#ffffff'
   inner.traverse((obj) => {
-    if (obj instanceof THREE.Mesh) paintMesh(obj, bodyTint, coat)
+    if (obj instanceof THREE.Mesh) paintMesh(obj, bodyTint)
   })
-  attachCartoonEyes(inner, animal)
 
   const orient = new THREE.Group()
   if (tpl.zForward) orient.rotation.y = -Math.PI / 2
@@ -261,10 +241,12 @@ export function instanceAnimal(animal: AnimalId, painted: Record<string, string>
   }
 
   root.userData.kind = animal
+  root.userData.source = 'gltf'
+  root.userData.pack = animal === 'dolphin' || animal === 'turtle' ? 'gobkit' : 'kenney-cube-pets'
   root.userData.coat = coat
   root.userData.marine = isMarine(animal)
   root.userData.legs = isMarine(animal) ? [] : collectLegs(root)
-  root.userData.eyes = collectEyes(root)
+  root.userData.eyes = EYE_ALIASES.map((n) => named(root, [n])).filter((o): o is THREE.Object3D => Boolean(o))
   root.userData.flippers = FLIPPER_ALIASES.map((n) => named(root, [n])).filter((o): o is THREE.Object3D => Boolean(o))
   root.userData.tail = named(root, TAIL_ALIASES)
   root.userData.mixer = mixer

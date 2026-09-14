@@ -54,11 +54,12 @@ npm run dev
 
 点 **打开世界**。大森林能看出远近：高树干、层层树冠、弯岸大海，小路会伸进林子。捏合 / 滚轮可以拉近看动物、拉远看深处。侧栏可换 **森林 / 雪原 / 海底**。陆地动物会自己走路、喝水、休息、坐下（错开节拍，不会一起摆同一个姿势）；海洋动物一直在湾里游，不会走上小路。
 
-**3D 动物**是网上拉下来的 **glTF**（`web/public/models/*.glb`）：狮是 [Zsky Animal Pack](https://opengameart.org/content/animal-pack-0)（CC BY，署名 Zsky）；鹿是 [Quaternius Ultimate Animated Animals](https://quaternius.com/packs/ultimateanimatedanimals.html) 的 Stag（CC0，带 Walk）；虎暂无独立老虎 glTF，用同一套 Zsky 的猫；鱼 / 海豚 / 海龟用 [Gobkit](https://gobkit.com/api/free) CC0（河豚、鲸、海豹——海龟没有可下载的 glTF）。孩子涂的色乘在皮毛材质上，眼睛是圆圆的贴纸瞳仁；身上有卡通分层光和墨线描边。来源见 [`web/public/models/NOTICE.md`](web/public/models/NOTICE.md)。不要把千图网 PNG 当模型，也不要用胶囊 / marching cubes 拼动物。
+**3D 动物**是网上拉下来的 **glTF**（`web/public/models/*.glb`），不是运行时圆球 / 胶囊，也不是贴纸大眼：
 
-**纸上涂色**
-3. 涂色页有大按钮 **重选动物**、**保存草稿**（最多 10 张）和 **我的草稿**。格子满了会让你点一张旧的换掉，不用输房号。首页也可进「我的草稿」。
-4. 真机 / 网页扫码：首页点 **扫码进入**。有摄像头就扫主机二维码；云桌面开不了摄像头时，点「选一张二维码图片」（可先在主机点「下载二维码」）。有 `?join=` 时仍进老师的房间。
+- 狮 / 鹿 / 虎 / 鱼 — [Kenney Cube Pets 2.0](https://kenney.nl/assets/cube-pets)（[CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)）。带画好的卡通脸、四条腿，文件里有 `walk` / `idle` 片段。共用 atlas `web/public/models/Textures/colormap.png`。
+- 海豚 — [Gobkit](https://gobkit.com/api/free) `Whale.glb`（CC0）。海龟 — Gobkit `Seal.glb`（CC0 替代；OGA 海龟只有 `.blend`）。
+
+孩子涂的色乘在皮毛上（默认白色，Kenney 原画脸能看见）。许可证见 [`web/public/models/NOTICE.md`](web/public/models/NOTICE.md)。不要把千图网 PNG 当模型，也不要用胶囊 / marching cubes / 贴纸瞳仁拼动物。
 
 **纸上涂色**
 
