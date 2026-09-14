@@ -9,7 +9,7 @@ export type Ring = [number, number][]
 export const COLOR_FRAME: Record<AnimalId, { minX: number; maxX: number; minY: number; maxY: number }> = {
   deer: { minX: -1.12, maxX: 1.62, minY: -0.04, maxY: 2.32 },
   tiger: { minX: -1.62, maxX: 1.68, minY: -0.04, maxY: 1.72 },
-  lion: { minX: -1.48, maxX: 1.68, minY: -0.04, maxY: 1.86 },
+  lion: { minX: -1.52, maxX: 1.72, minY: -0.04, maxY: 2.02 },
   fish: { minX: -1.42, maxX: 1.48, minY: -0.22, maxY: 1.32 },
   turtle: { minX: -1.28, maxX: 1.52, minY: -0.12, maxY: 1.32 },
   dolphin: { minX: -1.52, maxX: 1.62, minY: -0.28, maxY: 1.38 },
@@ -112,19 +112,53 @@ function pawLoop(x: number, yTop: number, half: number): Ring {
 
 function catEye(ctx: Ctx, ex: number, ey: number, nx: number, ny: number): void {
   ctx.save()
+  ctx.fillStyle = '#fffdf7'
+  ctx.beginPath()
+  ctx.ellipse(ex, ey, 0.11, 0.13, 0, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.fillStyle = '#7a3b12'
+  ctx.beginPath()
+  ctx.ellipse(ex + 0.018, ey - 0.01, 0.07, 0.085, 0, 0, Math.PI * 2)
+  ctx.fill()
   ctx.fillStyle = '#1a120c'
   ctx.beginPath()
-  ctx.ellipse(ex, ey, 0.07, 0.085, 0, 0, Math.PI * 2)
+  ctx.ellipse(ex + 0.03, ey - 0.012, 0.04, 0.055, 0, 0, Math.PI * 2)
   ctx.fill()
   ctx.fillStyle = '#fffdf7'
   ctx.beginPath()
-  ctx.ellipse(ex + 0.022, ey + 0.024, 0.022, 0.026, 0, 0, Math.PI * 2)
+  ctx.ellipse(ex + 0.008, ey + 0.04, 0.032, 0.036, 0, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.beginPath()
+  ctx.ellipse(ex + 0.048, ey - 0.008, 0.014, 0.016, 0, 0, Math.PI * 2)
   ctx.fill()
   ctx.fillStyle = '#1a120c'
   ctx.beginPath()
   ctx.ellipse(nx, ny, 0.05, 0.04, 0.2, 0, Math.PI * 2)
   ctx.fill()
   ctx.restore()
+}
+
+function flower(ctx: Ctx, x: number, y: number, r: number): void {
+  ctx.beginPath()
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * Math.PI * 2 - Math.PI / 2
+    ctx.ellipse(x + Math.cos(a) * r * 0.55, y + Math.sin(a) * r * 0.55, r * 0.42, r * 0.42, 0, 0, Math.PI * 2)
+  }
+  ctx.ellipse(x, y, r * 0.4, r * 0.4, 0, 0, Math.PI * 2)
+}
+
+function hoofLoop(x: number, yTop: number, half: number): Ring {
+  return [
+    [x + half, yTop],
+    [x + half, 0.16],
+    [x + half + 0.05, 0.07],
+    [x + 0.05, 0.0],
+    [x, 0.06],
+    [x - 0.05, 0.0],
+    [x - half - 0.05, 0.07],
+    [x - half, 0.16],
+    [x - half, yTop],
+  ]
 }
 
 function whiskers(ctx: Ctx, x: number, y: number): void {
@@ -304,14 +338,14 @@ export const DEER_OUTLINE: Ring = [
   [1.04, 1.0],
   [0.88, 0.9],
   [0.74, 0.74],
-  ...pawLoop(0.48, 0.7, 0.07),
+  ...hoofLoop(0.48, 0.7, 0.07),
   [0.32, 0.68],
-  ...pawLoop(0.16, 0.68, 0.068),
+  ...hoofLoop(0.16, 0.68, 0.068),
   [-0.02, 0.66],
   [-0.22, 0.66],
-  ...pawLoop(-0.4, 0.7, 0.07),
+  ...hoofLoop(-0.4, 0.7, 0.07),
   [-0.56, 0.7],
-  ...pawLoop(-0.72, 0.72, 0.072),
+  ...hoofLoop(-0.72, 0.72, 0.072),
   [-0.88, 0.86],
   [-1.06, 1.0],
   [-0.94, 1.16],
@@ -339,9 +373,9 @@ export function drawDeerRegions(ctx: Ctx): void {
   fillId(ctx, 16, () => oval(ctx, -0.94, 1.02, 0.18, 0.12))
   fillId(ctx, 7, () => oval(ctx, 0.0, 0.94, 0.7, 0.4))
   fillId(ctx, 8, () => oval(ctx, 0.06, 0.78, 0.44, 0.18))
-  fillId(ctx, 9, () => oval(ctx, -0.16, 1.04, 0.1, 0.08))
-  fillId(ctx, 10, () => oval(ctx, 0.1, 1.1, 0.09, 0.07))
-  fillId(ctx, 11, () => oval(ctx, 0.26, 0.94, 0.08, 0.065))
+  fillId(ctx, 9, () => flower(ctx, -0.16, 1.04, 0.11))
+  fillId(ctx, 10, () => flower(ctx, 0.1, 1.1, 0.1))
+  fillId(ctx, 11, () => flower(ctx, 0.26, 0.94, 0.09))
   fillId(ctx, 6, () => oval(ctx, 0.56, 1.08, 0.24, 0.22))
   fillId(ctx, 5, () => oval(ctx, 1.14, 1.18, 0.36, 0.26))
   fillId(ctx, 3, () => oval(ctx, 0.7, 1.56, 0.11, 0.14))
@@ -359,16 +393,16 @@ export function drawDeerLines(ctx: Ctx): void {
     ctx.moveTo(0.34, 0.84)
     ctx.quadraticCurveTo(0.0, 0.7, -0.32, 0.84)
   })
-  ink(ctx, 0.016, () => oval(ctx, -0.16, 1.04, 0.1, 0.08))
-  ink(ctx, 0.016, () => oval(ctx, 0.1, 1.1, 0.09, 0.07))
-  ink(ctx, 0.016, () => oval(ctx, 0.26, 0.94, 0.08, 0.065))
-  ink(ctx, 0.016, () => oval(ctx, -0.02, 0.92, 0.06, 0.05))
-  ink(ctx, 0.016, () => oval(ctx, 0.3, 1.08, 0.055, 0.045))
-  catEye(ctx, 1.2, 1.24, 1.46, 1.12)
+  ink(ctx, 0.016, () => flower(ctx, -0.16, 1.04, 0.11))
+  ink(ctx, 0.016, () => flower(ctx, 0.1, 1.1, 0.1))
+  ink(ctx, 0.016, () => flower(ctx, 0.26, 0.94, 0.09))
+  ink(ctx, 0.016, () => flower(ctx, -0.02, 0.92, 0.07))
+  ink(ctx, 0.016, () => flower(ctx, 0.3, 1.08, 0.065))
+  catEye(ctx, 1.18, 1.26, 1.46, 1.12)
 }
 
-const LION_MANE_C = { cx: 1.06, cy: 1.12, r: 0.52 }
-const LION_FACE_C = { cx: 1.12, cy: 1.1, r: 0.28 }
+const LION_MANE_C = { cx: 1.04, cy: 1.16, r: 0.64 }
+const LION_FACE_C = { cx: 1.14, cy: 1.12, r: 0.3 }
 
 const LION_EAR_L: Ring = [
   polar(LION_MANE_C.cx, LION_MANE_C.cy, LION_MANE_C.r * 0.82, 118),
@@ -385,7 +419,7 @@ const LION_EAR_R: Ring = [
 export const LION_OUTLINE: Ring = [
   polar(LION_FACE_C.cx, LION_FACE_C.cy, LION_FACE_C.r + 0.04, 20),
   polar(LION_FACE_C.cx, LION_FACE_C.cy, LION_FACE_C.r + 0.02, -20),
-  ...scallop(LION_MANE_C.cx, LION_MANE_C.cy, LION_MANE_C.r, -28, -105, 4, 0.06),
+  ...scallop(LION_MANE_C.cx, LION_MANE_C.cy, LION_MANE_C.r, -28, -105, 6, 0.12),
   [0.62, 0.8],
   [0.58, 0.76],
   ...pawLoop(0.5, 0.7, 0.09),
@@ -410,11 +444,11 @@ export const LION_OUTLINE: Ring = [
   LION_EAR_L[0]!,
   LION_EAR_L[1]!,
   LION_EAR_L[2]!,
-  ...scallop(LION_MANE_C.cx, LION_MANE_C.cy, LION_MANE_C.r, 112, 72, 3, 0.06),
+  ...scallop(LION_MANE_C.cx, LION_MANE_C.cy, LION_MANE_C.r, 112, 72, 4, 0.12),
   LION_EAR_R[0]!,
   LION_EAR_R[1]!,
   LION_EAR_R[2]!,
-  ...scallop(LION_MANE_C.cx, LION_MANE_C.cy, LION_MANE_C.r, 62, 18, 3, 0.06),
+  ...scallop(LION_MANE_C.cx, LION_MANE_C.cy, LION_MANE_C.r, 62, 18, 4, 0.12),
 ]
 
 export function drawLionRegions(ctx: Ctx): void {
@@ -448,8 +482,8 @@ export function drawLionLines(ctx: Ctx): void {
     ctx.quadraticCurveTo(-0.02, 0.66, -0.36, 0.78)
   })
   ink(ctx, 0.022, () => oval(ctx, -1.32, 0.9, 0.12, 0.1))
-  catEye(ctx, 1.18, 1.16, 1.4, 1.02)
-  whiskers(ctx, 1.32, 0.98)
+  catEye(ctx, 1.2, 1.2, 1.42, 1.04)
+  whiskers(ctx, 1.34, 1.0)
 }
 
 const FISH_TAIL: Ring = [

@@ -21,6 +21,10 @@ describe('3D animal volumes', () => {
       if (String(obj.userData.region || '').startsWith('spot')) spots += 1
     })
     expect(spots).toBeGreaterThan(5)
+    g.traverse((obj) => {
+      if (!(obj instanceof Mesh) || !String(obj.userData.region || '').startsWith('spot')) return
+      expect(obj.geometry.type).toBe('ExtrudeGeometry')
+    })
   })
 
   it('builds a tiger with a feline head and four legs', () => {
@@ -37,9 +41,38 @@ describe('3D animal volumes', () => {
     g.traverse((obj) => {
       if (obj.userData.region === 'mane') mane += 1
     })
-    expect(mane).toBeGreaterThan(8)
+    expect(mane).toBeGreaterThan(18)
     expect(sizeOf(g).y).toBeGreaterThan(1.2)
     expect(sizeOf(g).z).toBeGreaterThan(0.5)
+    g.traverse((obj) => {
+      if (!(obj instanceof Mesh) || obj.userData.region !== 'mane') return
+      expect(obj.geometry.type).not.toBe('TorusGeometry')
+      expect(obj.geometry.type).not.toBe('CapsuleGeometry')
+      expect(obj.geometry.type).not.toBe('SphereGeometry')
+    })
+    const eyes = g.userData.eyes as Group[]
+    expect(eyes.length).toBe(2)
+    for (const eye of eyes) {
+      const s = new Box3().setFromObject(eye).getSize(new Vector3())
+      expect(s.y).toBeGreaterThan(0.18)
+    }
+  })
+
+  it('builds land bodies as sculpted beans, not stretched spheres', () => {
+    for (const id of LAND_IDS) {
+      const g = createAnimalModel(id, {})
+      let beans = 0
+      g.traverse((obj) => {
+        if (!(obj instanceof Mesh) || obj.userData.region !== 'body') return
+        expect(obj.geometry.type).not.toBe('SphereGeometry')
+        expect(obj.geometry.type).not.toBe('CapsuleGeometry')
+        expect(obj.geometry.type).not.toBe('CylinderGeometry')
+        beans += 1
+      })
+      expect(beans).toBeGreaterThan(0)
+      const knees = (g.userData.legs as Group[]).filter((leg) => leg.userData.knee)
+      expect(knees).toHaveLength(4)
+    }
   })
 
   it('extrudes a silhouette with thickness on Z', () => {
@@ -91,6 +124,7 @@ describe('3D animal volumes', () => {
         if (!String(obj.userData.region || '').startsWith('leg')) return
         expect(obj.geometry.type).not.toBe('CapsuleGeometry')
         expect(obj.geometry.type).not.toBe('CylinderGeometry')
+        expect(obj.geometry.type).not.toBe('SphereGeometry')
         const mat = obj.material as MeshLambertMaterial
         expect(mat.transparent).toBe(false)
         expect(mat.opacity).toBe(1)

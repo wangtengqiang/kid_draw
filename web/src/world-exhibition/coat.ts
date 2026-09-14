@@ -72,9 +72,9 @@ function paintTiger(ctx: CanvasRenderingContext2D, size: number, body: string, p
   ctx.strokeStyle = darken(body, 0.5)
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
-  for (let i = 0; i < 12; i++) {
-    const u = 0.07 + i * 0.068
-    ctx.lineWidth = 12 + (i % 3) * 7
+  for (let i = 0; i < 7; i++) {
+    const u = 0.12 + i * 0.09
+    ctx.lineWidth = 8 + (i % 2) * 5
     ctx.beginPath()
     ctx.moveTo(u * size, size * 0.05)
     ctx.quadraticCurveTo(u * size + 22, size * 0.4, u * size - 8, size * 0.74)
@@ -92,19 +92,22 @@ function paintTiger(ctx: CanvasRenderingContext2D, size: number, body: string, p
 
 function paintDeer(ctx: CanvasRenderingContext2D, size: number, painted: Record<string, string>): void {
   const spots: [string, number, number, number][] = [
-    ['spot1', 0.3, 0.34, 28],
-    ['spot2', 0.46, 0.26, 24],
-    ['spot3', 0.38, 0.5, 22],
+    ['spot1', 0.3, 0.34, 26],
+    ['spot2', 0.46, 0.26, 22],
+    ['spot3', 0.38, 0.5, 20],
     ['spot1', 0.2, 0.44, 18],
-    ['spot2', 0.54, 0.42, 20],
+    ['spot2', 0.54, 0.42, 18],
     ['spot3', 0.34, 0.2, 16],
-    ['spot1', 0.5, 0.34, 16],
+    ['spot1', 0.5, 0.34, 15],
     ['spot2', 0.26, 0.28, 14],
   ]
   for (const [name, u, v, r] of spots) {
     ctx.fillStyle = colorOf('deer', name, painted)
     ctx.beginPath()
-    ctx.ellipse(u * size, v * size, r, r * 0.7, 0.18, 0, Math.PI * 2)
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2 - Math.PI / 2
+      ctx.ellipse(u * size + Math.cos(a) * r * 0.45, v * size + Math.sin(a) * r * 0.45, r * 0.42, r * 0.38, 0, 0, Math.PI * 2)
+    }
     ctx.fill()
   }
 }
