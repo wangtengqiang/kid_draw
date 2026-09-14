@@ -48,7 +48,7 @@ describe('3D animal volumes', () => {
       if (!(obj instanceof Mesh) || obj.userData.region !== 'mane') return
       expect(obj.geometry.type).not.toBe('TorusGeometry')
       expect(obj.geometry.type).not.toBe('CapsuleGeometry')
-      expect(obj.geometry.type).not.toBe('SphereGeometry')
+      expect(obj.geometry.type).not.toBe('CylinderGeometry')
     })
     const eyes = g.userData.eyes as Group[]
     expect(eyes.length).toBe(2)

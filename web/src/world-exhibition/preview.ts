@@ -12,7 +12,7 @@ export class PreviewStage {
   private scene = new THREE.Scene()
   private camera: THREE.PerspectiveCamera
   private model: THREE.Group | null = null
-  private rot = -0.45
+  private rot = -0.85
   private raf = 0
   private running = true
   private clock = new THREE.Clock()

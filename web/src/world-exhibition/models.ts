@@ -14,18 +14,18 @@ function colorOf(animal: AnimalId, region: string, painted: Record<string, strin
 
 const GEO = {
   sphere: new THREE.SphereGeometry(1, 16, 12),
-  fluffy: new THREE.SphereGeometry(1, 10, 8),
+  fluffy: new THREE.SphereGeometry(1, 14, 12),
   fluff: [0, 1, 2, 3, 4, 5].map((seed) => makeFluff(seed)),
   flower: makeFlower(),
   hoof: makeSplitHoof(),
 }
 
 function makeFluff(seed: number): THREE.BufferGeometry {
-  const g = new THREE.IcosahedronGeometry(1, 1)
+  const g = new THREE.SphereGeometry(1, 14, 12)
   const pos = g.getAttribute('position')
   for (let i = 0; i < pos.count; i++) {
-    const n = 0.72 + 0.38 * hash(seed * 17 + i * 3)
-    pos.setXYZ(i, pos.getX(i) * n, pos.getY(i) * n * (0.9 + 0.2 * hash(seed + i)), pos.getZ(i) * n)
+    const n = 0.88 + 0.18 * hash(seed * 17 + i * 3)
+    pos.setXYZ(i, pos.getX(i) * n, pos.getY(i) * (0.92 + 0.16 * hash(seed + i)), pos.getZ(i) * n)
   }
   g.computeVertexNormals()
   return g
@@ -329,16 +329,16 @@ export function recolorAnimal(
 function deer(painted: Record<string, string>, coat: THREE.Texture): THREE.Group {
   const g = new THREE.Group()
   const a: AnimalId = 'deer'
-  g.add(volume(1.12, 0.58, 0.56, 'body', a, painted, 0.02, 0.68, 0, coat))
-  g.add(volume(0.78, 0.28, 0.4, 'belly', a, painted, 0.08, 0.5, 0))
-  g.add(volume(0.34, 0.28, 0.26, 'neck', a, painted, 0.46, 0.92, 0))
-  g.add(volume(0.48, 0.44, 0.42, 'head', a, painted, 0.78, 1.16, 0))
-  g.add(volume(0.28, 0.18, 0.2, 'head', a, painted, 1.08, 1.04, 0))
+  g.add(volume(1.02, 0.6, 0.58, 'body', a, painted, 0.0, 0.7, 0, coat))
+  g.add(volume(0.72, 0.3, 0.42, 'belly', a, painted, 0.06, 0.52, 0))
+  g.add(volume(0.32, 0.3, 0.28, 'neck', a, painted, 0.48, 0.98, 0))
+  g.add(volume(0.52, 0.48, 0.46, 'head', a, painted, 0.82, 1.2, 0))
+  g.add(volume(0.3, 0.2, 0.22, 'head', a, painted, 1.12, 1.08, 0))
 
-  const earL = volume(0.1, 0.28, 0.12, 'earL', a, painted, 0.66, 1.42, 0.16)
+  const earL = volume(0.1, 0.3, 0.12, 'earL', a, painted, 0.7, 1.48, 0.16)
   earL.rotation.z = 0.35
   earL.rotation.x = 0.25
-  const earR = volume(0.1, 0.28, 0.12, 'earR', a, painted, 0.66, 1.42, -0.16)
+  const earR = volume(0.1, 0.3, 0.12, 'earR', a, painted, 0.7, 1.48, -0.16)
   earR.rotation.z = 0.35
   earR.rotation.x = -0.25
   g.add(earL, earR)
@@ -348,36 +348,36 @@ function deer(painted: Record<string, string>, coat: THREE.Texture): THREE.Group
     {
       region: 'antlerL',
       pts: [
-        [0.64, 1.4, 0.1],
-        [0.58, 1.68, 0.16],
-        [0.5, 1.96, 0.14],
+        [0.7, 1.46, 0.1],
+        [0.62, 1.74, 0.16],
+        [0.52, 2.02, 0.14],
       ],
       tines: [
         [
-          [0.56, 1.7, 0.16],
-          [0.38, 1.9, 0.24],
+          [0.6, 1.76, 0.16],
+          [0.4, 1.96, 0.24],
         ],
         [
-          [0.54, 1.82, 0.14],
-          [0.7, 2.08, 0.1],
+          [0.58, 1.88, 0.14],
+          [0.74, 2.14, 0.1],
         ],
       ],
     },
     {
       region: 'antlerR',
       pts: [
-        [0.64, 1.4, -0.1],
-        [0.6, 1.7, -0.16],
-        [0.54, 1.98, -0.14],
+        [0.7, 1.46, -0.1],
+        [0.64, 1.76, -0.16],
+        [0.56, 2.04, -0.14],
       ],
       tines: [
         [
-          [0.58, 1.72, -0.16],
-          [0.74, 2.08, -0.1],
+          [0.62, 1.78, -0.16],
+          [0.78, 2.14, -0.1],
         ],
         [
-          [0.56, 1.84, -0.14],
-          [0.38, 1.92, -0.24],
+          [0.6, 1.9, -0.14],
+          [0.4, 1.98, -0.24],
         ],
       ],
     },
@@ -429,7 +429,7 @@ function deer(painted: Record<string, string>, coat: THREE.Texture): THREE.Group
     { name: 'legBL', x: -0.32, z: 0.28, hipY: 0.52, radius: 0.1, foot: 'hoof' },
     { name: 'legBR', x: -0.32, z: -0.28, hipY: 0.52, radius: 0.1, foot: 'hoof' },
   ])
-  cartoonFace(g, { x: 0.96, y: 1.18, z: 0.16, scale: 1.15, iris: '#5b3318', look: 0.42 })
+  cartoonFace(g, { x: 1.0, y: 1.22, z: 0.17, scale: 1.22, iris: '#5b3318', look: 0.35 })
   g.userData.legs = legs
   return g
 }
@@ -437,10 +437,10 @@ function deer(painted: Record<string, string>, coat: THREE.Texture): THREE.Group
 function tiger(painted: Record<string, string>, coat: THREE.Texture): THREE.Group {
   const g = new THREE.Group()
   const a: AnimalId = 'tiger'
-  g.add(volume(1.18, 0.56, 0.58, 'body', a, painted, 0.02, 0.62, 0, coat))
-  g.add(volume(0.82, 0.28, 0.42, 'belly', a, painted, 0.08, 0.44, 0))
-  g.add(volume(0.56, 0.52, 0.52, 'head', a, painted, 0.72, 1.02, 0))
-  g.add(volume(0.32, 0.22, 0.3, 'muzzle', a, painted, 1.08, 0.86, 0))
+  g.add(volume(1.08, 0.58, 0.6, 'body', a, painted, -0.02, 0.62, 0, coat))
+  g.add(volume(0.76, 0.3, 0.44, 'belly', a, painted, 0.04, 0.44, 0))
+  g.add(volume(0.58, 0.54, 0.54, 'head', a, painted, 0.74, 1.04, 0))
+  g.add(volume(0.3, 0.22, 0.32, 'muzzle', a, painted, 1.1, 0.88, 0))
   g.add(volume(0.16, 0.16, 0.18, 'muzzle', a, painted, 1.02, 0.88, 0.14))
   g.add(volume(0.16, 0.16, 0.18, 'muzzle', a, painted, 1.02, 0.88, -0.14))
 
@@ -491,7 +491,7 @@ function tiger(painted: Record<string, string>, coat: THREE.Texture): THREE.Grou
     { name: 'legBL', x: -0.32, z: 0.3, hipY: 0.48, radius: 0.12, foot: 'paw' },
     { name: 'legBR', x: -0.32, z: -0.3, hipY: 0.48, radius: 0.12, foot: 'paw' },
   ])
-  cartoonFace(g, { x: 0.92, y: 1.06, z: 0.18, scale: 1.22, iris: '#7a3b12', look: 0.38 })
+  cartoonFace(g, { x: 0.94, y: 1.08, z: 0.18, scale: 1.32, iris: '#7a3b12', look: 0.32 })
   g.userData.legs = legs
   return g
 }
@@ -499,16 +499,19 @@ function tiger(painted: Record<string, string>, coat: THREE.Texture): THREE.Grou
 function lion(painted: Record<string, string>, coat: THREE.Texture): THREE.Group {
   const g = new THREE.Group()
   const a: AnimalId = 'lion'
-  g.add(volume(1.02, 0.54, 0.56, 'body', a, painted, 0.0, 0.6, 0, coat))
-  g.add(volume(0.72, 0.26, 0.4, 'belly', a, painted, 0.06, 0.42, 0))
+  g.add(volume(0.92, 0.52, 0.58, 'body', a, painted, -0.08, 0.56, 0, coat))
+  g.add(volume(0.66, 0.26, 0.42, 'belly', a, painted, -0.02, 0.4, 0))
 
   const mane = new THREE.Group()
   mane.userData.region = 'mane'
   const maneColor = colorOf(a, 'mane', painted)
-  const inner = new THREE.Color(maneColor).multiplyScalar(0.82).getStyle()
-  const cx = 0.54
+  const inner = new THREE.Color(maneColor).multiplyScalar(0.78).getStyle()
+  const core = part(beanGeometry(0.72, 0.82, 0.8), 'mane', a, painted)
+  core.position.set(0.48, 0.98, 0)
+  mane.add(core)
+  const cx = 0.5
   const cy = 0.98
-  const n = 28
+  const n = 36
   for (let i = 0; i < n; i++) {
     const golden = Math.PI * (3 - Math.sqrt(5))
     const y = 1 - (i / (n - 1)) * 2
@@ -517,63 +520,41 @@ function lion(painted: Record<string, string>, coat: THREE.Texture): THREE.Group
     const dirx = Math.cos(theta) * r
     const diry = y
     const dirz = Math.sin(theta) * r
-    if (dirx > 0.62 && Math.abs(dirz) < 0.42 && Math.abs(diry) < 0.38) continue
-    const rad = 0.4 + 0.16 * hash(i + 9)
-    const sx = 0.16 + 0.07 * hash(i)
-    const sy = 0.18 + 0.08 * hash(i + 3)
-    const sz = 0.16 + 0.07 * hash(i + 5)
-    mane.add(tuftMesh(i, i % 2 ? maneColor : inner, cx + dirx * rad, cy + diry * rad * 0.95, dirz * rad, sx, sy, sz))
+    if (dirx > 0.28) continue
+    const rad = 0.38 + 0.12 * hash(i + 9)
+    const s = 0.15 + 0.05 * hash(i)
+    mane.add(tuftMesh(i, i % 3 ? maneColor : inner, cx + dirx * rad, cy + diry * rad * 0.92, dirz * rad, s * 1.05, s * 1.15, s * 1.05))
   }
-  for (let i = 0; i < 10; i++) {
-    const a0 = (i / 10) * Math.PI * 2
-    const rad = 0.46
-    mane.add(
-      tuftMesh(
-        i + 40,
-        maneColor,
-        cx + Math.cos(a0) * 0.12 + 0.08,
-        cy + Math.sin(a0) * rad * 0.55,
-        Math.sin(a0 * 1.3) * rad * 0.7,
-        0.2,
-        0.22,
-        0.18,
-      ),
-    )
-  }
-  for (const [x, y, z, s] of [
-    [0.38, 0.72, 0.22, 0.18],
-    [0.38, 0.72, -0.22, 0.18],
-    [0.28, 0.86, 0.12, 0.16],
-    [0.28, 0.86, -0.12, 0.16],
-    [0.48, 1.36, 0, 0.2],
-  ] as const) {
-    mane.add(tuftMesh(Math.round(x * 20 + z * 8), inner, x, y, z, s, s * 1.1, s))
+  for (let i = 0; i < 14; i++) {
+    const a0 = -0.9 + (i / 13) * 1.8
+    const y0 = Math.sin(a0) * 0.42
+    const z0 = Math.cos(a0) * 0.48
+    mane.add(tuftMesh(i + 50, maneColor, 0.42, cy + y0, z0, 0.16, 0.18, 0.16))
   }
   g.add(mane)
 
-  g.add(volume(0.5, 0.46, 0.46, 'head', a, painted, 0.72, 0.98, 0))
-  g.add(volume(0.28, 0.2, 0.28, 'muzzle', a, painted, 1.02, 0.84, 0))
-  g.add(volume(0.14, 0.14, 0.16, 'muzzle', a, painted, 0.96, 0.86, 0.12))
-  g.add(volume(0.14, 0.14, 0.16, 'muzzle', a, painted, 0.96, 0.86, -0.12))
-  const earL = volume(0.1, 0.16, 0.08, 'earL', a, painted, 0.6, 1.3, 0.16)
-  const earR = volume(0.1, 0.16, 0.08, 'earR', a, painted, 0.6, 1.3, -0.16)
-  g.add(earL, earR)
+  g.add(volume(0.46, 0.44, 0.44, 'head', a, painted, 0.78, 0.98, 0))
+  g.add(volume(0.26, 0.2, 0.28, 'muzzle', a, painted, 1.04, 0.86, 0))
+  g.add(volume(0.14, 0.14, 0.16, 'muzzle', a, painted, 0.98, 0.88, 0.13))
+  g.add(volume(0.14, 0.14, 0.16, 'muzzle', a, painted, 0.98, 0.88, -0.13))
+  g.add(volume(0.1, 0.16, 0.08, 'earL', a, painted, 0.66, 1.32, 0.16))
+  g.add(volume(0.1, 0.16, 0.08, 'earR', a, painted, 0.66, 1.32, -0.16))
 
   const tail = new THREE.Group()
-  tail.add(volume(0.62, 0.08, 0.08, 'tail', a, painted, -0.78, 0.68, 0))
-  const tuft = tuftMesh(21, colorOf(a, 'tuft', painted), -1.16, 0.5, 0, 0.14, 0.14, 0.14)
+  tail.add(volume(0.58, 0.08, 0.08, 'tail', a, painted, -0.72, 0.64, 0))
+  const tuft = tuftMesh(21, colorOf(a, 'tuft', painted), -1.08, 0.48, 0, 0.16, 0.16, 0.16)
   tuft.userData.region = 'tuft'
   tail.add(tuft)
   g.add(tail)
   g.userData.tail = tail
 
   const legs = placeLegs(g, a, painted, [
-    { name: 'legFL', x: 0.32, z: 0.26, hipY: 0.46, radius: 0.11, foot: 'paw' },
-    { name: 'legFR', x: 0.32, z: -0.26, hipY: 0.46, radius: 0.11, foot: 'paw' },
-    { name: 'legBL', x: -0.28, z: 0.28, hipY: 0.48, radius: 0.12, foot: 'paw' },
-    { name: 'legBR', x: -0.28, z: -0.28, hipY: 0.48, radius: 0.12, foot: 'paw' },
+    { name: 'legFL', x: 0.28, z: 0.26, hipY: 0.44, radius: 0.12, foot: 'paw' },
+    { name: 'legFR', x: 0.28, z: -0.26, hipY: 0.44, radius: 0.12, foot: 'paw' },
+    { name: 'legBL', x: -0.3, z: 0.28, hipY: 0.46, radius: 0.13, foot: 'paw' },
+    { name: 'legBR', x: -0.3, z: -0.28, hipY: 0.46, radius: 0.13, foot: 'paw' },
   ])
-  cartoonFace(g, { x: 0.9, y: 1.02, z: 0.17, scale: 1.28, iris: '#8a4a16', look: 0.4 })
+  cartoonFace(g, { x: 0.94, y: 1.04, z: 0.16, scale: 1.35, iris: '#8a4a16', look: 0.32 })
   g.userData.legs = legs
   return g
 }
