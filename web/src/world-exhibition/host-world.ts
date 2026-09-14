@@ -318,12 +318,15 @@ export class HostWorld {
   frameFirstAnimal(): boolean {
     const actor = this.actors.values().next().value as Actor | undefined
     if (!actor) return false
-    const p = actor.group.position
     const a = actor.angle
     const tx = -Math.sin(a)
     const tz = Math.cos(a)
-    this.orbit.target.set(p.x, 0.95, p.z)
-    this.camera.position.set(p.x + tx * 4.3, 1.72, p.z + tz * 4.3)
+    const target = new THREE.Vector3()
+    const head = actor.group.getObjectByName('head')
+    if (head) head.getWorldPosition(target)
+    else actor.group.getWorldPosition(target)
+    this.orbit.target.copy(target)
+    this.camera.position.set(target.x + tx * 3.8, target.y + 0.42, target.z + tz * 3.8)
     const ox = this.camera.position.x - this.orbit.target.x
     const oy = this.camera.position.y - this.orbit.target.y
     const oz = this.camera.position.z - this.orbit.target.z

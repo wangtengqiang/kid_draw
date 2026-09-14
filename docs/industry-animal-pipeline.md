@@ -55,7 +55,7 @@
 
 ## 候选取舍（这一轮又查了一遍）
 
-家长参考是圆滚、鬃毛蓬松、大眼睛的卡通狮。免费包里没有同时满足「像那张狮、真物种、可走路」的 glTF，所以陆地狮/鹿/虎改为仓库里原创的卡通幼崽（`author-cartoon-cubs.mjs`）。Kenney Cube Pets 只留给鱼。
+家长参考是站立、鬃毛蓬松、大眼睛的卡通狮。免费包里没有同时满足「像那张狮、真物种、可走路」的 glTF，所以陆地狮/鹿/虎改为仓库里原创的站立卡通四足（`author-cartoon-cubs.mjs`）。Kenney Cube Pets 只留给鱼。
 
 | 候选 | URL | 结论 |
 | --- | --- | --- |
@@ -72,9 +72,9 @@
 | Mixamo | https://www.mixamo.com/ | **拒绝。** 人形库，要 Adobe 登录。 |
 | OGA Micket tiger、低模鹿 | https://opengameart.org/content/tiger · https://opengameart.org/content/deer-low-poly-rigged | **拒绝。** CC0 但是 0 A.D. 写实低模，不是幼崽卡通，还是 .blend/.zip。 |
 | Unity/CGTrader 卡通虎 | 付费资源店 | **拒绝。** 付费 API / 商店。 |
-| 粘土 / 胶囊 / icosphere 鬃毛 | 本仓库旧 `author-animals.mjs` | **拒绝 metaball。** 陆地改为 `author-cartoon-cubs.mjs` 的分件卡通幼崽。 |
+| 粘土 / 胶囊 / icosphere 鬃毛 / 向日葵幼崽 | 本仓库旧 `author-animals.mjs` 与旧 cub 脚本 | **拒绝。** 陆地改为站立四足：颈鬃是有厚度的 ruff，身子比头长。 |
 
-免登录 zip 里**没有**「又圆又像参考图、又是真老虎」的 glTF。虎和狮、鹿一样用本仓库卡通幼崽，不用狼、也不用 Kenney 方块虎。
+免登录 zip 里**没有**「又圆又像参考图、又是真老虎」的 glTF。虎和狮、鹿一样用本仓库站立四足，不用狼、也不用 Kenney 方块虎。
 
 ## 别人怎么用 GL 画动物
 
@@ -82,7 +82,7 @@
 
 | 总览 | 本项目 |
 | --- | --- |
-| 建模 modeling | 本仓库卡通幼崽 glTF（狮/鹿/虎）+ Kenney 鱼 + Gobkit 鲸/海豹，不在运行时捏椭圆 |
+| 建模 modeling | 本仓库站立卡通四足 glTF（狮/鹿/虎）+ Kenney 鱼 + Gobkit 鲸/海豹，不在运行时捏椭圆 |
 | 贴图 textures | 陆地：孩子画板原图像素当皮毛 UV；鱼：Kenney `colormap.png` 脸图集 |
 | 灯光 lighting | Ambient + Hemisphere + Directional |
 | 投影 projection | `PerspectiveCamera` |
@@ -95,15 +95,15 @@
 
 | 做法 | 是什么 | 什么时候用 | 本项目 |
 | --- | --- | --- | --- |
-| **精灵 / 广告牌** | 一张 PNG 永远对着相机 | 2D 微信小游戏、远景粒子 | 小游戏成功页用 **glTF 烘出来的 PNG**，陆地是卡通幼崽正面，不是手绘椭圆 |
+| **精灵 / 广告牌** | 一张 PNG 永远对着相机 | 2D 微信小游戏、远景粒子 | 小游戏成功页用 **glTF 烘出来的 PNG**，陆地是站立四足正面，不是手绘椭圆 |
 | **蒙皮网格** | 骨骼带动顶点，`AnimationMixer` / Unity Mecanim 播 Walk | 会走路的 3D 角色 | 网页主机森林：`GLTFLoader` + `AnimationMixer` |
-| **Kenney Cube Pets** | 低模立方卡通 + 一张脸图集 + 文件里的 walk/idle | 独立游戏、网页 demo | **只采用鱼。** 狮/鹿/虎改成本仓库圆滚幼崽 |
+| **Kenney Cube Pets** | 低模立方卡通 + 一张脸图集 + 文件里的 walk/idle | 独立游戏、网页 demo | **只采用鱼。** 狮/鹿/虎改成本仓库站立四足 |
 
 **Three.js（网页留下这一条）**
 
 1. [`GLTFLoader`](https://threejs.org/docs/#examples/en/loaders/GLTFLoader) 读 `.glb`（网格、UV、贴图、剪辑一次进来）。手册：[Loading 3D models](https://threejs.org/docs/#manual/en/introduction/Loading-3D-models)。
 2. [`AnimationMixer`](https://threejs.org/docs/#api/en/animation/AnimationMixer) 播 `walk` / `idle`。说明：[Animation system](https://threejs.org/manual/en/animation-system.html)。蒙皮要 `SkeletonUtils.clone`，不能只 `scene.clone()`。
-3. 卡通光：[toon 示例](https://threejs.org/examples/#webgl_materials_toon)（`MeshToonMaterial` 分层光）。描边常用 [inverted hull / OutlineEffect](https://threejs.org/examples/#webgl_clipping_stencil)。陆地幼崽是分件 Lambert（大眼睛、鬃毛是网格，不是图集）；鱼才用 Kenney 脸图集。不打阴影（主机注释里写了省 GPU）。
+3. 卡通光：[toon 示例](https://threejs.org/examples/#webgl_materials_toon)（`MeshToonMaterial` 分层光）。描边常用 [inverted hull / OutlineEffect](https://threejs.org/examples/#webgl_clipping_stencil)。陆地四足是分件 Lambert（大眼睛、颈鬃是网格，不是图集）；鱼才用 Kenney 脸图集。不打阴影（主机注释里写了省 GPU）。
 
 **Unity / Unreal 童书式上色**
 
@@ -117,11 +117,11 @@
 
 **孩子涂色怎么进网格**
 
-博物馆 / LED 案例（上文）都是：纸是 2D 模板，3D 是做好的角色。我们屏上仍是自由蜡笔；识别用开场模板。3D 把画板原图像素贴在幼崽皮毛 UV 上；鱼仍乘 Kenney 脸图集。
+博物馆 / LED 案例（上文）都是：纸是 2D 模板，3D 是做好的角色。我们屏上仍是自由蜡笔；识别用开场模板。3D 把画板原图像素贴在四足皮毛 UV 上；鱼仍乘 Kenney 脸图集。
 
 ## 当前默认
 
-- 狮 / 鹿 / 虎 ← 本仓库卡通幼崽 glTF（`author-cartoon-cubs.mjs`），正面大眼睛 + 狮鬃，walk 在文件里。
+- 狮 / 鹿 / 虎 ← 本仓库站立卡通四足 glTF（`author-cartoon-cubs.mjs`），颈鬃有厚度、身子拉长，walk 在文件里。
 - 鱼 ← Kenney Cube Pets（CC0）。
 - 海豚 / 海龟 ← Gobkit Whale / Seal（CC0）。
 - 运行时：`GLTFLoader` + `AnimationMixer`。孩子涂色是画板原图像素，贴在皮毛 UV 上。

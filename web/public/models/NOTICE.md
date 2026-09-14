@@ -1,15 +1,17 @@
 # 3D models — licenses
 
-Default **lion / deer / tiger** are original in-repo cartoon cubs (chibi,
-fluffy mane, big eyes), authored with Three.js `GLTFExporter`. Kid paintboard
-pixels stay the coat UV. Not Kenney cubes, not fox/wolf, not 千图网 textures.
+Default **lion / deer / tiger** are original in-repo standing cartoon
+quadrupeds (neck ruff, elongated body, big eyes), authored with Three.js
+`GLTFExporter`. Kid paintboard pixels stay the coat UV. Not Kenney cubes,
+not fox/wolf, not sunflower-petal cubs, not 千图网 textures.
 
-## Cartoon cubs — lion, deer, tiger (original, this repo)
+## Standing quads — lion, deer, tiger (original, this repo)
 
 - Built by `web/scripts/author-cartoon-cubs.mjs`
-- Style target: 王腾强's cute cartoon lion (round head, sunflower mane, cream
-  face, huge eyes). Deer and tiger share the same language (spots + Y antlers;
-  round cat head). No stock PNG was baked into the mesh.
+- Style target: `gen-lion-turnaround.png` + `gen-land-animals-sheet.png`
+  (front / 3q / side / back standing lion; deer and tiger in the same
+  language). Neck mane is a 3D ruff with Z depth that hangs down the chest,
+  not petals in the face plane. No stock PNG was baked into the mesh.
 - Files: `lion.glb`, `deer.glb`, `tiger.glb`
 - Clips: `walk`, `idle`, `eat`, `static`
 - Front snapshots: `snapshots/{lion,deer,tiger}.png`
@@ -30,11 +32,11 @@ pixels stay the coat UV. Not Kenney cubes, not fox/wolf, not 千图网 textures.
 
 ## Tried and not the land default
 
-Kenney Cube Pets (too cubic vs the lion drawing), Quaternius fox/wolf (wrong
-species), Zsky petal-mane lion (no walk), Sketchfab/Poly Pizza (login / API
-key), marching-cubes clay, 千图网 watermarks.
+Kenney Cube Pets (too cubic), Quaternius fox/wolf (wrong species), sunflower
+petal-head cubs (rejected), Zsky petal-mane lion (no walk), Sketchfab/Poly
+Pizza (login / API key), marching-cubes clay, 千图网 watermarks.
 
 ## Not in this folder
 
 - No 千图网 / stock-art pixels as textures
-- No marching-cubes / cube-pet land defaults
+- No marching-cubes / cube-pet / sunflower-cub land defaults

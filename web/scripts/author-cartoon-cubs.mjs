@@ -1,7 +1,11 @@
 /**
- * Author in-repo cartoon cubs: round head, fluffy mane, big eyes.
- * Style target is 王腾强's cute lion drawing (chibi, sunflower mane, cream face).
- * Not Kenney cubes, not marching-cubes clay, not fox/wolf, not 千图网 pixels.
+ * Author standing cartoon quads: lion / deer / tiger.
+ * Style target: gen-lion-turnaround.png + gen-land-animals-sheet.png
+ * Neck mane is a 3D ruff (depth in Z, hangs down the chest). Not sunflower petals
+ * in the face plane. Not Kenney cubes, clay, fox/wolf, or 千图网.
+ *
+ * Faces +Z so gltf-kit orient.rotation.y = -π/2 still walks correctly.
+ * Kid paintboard stays the coat UV — do not bake crayon splatters.
  *
  * Run: node scripts/author-cartoon-cubs.mjs
  */
@@ -29,13 +33,13 @@ globalThis.URL = window.URL
 globalThis.Event = window.Event
 globalThis.Node = window.Node
 
-const SEG = 18
+const SEG = 16
 const Q = new THREE.Quaternion()
 const X = new THREE.Vector3(1, 0, 0)
 const Y = new THREE.Vector3(0, 1, 0)
 
 function ball(rx, ry, rz, seg = SEG) {
-  const g = new THREE.SphereGeometry(1, seg, Math.max(12, Math.round(seg * 0.75)))
+  const g = new THREE.SphereGeometry(1, seg, Math.max(10, Math.round(seg * 0.75)))
   g.scale(rx, ry, rz)
   return g
 }
@@ -87,12 +91,12 @@ function mergeGroup(name, hex, builders) {
   return mesh
 }
 
-function addEyes(head, { y = 0.06, z = 0.22, spread = 0.12, white = 0.13, iris = 0.07 }) {
+function addEyes(head, { y = 0.06, z = 0.2, spread = 0.11, white = 0.12, iris = 0.065 }) {
   const make = (side, sx) => {
-    const eye = part(side === 'L' ? 'eyeL' : 'eyeR', ball(white, white * 1.12, white * 0.72), '#fffdf7', sx, y, z)
-    const irisM = part(side === 'L' ? 'irisL' : 'irisR', ball(iris, iris * 1.05, iris * 0.55), '#6b3a14', 0, -0.01, white * 0.55)
-    const pupil = part(side === 'L' ? 'pupilL' : 'pupilR', ball(iris * 0.48, iris * 0.52, iris * 0.28), '#1a120c', 0, -0.005, iris * 0.45)
-    const shine = part(side === 'L' ? 'shineL' : 'shineR', ball(iris * 0.22, iris * 0.22, iris * 0.12), '#ffffff', -iris * 0.22, iris * 0.28, iris * 0.2)
+    const eye = part(side === 'L' ? 'eyeL' : 'eyeR', ball(white, white * 1.12, white * 0.7), '#fffdf7', sx, y, z)
+    const irisM = part(side === 'L' ? 'irisL' : 'irisR', ball(iris, iris * 1.05, iris * 0.52), '#3c9ee0', 0, -0.008, white * 0.52)
+    const pupil = part(side === 'L' ? 'pupilL' : 'pupilR', ball(iris * 0.48, iris * 0.52, iris * 0.26), '#1a120c', 0, -0.004, iris * 0.42)
+    const shine = part(side === 'L' ? 'shineL' : 'shineR', ball(iris * 0.22, iris * 0.22, iris * 0.12), '#ffffff', -iris * 0.22, iris * 0.28, iris * 0.18)
     irisM.add(pupil, shine)
     eye.add(irisM)
     head.add(eye)
@@ -101,80 +105,24 @@ function addEyes(head, { y = 0.06, z = 0.22, spread = 0.12, white = 0.13, iris =
   make('R', spread)
 }
 
-function addSmile(head, z = 0.28) {
-  const geo = new THREE.TorusGeometry(0.075, 0.012, 8, 18, Math.PI)
+function addSmile(head, z = 0.26) {
+  const geo = new THREE.TorusGeometry(0.07, 0.011, 8, 16, Math.PI)
   geo.rotateX(Math.PI)
   const smile = part('nose-smile', geo, '#5a3318', 0, -0.1, z)
-  smile.rotation.x = 0.15
+  smile.rotation.x = 0.18
   head.add(smile)
-  head.add(part('nose', ball(0.035, 0.028, 0.03), '#c45c4a', 0, -0.04, z + 0.04))
+  head.add(part('nose', ball(0.032, 0.026, 0.028), '#c45c4a', 0, -0.038, z + 0.05))
 }
 
-function thickLeg(name, x, z, length = 0.26, r = 0.085) {
+function thickLeg(name, x, z, length = 0.44, r = 0.08, hex = '#e8b56a', pawHex = '#d9a066') {
   const leg = new THREE.Group()
   leg.name = name
-  const cyl = new THREE.CylinderGeometry(r * 0.92, r * 1.05, length, 12)
-  const shaft = part(`${name}-shaft`, cyl, '#e8b56a', 0, -length / 2, 0)
-  const paw = part(`${name}-paw`, ball(r * 1.15, r * 0.55, r * 1.2), '#d9a066', 0, -length, 0.02)
+  const cyl = new THREE.CylinderGeometry(r * 0.88, r * 1.08, length, 12)
+  const shaft = part(`${name}-shaft`, cyl, hex, 0, -length / 2, 0)
+  const paw = part(`${name}-paw`, ball(r * 1.35, r * 0.55, r * 1.45, 12), pawHex, 0, -length, 0.03)
   leg.add(shaft, paw)
-  leg.position.set(x, 0.28, z)
+  leg.position.set(x, length + 0.02, z)
   return leg
-}
-
-function makeLion() {
-  const root = new THREE.Group()
-  root.name = 'animal-lion'
-
-  const body = part('body', ball(0.32, 0.26, 0.38), '#f0c36a', 0, 0.38, -0.06)
-  const belly = part('belly', ball(0.24, 0.18, 0.3), '#fff3d6', 0, 0.3, 0.04)
-  root.add(body, belly)
-
-  const head = new THREE.Group()
-  head.name = 'head'
-  head.position.set(0, 0.78, 0.22)
-  const face = part('face', ball(0.34, 0.33, 0.3), '#ffe7b8')
-  head.add(face)
-  addEyes(head, { y: 0.05, z: 0.23, spread: 0.13, white: 0.142, iris: 0.076 })
-  addSmile(head, 0.27)
-  head.add(part('earL', ball(0.09, 0.1, 0.07), '#f0c36a', -0.22, 0.28, -0.02))
-  head.add(part('earR', ball(0.09, 0.1, 0.07), '#f0c36a', 0.22, 0.28, -0.02))
-  head.add(part('earInL', ball(0.05, 0.055, 0.03), '#f4b4a0', -0.22, 0.28, 0.04))
-  head.add(part('earInR', ball(0.05, 0.055, 0.03), '#f4b4a0', 0.22, 0.28, 0.04))
-
-  const mane = mergeGroup('mane', '#e08932', [
-    ...Array.from({ length: 14 }, (_, i) => () => {
-      const a = (i / 14) * Math.PI * 2 - Math.PI / 2
-      const tuft = part(`m${i}`, ball(0.145, 0.23, 0.125), '#e08932', Math.cos(a) * 0.4, Math.sin(a) * 0.37, -0.02)
-      tuft.rotation.z = a + Math.PI / 2
-      return tuft
-    }),
-    ...Array.from({ length: 10 }, (_, i) => () => {
-      const a = (i / 10) * Math.PI * 2 + 0.18
-      const tuft = part(`mb${i}`, ball(0.13, 0.17, 0.12), '#c96e22', Math.cos(a) * 0.32, Math.sin(a) * 0.22, -0.24)
-      tuft.rotation.z = a
-      return tuft
-    }),
-    () => part('maneTop', ball(0.18, 0.16, 0.16), '#e08932', 0, 0.42, -0.08),
-  ])
-  head.add(mane)
-  root.add(head)
-
-  root.add(
-    thickLeg('leg-front-left', -0.16, 0.14),
-    thickLeg('leg-front-right', 0.16, 0.14),
-    thickLeg('leg-back-left', -0.18, -0.22, 0.24, 0.09),
-    thickLeg('leg-back-right', 0.18, -0.22, 0.24, 0.09),
-  )
-
-  const tail = new THREE.Group()
-  tail.name = 'tail'
-  tail.position.set(0, 0.42, -0.4)
-  tail.add(part('tail-shaft', ball(0.05, 0.05, 0.16), '#f0c36a', 0, 0.02, -0.08))
-  tail.add(part('tail-tuft', ball(0.09, 0.09, 0.09), '#e08932', 0, 0.04, -0.22))
-  root.add(tail)
-
-  tintLegs(root, '#e8b56a', '#d9a066')
-  return root
 }
 
 function tintLegs(root, shaft, paw) {
@@ -185,140 +133,243 @@ function tintLegs(root, shaft, paw) {
   })
 }
 
-function makeDeer() {
-  const root = new THREE.Group()
-  root.name = 'animal-deer'
-  const body = part('body', ball(0.3, 0.26, 0.4), '#d9a066', 0, 0.4, -0.04)
-  const belly = part('belly', ball(0.22, 0.18, 0.3), '#f6e4c8', 0, 0.32, 0.06)
-  root.add(body, belly)
-
-  const spots = mergeGroup('spots', '#fff6e0', [
-    () => part('s1', ball(0.06, 0.05, 0.04), '#fff6e0', -0.14, 0.08, 0.12),
-    () => part('s2', ball(0.05, 0.045, 0.035), '#fff6e0', 0.12, 0.12, 0.02),
-    () => part('s3', ball(0.055, 0.045, 0.035), '#fff6e0', -0.06, 0.14, -0.1),
-    () => part('s4', ball(0.045, 0.04, 0.03), '#fff6e0', 0.16, 0.02, -0.12),
-    () => part('s5', ball(0.04, 0.035, 0.03), '#fff6e0', 0.02, 0.16, 0.16),
+/** Neck ruff in 3D: rings around Y, bib down the chest, volume behind the head. */
+function lionMane() {
+  const MANE = '#d47828'
+  const DARK = '#c26518'
+  const tufts = []
+  const rings = [
+    { y: 0.2, r: 0.3, z0: -0.06, n: 9, rx: 0.11, ry: 0.16, rz: 0.12 },
+    { y: 0.04, r: 0.34, z0: -0.02, n: 11, rx: 0.12, ry: 0.15, rz: 0.13 },
+    { y: -0.14, r: 0.3, z0: 0.04, n: 10, rx: 0.11, ry: 0.18, rz: 0.12 },
+    { y: 0.08, r: 0.26, z0: -0.2, n: 8, rx: 0.12, ry: 0.14, rz: 0.14 },
+  ]
+  rings.forEach((ring, ri) => {
+    for (let i = 0; i < ring.n; i++) {
+      const a = (i / ring.n) * Math.PI * 2 + ri * 0.17
+      const x = Math.sin(a) * ring.r
+      const z = Math.cos(a) * ring.r + ring.z0
+      if (z > 0.2 && ring.y > 0.02) continue
+      tufts.push(() => {
+        const t = part(`tuft-${ri}-${i}`, ball(ring.rx, ring.ry, ring.rz, 10), i % 2 ? DARK : MANE, x, ring.y, z)
+        t.rotation.z = Math.sin(a) * 0.35
+        t.rotation.x = -Math.cos(a) * 0.2
+        return t
+      })
+    }
+  })
+  return mergeGroup('mane', MANE, [
+    () => part('maneCore', ball(0.36, 0.34, 0.3), MANE, 0, 0.02, -0.04),
+    () => part('maneBack', ball(0.3, 0.28, 0.22), DARK, 0, 0.06, -0.26),
+    () => part('maneBib', ball(0.24, 0.3, 0.16), MANE, 0, -0.24, 0.16),
+    () => part('maneChest', ball(0.2, 0.22, 0.14), DARK, 0, -0.32, 0.06),
+    () => part('maneShoulderL', ball(0.14, 0.18, 0.16), MANE, -0.28, -0.06, 0.0),
+    () => part('maneShoulderR', ball(0.14, 0.18, 0.16), MANE, 0.28, -0.06, 0.0),
+    () => part('maneCrown', ball(0.2, 0.14, 0.16), MANE, 0, 0.28, -0.1),
+    ...tufts,
   ])
-  body.add(spots)
+}
+
+function makeLion() {
+  const GOLD = '#f0b54a'
+  const CREAM = '#ffe6b0'
+  const root = new THREE.Group()
+  root.name = 'animal-lion'
+
+  const body = part('body', ball(0.3, 0.28, 0.52), GOLD, 0, 0.52, -0.08)
+  const belly = part('belly', ball(0.22, 0.2, 0.38), CREAM, 0, 0.4, 0.02)
+  const chest = part('chest', ball(0.26, 0.24, 0.2), GOLD, 0, 0.54, 0.28)
+  root.add(body, belly, chest)
+
+  const neck = part('neck', ball(0.14, 0.14, 0.14), GOLD, 0, 0.72, 0.38)
+  root.add(neck)
 
   const head = new THREE.Group()
   head.name = 'head'
-  head.position.set(0, 0.82, 0.28)
-  head.add(part('face', ball(0.26, 0.26, 0.24), '#e8b98a'))
-  head.add(part('muzzle', ball(0.12, 0.1, 0.14), '#f6e4c8', 0, -0.08, 0.18))
-  addEyes(head, { y: 0.04, z: 0.18, spread: 0.1, white: 0.11, iris: 0.06 })
-  addSmile(head, 0.22)
-  head.add(part('earL', ball(0.07, 0.14, 0.05), '#d9a066', -0.16, 0.26, -0.04))
-  head.add(part('earR', ball(0.07, 0.14, 0.05), '#d9a066', 0.16, 0.26, -0.04))
-  head.add(part('earInL', ball(0.035, 0.08, 0.02), '#f4b4a0', -0.16, 0.26, 0.02))
-  head.add(part('earInR', ball(0.035, 0.08, 0.02), '#f4b4a0', 0.16, 0.26, 0.02))
+  head.position.set(0, 0.86, 0.54)
+  head.add(part('face', ball(0.24, 0.22, 0.22), CREAM))
+  head.add(part('muzzle', ball(0.13, 0.1, 0.14), CREAM, 0, -0.07, 0.18))
+  addEyes(head, { y: 0.04, z: 0.18, spread: 0.11, white: 0.118, iris: 0.064 })
+  addSmile(head, 0.24)
+  head.add(part('browL', ball(0.06, 0.02, 0.03), '#c48a48', -0.1, 0.12, 0.16))
+  head.add(part('browR', ball(0.06, 0.02, 0.03), '#c48a48', 0.1, 0.12, 0.16))
+  const earL = part('earL', ball(0.07, 0.08, 0.055), GOLD, -0.18, 0.16, -0.04)
+  const earR = part('earR', ball(0.07, 0.08, 0.055), GOLD, 0.18, 0.16, -0.04)
+  earL.add(part('earInL', ball(0.038, 0.045, 0.02), '#f4b4a0', 0, 0, 0.03))
+  earR.add(part('earInR', ball(0.038, 0.045, 0.02), '#f4b4a0', 0, 0, 0.03))
+  head.add(earL, earR)
 
-  const antler = (name, sx) => {
-    const g = new THREE.Group()
-    g.name = name
-    g.position.set(sx * 0.16, 0.24, -0.02)
-    const wood = '#8b5a2b'
-    const beamGeo = new THREE.CylinderGeometry(0.02, 0.028, 0.14, 10)
-    beamGeo.translate(0, 0.07, 0)
-    const beam = part(`${name}-beam`, beamGeo, wood)
-    beam.rotation.z = sx * 0.42
-    beam.rotation.x = -0.06
-    const joint = part(`${name}-joint`, ball(0.028, 0.028, 0.028), wood, 0, 0.14, 0)
-    const upGeo = new THREE.CylinderGeometry(0.013, 0.018, 0.12, 8)
-    upGeo.translate(0, 0.06, 0)
-    const up = part(`${name}-tine-up`, upGeo, wood, 0, 0.14, 0)
-    up.rotation.z = sx * -0.08
-    up.rotation.x = -0.04
-    const outGeo = new THREE.CylinderGeometry(0.012, 0.016, 0.11, 8)
-    outGeo.translate(0, 0.055, 0)
-    const out = part(`${name}-branch`, outGeo, wood, 0, 0.14, 0)
-    out.rotation.z = sx * 0.78
-    out.rotation.x = 0.05
-    beam.add(joint, up, out)
-    g.add(beam)
-    return g
-  }
-  head.add(antler('antler-left', -1), antler('antler-right', 1))
+  const mane = lionMane()
+  mane.position.set(0, -0.1, -0.2)
+  head.add(mane)
   root.add(head)
 
   root.add(
-    thickLeg('leg-front-left', -0.14, 0.16, 0.3, 0.07),
-    thickLeg('leg-front-right', 0.14, 0.16, 0.3, 0.07),
-    thickLeg('leg-back-left', -0.16, -0.22, 0.28, 0.075),
-    thickLeg('leg-back-right', 0.16, -0.22, 0.28, 0.075),
+    thickLeg('leg-front-left', -0.16, 0.26, 0.46, 0.082, GOLD, '#e0a04a'),
+    thickLeg('leg-front-right', 0.16, 0.26, 0.46, 0.082, GOLD, '#e0a04a'),
+    thickLeg('leg-back-left', -0.18, -0.38, 0.44, 0.09, GOLD, '#e0a04a'),
+    thickLeg('leg-back-right', 0.18, -0.38, 0.44, 0.09, GOLD, '#e0a04a'),
   )
-  tintLegs(root, '#c48a4a', '#b07840')
 
   const tail = new THREE.Group()
   tail.name = 'tail'
-  tail.position.set(0, 0.42, -0.42)
-  tail.add(part('tail-tuft', ball(0.08, 0.08, 0.08), '#f6e4c8'))
+  tail.position.set(0, 0.56, -0.56)
+  tail.add(part('tail-shaft', ball(0.045, 0.045, 0.2), GOLD, 0, 0.04, -0.1))
+  tail.add(part('tail-tuft', ball(0.08, 0.08, 0.09), '#d47828', 0, 0.08, -0.28))
   root.add(tail)
   return root
 }
 
-function makeTiger() {
-  const root = new THREE.Group()
-  root.name = 'animal-tiger'
-  const body = part('body', ball(0.34, 0.26, 0.42), '#f08a3a', 0, 0.38, -0.04)
-  const belly = part('belly', ball(0.24, 0.18, 0.3), '#fff3d6', 0, 0.3, 0.06)
-  root.add(body, belly)
+function deerAntler(name, sx) {
+  const g = new THREE.Group()
+  g.name = name
+  g.position.set(sx * 0.08, 0.2, -0.02)
+  const wood = '#8b5a2b'
+  const beamGeo = new THREE.CylinderGeometry(0.016, 0.024, 0.22, 8)
+  beamGeo.translate(0, 0.11, 0)
+  const beam = part(`${name}-beam`, beamGeo, wood)
+  beam.rotation.z = sx * 0.28
+  beam.rotation.x = -0.12
+  const joint = part(`${name}-joint`, ball(0.022, 0.022, 0.022, 8), wood, 0, 0.22, 0)
+  const upGeo = new THREE.CylinderGeometry(0.01, 0.015, 0.14, 8)
+  upGeo.translate(0, 0.07, 0)
+  const up = part(`${name}-tine-up`, upGeo, wood, 0, 0.22, 0)
+  up.rotation.z = sx * -0.15
+  up.rotation.x = -0.08
+  const outGeo = new THREE.CylinderGeometry(0.009, 0.014, 0.12, 8)
+  outGeo.translate(0, 0.06, 0)
+  const out = part(`${name}-branch`, outGeo, wood, 0, 0.22, 0)
+  out.rotation.z = sx * 0.72
+  out.rotation.x = 0.04
+  beam.add(joint, up, out)
+  g.add(beam)
+  return g
+}
 
-  const stripes = mergeGroup('stripes', '#3a2418', [
-    () => {
-      const s = part('t1', ball(0.36, 0.08, 0.12), '#3a2418', 0, 0.08, 0.02)
-      s.rotation.z = 0.15
-      return s
-    },
-    () => {
-      const s = part('t2', ball(0.34, 0.07, 0.1), '#3a2418', 0, -0.02, -0.08)
-      s.rotation.z = -0.1
-      return s
-    },
-    () => {
-      const s = part('t3', ball(0.3, 0.06, 0.09), '#3a2418', 0, 0.14, -0.14)
-      s.rotation.z = 0.2
-      return s
-    },
-  ])
-  body.add(stripes)
+function makeDeer() {
+  const COAT = '#d9a066'
+  const CREAM = '#f6e4c8'
+  const root = new THREE.Group()
+  root.name = 'animal-deer'
+
+  const body = part('body', ball(0.24, 0.26, 0.48), COAT, 0, 0.58, -0.06)
+  const belly = part('belly', ball(0.18, 0.2, 0.36), CREAM, 0, 0.46, 0.04)
+  root.add(body, belly)
+  body.add(
+    mergeGroup('spots', '#fff6e0', [
+      () => part('s1', ball(0.05, 0.04, 0.035, 8), '#fff6e0', -0.12, 0.06, 0.14),
+      () => part('s2', ball(0.045, 0.038, 0.03, 8), '#fff6e0', 0.1, 0.1, 0.02),
+      () => part('s3', ball(0.05, 0.04, 0.03, 8), '#fff6e0', -0.04, 0.12, -0.12),
+      () => part('s4', ball(0.04, 0.032, 0.028, 8), '#fff6e0', 0.14, 0.0, -0.14),
+      () => part('s5', ball(0.035, 0.03, 0.026, 8), '#fff6e0', 0.02, 0.14, 0.18),
+      () => part('s6', ball(0.032, 0.028, 0.024, 8), '#fff6e0', -0.14, -0.02, -0.02),
+    ]),
+  )
+
+  const neck = part('neck', ball(0.09, 0.2, 0.1), COAT, 0, 0.86, 0.32)
+  neck.rotation.x = 0.35
+  root.add(neck)
 
   const head = new THREE.Group()
   head.name = 'head'
-  head.position.set(0, 0.76, 0.26)
-  head.add(part('face', ball(0.3, 0.28, 0.28), '#f08a3a'))
-  head.add(part('muzzle', ball(0.16, 0.12, 0.16), '#ffe0b0', 0, -0.08, 0.18))
-  addEyes(head, { y: 0.05, z: 0.2, spread: 0.12, white: 0.125, iris: 0.068 })
-  addSmile(head, 0.26)
-  const pointedEar = (name, sx) => {
-    const geo = new THREE.ConeGeometry(0.06, 0.13, 10)
-    geo.translate(0, 0.065, 0)
-    const ear = part(name, geo, '#f08a3a', sx * 0.17, 0.24, -0.02)
-    ear.rotation.z = sx * 0.16
-    ear.rotation.x = 0.08
-    const inner = part(name === 'earL' ? 'earInL' : 'earInR', ball(0.026, 0.05, 0.016), '#f4b4a0', 0, 0.04, 0.028)
-    ear.add(inner)
-    return ear
-  }
-  head.add(pointedEar('earL', -1), pointedEar('earR', 1))
-  head.add(part('cheekL', ball(0.08, 0.05, 0.04), '#3a2418', -0.18, -0.02, 0.16))
-  head.add(part('cheekR', ball(0.08, 0.05, 0.04), '#3a2418', 0.18, -0.02, 0.16))
-  head.add(part('browStripe', ball(0.04, 0.1, 0.04), '#3a2418', 0, 0.16, 0.18))
+  head.position.set(0, 1.08, 0.5)
+  head.add(part('face', ball(0.16, 0.16, 0.16), '#e8b98a'))
+  head.add(part('muzzle', ball(0.08, 0.07, 0.12), CREAM, 0, -0.06, 0.14))
+  addEyes(head, { y: 0.03, z: 0.13, spread: 0.08, white: 0.09, iris: 0.05 })
+  addSmile(head, 0.18)
+  const earL = part('earL', ball(0.045, 0.11, 0.035), COAT, -0.12, 0.16, -0.04)
+  const earR = part('earR', ball(0.045, 0.11, 0.035), COAT, 0.12, 0.16, -0.04)
+  earL.rotation.z = -0.25
+  earR.rotation.z = 0.25
+  earL.add(part('earInL', ball(0.022, 0.06, 0.014, 8), '#f4b4a0', 0, 0.01, 0.02))
+  earR.add(part('earInR', ball(0.022, 0.06, 0.014, 8), '#f4b4a0', 0, 0.01, 0.02))
+  head.add(earL, earR)
+  head.add(deerAntler('antler-left', -1), deerAntler('antler-right', 1))
   root.add(head)
 
   root.add(
-    thickLeg('leg-front-left', -0.16, 0.16),
-    thickLeg('leg-front-right', 0.16, 0.16),
-    thickLeg('leg-back-left', -0.18, -0.22, 0.24, 0.09),
-    thickLeg('leg-back-right', 0.18, -0.22, 0.24, 0.09),
+    thickLeg('leg-front-left', -0.12, 0.24, 0.56, 0.055, '#c48a4a', '#b07840'),
+    thickLeg('leg-front-right', 0.12, 0.24, 0.56, 0.055, '#c48a4a', '#b07840'),
+    thickLeg('leg-back-left', -0.14, -0.34, 0.54, 0.06, '#c48a4a', '#b07840'),
+    thickLeg('leg-back-right', 0.14, -0.34, 0.54, 0.06, '#c48a4a', '#b07840'),
   )
-  tintLegs(root, '#e07a30', '#c96a28')
 
   const tail = new THREE.Group()
   tail.name = 'tail'
-  tail.position.set(0, 0.42, -0.42)
-  tail.add(part('tail-shaft', ball(0.045, 0.045, 0.18), '#f08a3a', 0, 0.02, -0.1))
-  tail.add(part('tail-tuft', ball(0.07, 0.07, 0.07), '#3a2418', 0, 0.04, -0.26))
+  tail.position.set(0, 0.62, -0.5)
+  tail.add(part('tail-tuft', ball(0.07, 0.07, 0.08), CREAM))
+  root.add(tail)
+  return root
+}
+
+function pointedEar(name, sx, hex) {
+  const geo = new THREE.ConeGeometry(0.055, 0.14, 10)
+  geo.translate(0, 0.07, 0)
+  const ear = part(name, geo, hex, sx * 0.15, 0.18, -0.03)
+  ear.rotation.z = sx * 0.18
+  ear.rotation.x = 0.1
+  ear.add(part(name === 'earL' ? 'earInL' : 'earInR', ball(0.022, 0.045, 0.014, 8), '#f4b4a0', 0, 0.04, 0.026))
+  return ear
+}
+
+function makeTiger() {
+  const ORANGE = '#f08a3a'
+  const CREAM = '#ffe0b0'
+  const STRIPE = '#3a2418'
+  const root = new THREE.Group()
+  root.name = 'animal-tiger'
+
+  const body = part('body', ball(0.3, 0.26, 0.5), ORANGE, 0, 0.5, -0.06)
+  const belly = part('belly', ball(0.2, 0.18, 0.36), CREAM, 0, 0.38, 0.04)
+  root.add(body, belly)
+  body.add(
+    mergeGroup('stripes', STRIPE, [
+      () => {
+        const s = part('t1', ball(0.32, 0.055, 0.1, 10), STRIPE, 0, 0.08, 0.04)
+        s.rotation.z = 0.12
+        return s
+      },
+      () => {
+        const s = part('t2', ball(0.3, 0.05, 0.09, 10), STRIPE, 0, -0.02, -0.1)
+        s.rotation.z = -0.08
+        return s
+      },
+      () => {
+        const s = part('t3', ball(0.26, 0.045, 0.08, 10), STRIPE, 0, 0.12, -0.18)
+        s.rotation.z = 0.16
+        return s
+      },
+    ]),
+  )
+
+  const neck = part('neck', ball(0.12, 0.12, 0.12), ORANGE, 0, 0.7, 0.36)
+  root.add(neck)
+
+  const head = new THREE.Group()
+  head.name = 'head'
+  head.position.set(0, 0.84, 0.52)
+  head.add(part('face', ball(0.22, 0.2, 0.2), ORANGE))
+  head.add(part('muzzle', ball(0.14, 0.1, 0.15), CREAM, 0, -0.08, 0.16))
+  addEyes(head, { y: 0.04, z: 0.16, spread: 0.1, white: 0.112, iris: 0.06 })
+  addSmile(head, 0.22)
+  head.add(pointedEar('earL', -1, ORANGE), pointedEar('earR', 1, ORANGE))
+  head.add(part('cheekL', ball(0.07, 0.045, 0.035, 8), STRIPE, -0.16, -0.02, 0.12))
+  head.add(part('cheekR', ball(0.07, 0.045, 0.035, 8), STRIPE, 0.16, -0.02, 0.12))
+  head.add(part('browStripe', ball(0.035, 0.08, 0.03, 8), STRIPE, 0, 0.12, 0.14))
+  root.add(head)
+
+  root.add(
+    thickLeg('leg-front-left', -0.16, 0.26, 0.46, 0.078, ORANGE, '#e07a30'),
+    thickLeg('leg-front-right', 0.16, 0.26, 0.46, 0.078, ORANGE, '#e07a30'),
+    thickLeg('leg-back-left', -0.18, -0.36, 0.44, 0.085, ORANGE, '#e07a30'),
+    thickLeg('leg-back-right', 0.18, -0.36, 0.44, 0.085, ORANGE, '#e07a30'),
+  )
+
+  const tail = new THREE.Group()
+  tail.name = 'tail'
+  tail.position.set(0, 0.54, -0.54)
+  tail.add(part('tail-shaft', ball(0.042, 0.042, 0.22), ORANGE, 0, 0.05, -0.12))
+  tail.add(part('tail-tuft', ball(0.07, 0.07, 0.08), STRIPE, 0, 0.08, -0.32))
   root.add(tail)
   return root
 }
@@ -326,8 +377,8 @@ function makeTiger() {
 function clipsFor(root) {
   const rest = [0, 0, 0, 1]
   const walkTimes = [0, 0.25, 0.5, 0.75, 1]
-  const pairA = flatten([rest, quatAxis(X, 0.42), rest, quatAxis(X, -0.42), rest])
-  const pairB = flatten([rest, quatAxis(X, -0.42), rest, quatAxis(X, 0.42), rest])
+  const pairA = flatten([rest, quatAxis(X, 0.48), rest, quatAxis(X, -0.48), rest])
+  const pairB = flatten([rest, quatAxis(X, -0.48), rest, quatAxis(X, 0.48), rest])
   const walk = new THREE.AnimationClip('walk', 1, [
     new THREE.QuaternionKeyframeTrack('leg-front-left.quaternion', walkTimes, pairA),
     new THREE.QuaternionKeyframeTrack('leg-front-right.quaternion', walkTimes, pairB),
@@ -341,7 +392,7 @@ function clipsFor(root) {
     new THREE.QuaternionKeyframeTrack(
       'tail.quaternion',
       walkTimes,
-      flatten([rest, quatAxis(Y, 0.35), rest, quatAxis(Y, -0.35), rest]),
+      flatten([rest, quatAxis(Y, 0.38), rest, quatAxis(Y, -0.38), rest]),
     ),
   ])
   const idleTimes = [0, 1.2, 2.4]
@@ -383,8 +434,25 @@ async function exportGlb(root, clips) {
   return Buffer.from(data)
 }
 
+function assertStanding(root, id) {
+  root.updateMatrixWorld(true)
+  const body = root.getObjectByName('body')
+  if (!body || !body.geometry) throw new Error(`${id} missing body`)
+  body.geometry.computeBoundingBox()
+  const bs = body.geometry.boundingBox.getSize(new THREE.Vector3())
+  if (bs.z <= bs.y) throw new Error(`${id} body is not longer than tall (${bs.z} vs ${bs.y})`)
+  if (id === 'lion') {
+    const mane = root.getObjectByName('mane')
+    if (!mane || !mane.geometry) throw new Error('lion missing mane')
+    mane.geometry.computeBoundingBox()
+    const ms = mane.geometry.boundingBox.getSize(new THREE.Vector3())
+    if (ms.z < 0.45) throw new Error(`lion mane too flat in Z: ${ms.z}`)
+  }
+}
+
 async function writeAnimal(id, builder) {
   const root = builder()
+  assertStanding(root, id)
   const clips = clipsFor(root)
   const buf = await exportGlb(root, clips)
   const dest = path.join(OUT, `${id}.glb`)
@@ -395,4 +463,4 @@ async function writeAnimal(id, builder) {
 await writeAnimal('lion', makeLion)
 await writeAnimal('deer', makeDeer)
 await writeAnimal('tiger', makeTiger)
-console.log('authored cartoon cubs')
+console.log('authored standing quads')

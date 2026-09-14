@@ -29,7 +29,7 @@ function glbJson(file: string): {
   }
 }
 
-describe('authored cartoon cubs as default land lion/deer/tiger', () => {
+describe('authored standing quads as default land lion/deer/tiger', () => {
   afterEach(() => {
     setAnimalModelProvider(null)
   })
@@ -39,7 +39,7 @@ describe('authored cartoon cubs as default land lion/deer/tiger', () => {
     await loadAnimalTemplates()
   }
 
-  it('loads round cartoon cubs, not Kenney cubes or fox/wolf stand-ins', async () => {
+  it('loads standing quads, not Kenney cubes or fox/wolf stand-ins', async () => {
     await loadShipped()
     for (const kind of ['lion', 'deer', 'tiger'] as AnimalId[]) {
       const json = glbJson(`models/${kind}.glb`)
@@ -48,26 +48,36 @@ describe('authored cartoon cubs as default land lion/deer/tiger', () => {
       expect(nodes).toContain('body')
       expect(nodes).toContain('leg-front-left')
       expect(nodes).toContain('eyeL')
+      expect(nodes).toContain('muzzle')
       expect(nodes).not.toContain('fox')
       expect(nodes).not.toContain('wolf')
-      expect((json.animations || []).map((c) => c.name)).toContain('walk')
+      expect((json.animations || []).map((c) => c.name)).toEqual(expect.arrayContaining(['walk', 'idle', 'eat', 'static']))
       expect(json.asset?.generator ?? '').toMatch(/GLTFExporter/i)
 
       const group = createAnimalModel(kind, { body: '#ffffff' })
-      expect(group.userData.pack).toBe('cartoon-cub')
+      expect(group.userData.pack).toBe('standing-quad')
       expect(group.getObjectByName(`animal-${kind}`)).toBeTruthy()
       expect(group.getObjectByName('eyeL')).toBeTruthy()
       const body = group.getObjectByName('body') as THREE.Mesh
       expect(body.geometry).not.toBeInstanceOf(THREE.BoxGeometry)
       expect(body.geometry).not.toBeInstanceOf(THREE.CapsuleGeometry)
+      body.geometry.computeBoundingBox()
+      const size = body.geometry.boundingBox!.getSize(new THREE.Vector3())
+      expect(size.z).toBeGreaterThan(size.y)
       const mat = body.material as THREE.MeshLambertMaterial
       expect(mat.transparent).toBe(false)
       expect(mat.color.getHexString()).not.toBe('ffffff')
     }
     const lion = createAnimalModel('lion', { body: '#ffffff' })
-    expect(lion.getObjectByName('mane')).toBeTruthy()
+    const mane = lion.getObjectByName('mane') as THREE.Mesh
+    expect(mane).toBeTruthy()
+    mane.geometry.computeBoundingBox()
+    const maneSize = mane.geometry.boundingBox!.getSize(new THREE.Vector3())
+    expect(maneSize.z).toBeGreaterThan(0.45)
     const deer = createAnimalModel('deer', { body: '#ffffff' })
     expect(deer.getObjectByName('antler-left')).toBeTruthy()
+    const tiger = createAnimalModel('tiger', { body: '#ffffff' })
+    expect(tiger.getObjectByName('mane')).toBeFalsy()
   })
 
   it('plays the walk clip on the lion', async () => {
@@ -77,7 +87,7 @@ describe('authored cartoon cubs as default land lion/deer/tiger', () => {
     expect((lion.userData.activeClip as THREE.AnimationAction).getClip().name).toBe('walk')
   })
 
-  it('kid coloring tints the cub coat and keeps eyes authored', async () => {
+  it('kid coloring tints the coat and keeps eyes authored', async () => {
     await loadShipped()
     const lion = createAnimalModel('lion', { body: '#e24b4b' })
     const body = lion.getObjectByName('body') as THREE.Mesh

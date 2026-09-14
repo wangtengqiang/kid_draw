@@ -1,5 +1,5 @@
 /**
- * Museum/LED stack: authored cartoon cubs (lion/deer/tiger) + Kenney fish + Gobkit marine.
+ * Museum/LED stack: standing cartoon quads (lion/deer/tiger) + Kenney fish + Gobkit marine.
  * GLTFLoader + AnimationMixer. Kid paintboard stays the coat UV.
  */
 import * as THREE from 'three'
@@ -218,7 +218,7 @@ function paintMesh(obj: THREE.Mesh, bodyTint: string): void {
 }
 
 function packOf(animal: AnimalId): string {
-  if (animal === 'lion' || animal === 'deer' || animal === 'tiger') return 'cartoon-cub'
+  if (animal === 'lion' || animal === 'deer' || animal === 'tiger') return 'standing-quad'
   if (animal === 'fish') return 'kenney-cube-pets'
   return 'gobkit'
 }
