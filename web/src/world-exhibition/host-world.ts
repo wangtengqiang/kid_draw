@@ -22,9 +22,9 @@ interface Actor {
   emoteUntil: number
 }
 
-/** 森林右侧大海：岸在小路外，海面铺开。 */
-export const OCEAN = { x: 10.2, z: 0.5, rx: 4.9, rz: 7.4 }
-export const SHORE_DRINK = { x: 5.25, z: 1.15 }
+/** 森林右侧大海：岸在小路外，海面沿整条右岸铺开。 */
+export const OCEAN = { x: 10.1, z: 1.0, rx: 4.3, rz: 11.2 }
+export const SHORE_DRINK = { x: 5.35, z: 1.4 }
 
 const shared = {
   trunkGeo: new THREE.CylinderGeometry(0.08, 0.12, 1, 5),
@@ -99,9 +99,9 @@ export class HostWorld {
     this.renderer.setPixelRatio(1)
     this.renderer.shadowMap.enabled = false
     this.camera = new THREE.PerspectiveCamera(42, 1, 0.2, 70)
-    this.camera.position.set(2.4, 4.8, 12.6)
-    this.camera.lookAt(2.2, 1.0, -2.2)
-    this.orbit = new OrbitZoom(canvas, this.camera, new THREE.Vector3(2.0, 0.65, -0.2), HOST_ORBIT)
+    this.camera.position.set(2.6, 5.0, 12.8)
+    this.camera.lookAt(3.4, 0.85, -1.4)
+    this.orbit = new OrbitZoom(canvas, this.camera, new THREE.Vector3(3.2, 0.6, 0.2), HOST_ORBIT)
     const grass = new THREE.CanvasTexture(paintGrassGround())
     grass.wrapS = grass.wrapT = THREE.RepeatWrapping
     grass.repeat.set(4, 4)
@@ -241,7 +241,7 @@ export class HostWorld {
     }
 
     if (this.action === 'drink') {
-      actor.group.position.set(SHORE_DRINK.x, 0, SHORE_DRINK.z + actor.lane * 0.55)
+      actor.group.position.set(SHORE_DRINK.x, 0, SHORE_DRINK.z + actor.lane * 1.55)
       actor.group.rotation.y = 0
       tickAction(actor.group, 'drink', t)
       return
@@ -255,7 +255,7 @@ export class HostWorld {
     }
     if (this.action === 'sit') {
       const a = actor.angle
-      actor.group.position.set(Math.cos(a) * 2.15, 0, Math.sin(a) * 2.15)
+      actor.group.position.set(Math.cos(a) * 3.05, 0, Math.sin(a) * 3.05)
       actor.group.rotation.y = a + Math.PI
       tickAction(actor.group, 'sit', t)
       return
@@ -350,29 +350,26 @@ export class HostWorld {
   }
 
   private addOcean(): void {
-    const shore = new THREE.Mesh(shared.diskGeo, shared.shoreMat)
+    const shore = new THREE.Mesh(new THREE.PlaneGeometry(9.6, 24, 1, 1), shared.shoreMat)
     shore.rotation.x = -Math.PI / 2
-    shore.position.set(OCEAN.x - 0.35, 0.016, OCEAN.z)
-    shore.scale.set(OCEAN.rx * 1.22, 1, OCEAN.rz * 1.12)
+    shore.position.set(9.3, 0.016, 0.5)
     const water = new THREE.Mesh(
-      shared.diskGeo,
+      new THREE.PlaneGeometry(8.4, 23, 1, 1),
       new THREE.MeshLambertMaterial({ color: '#3a8fb5' }),
     )
     water.rotation.x = -Math.PI / 2
-    water.position.set(OCEAN.x, 0.028, OCEAN.z)
-    water.scale.set(OCEAN.rx, 1, OCEAN.rz)
+    water.position.set(10.15, 0.03, 0.7)
     const deep = new THREE.Mesh(
-      shared.diskGeo,
+      new THREE.PlaneGeometry(5.2, 20, 1, 1),
       new THREE.MeshLambertMaterial({ color: '#2a6f96' }),
     )
     deep.rotation.x = -Math.PI / 2
-    deep.position.set(OCEAN.x + 1.4, 0.034, OCEAN.z)
-    deep.scale.set(OCEAN.rx * 0.62, 1, OCEAN.rz * 0.7)
+    deep.position.set(11.5, 0.036, 1.1)
     this.decorations.add(shore, water, deep)
     for (const [x, z, s] of [
-      [5.7, 2.6, 1.1],
-      [6.1, -1.4, 0.85],
-      [5.5, 0.2, 0.7],
+      [5.8, 3.4, 1.15],
+      [6.0, -2.2, 0.9],
+      [5.6, 0.6, 0.75],
     ] as const) {
       const rock = new THREE.Mesh(shared.stoneGeo, shared.rockMat)
       rock.position.set(x, 0.06, z)

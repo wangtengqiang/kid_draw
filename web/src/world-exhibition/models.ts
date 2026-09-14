@@ -580,10 +580,11 @@ export function tickAction(group: THREE.Group, action: WorldAction, t: number): 
     return
   }
   if (action === 'sit') {
-    if (legs[2]) legs[2].rotation.z = 0.95
-    if (legs[3]) legs[3].rotation.z = 0.95
-    if (legs[0]) legs[0].rotation.z = -0.12
-    if (legs[1]) legs[1].rotation.z = -0.12
+    if (legs[2]) legs[2].rotation.z = 1.15
+    if (legs[3]) legs[3].rotation.z = 1.15
+    if (legs[0]) legs[0].rotation.z = -0.18
+    if (legs[1]) legs[1].rotation.z = -0.18
+    group.rotation.x = 0.18
     return
   }
   if (action === 'drink') {
