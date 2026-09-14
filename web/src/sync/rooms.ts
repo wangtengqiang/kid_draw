@@ -214,6 +214,8 @@ export function joinQuery(): string | null {
 }
 
 export function isHostQuery(): boolean {
+  const path = window.location.pathname.replace(/\/+$/, '')
+  if (path.endsWith('/host')) return true
   const q = new URLSearchParams(window.location.search)
   return q.get('host') === '1' || q.get('role') === 'host'
 }

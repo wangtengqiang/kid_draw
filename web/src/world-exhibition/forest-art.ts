@@ -2,8 +2,8 @@
  * 观展背景：画出来的远山、湖水和密林，靠近场地照片里的石径树林。
  */
 export function paintForestPanorama(): HTMLCanvasElement {
-  const w = 2048
-  const h = 1024
+  const w = 1024
+  const h = 512
   const c = document.createElement('canvas')
   c.width = w
   c.height = h
@@ -40,16 +40,16 @@ export function paintForestPanorama(): HTMLCanvasElement {
   ctx.ellipse(w * 0.72, h * 0.6, w * 0.16, h * 0.045, 0, 0, Math.PI * 2)
   ctx.fill()
 
-  for (let i = 0; i < 32; i++) {
-    const x = (i / 32) * w + Math.sin(i * 1.7) * 30
-    paintMass(ctx, x, h * 0.52, 200 + (i % 5) * 36, i)
+  for (let i = 0; i < 14; i++) {
+    const x = (i / 14) * w + Math.sin(i * 1.7) * 30
+    paintMass(ctx, x, h * 0.52, 160 + (i % 5) * 28, i)
   }
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 36; i++) {
     const x = ((i * 97) % w) + Math.sin(i) * 12
-    paintTree(ctx, x, h * 0.48 + (i % 6) * 14, 120 + (i % 9) * 22, i)
+    paintTree(ctx, x, h * 0.48 + (i % 6) * 14, 90 + (i % 9) * 16, i)
   }
-  for (let i = 0; i < 56; i++) {
-    paintTree(ctx, (i / 56) * w + 24, h * 0.6 + (i % 4) * 10, 170 + (i % 6) * 28, i + 40)
+  for (let i = 0; i < 22; i++) {
+    paintTree(ctx, (i / 22) * w + 24, h * 0.6 + (i % 4) * 10, 120 + (i % 6) * 20, i + 40)
   }
 
   const mist = ctx.createLinearGradient(0, h * 0.48, 0, h)
@@ -92,8 +92,8 @@ function paintMass(ctx: CanvasRenderingContext2D, x: number, y: number, r: numbe
 }
 
 export function paintGrassGround(): HTMLCanvasElement {
-  const w = 1024
-  const h = 1024
+  const w = 256
+  const h = 256
   const c = document.createElement('canvas')
   c.width = w
   c.height = h
@@ -101,7 +101,7 @@ export function paintGrassGround(): HTMLCanvasElement {
   if (!ctx) return c
   ctx.fillStyle = '#3f6e32'
   ctx.fillRect(0, 0, w, h)
-  for (let i = 0; i < 1400; i++) {
+  for (let i = 0; i < 280; i++) {
     const x = (i * 73) % w
     const y = (i * 131) % h
     ctx.fillStyle = i % 4 ? '#4e8540' : '#2f5c28'
@@ -110,7 +110,7 @@ export function paintGrassGround(): HTMLCanvasElement {
     ctx.fill()
   }
   ctx.lineCap = 'round'
-  for (let i = 0; i < 2200; i++) {
+  for (let i = 0; i < 400; i++) {
     const x = (i * 47) % w
     const y = (i * 89) % h
     ctx.strokeStyle = i % 3 ? 'rgba(90,140,60,0.55)' : 'rgba(40,80,32,0.5)'
