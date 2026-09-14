@@ -101,7 +101,7 @@ describe('art cutouts as default land lion/deer/tiger', () => {
     expect((iris.material as THREE.MeshLambertMaterial).color.getHexString()).not.toBe('e24b4b')
   })
 
-  it('kid paintboard stripes become the body map, not a single averaged tint', async () => {
+  it('keeps the art-cutout sprite when kid paint cannot be composited', async () => {
     await loadShipped()
     const data = new Uint8Array([204, 34, 68, 255, 17, 68, 170, 255, 204, 34, 68, 255, 17, 68, 170, 255])
     const paper = new THREE.DataTexture(data, 2, 2)
@@ -109,14 +109,13 @@ describe('art cutouts as default land lion/deer/tiger', () => {
     const lion = createAnimalModel('lion', { body: '#e24b4b' }, paper)
     const body = lion.getObjectByName('body') as THREE.Mesh
     const mat = body.material as THREE.MeshLambertMaterial
-    expect(mat.color.getHexString()).toBe('ffffff')
-    expect(mat.map).toBe(lion.userData.drawing)
+    expect(body.userData.cutout).toBe(true)
+    expect(mat.map).toBeTruthy()
+    expect(mat.map).not.toBe(paper)
     const uv = body.geometry.getAttribute('uv')
     expect(uv).toBeTruthy()
     expect(uv.count).toBeGreaterThan(8)
-    const pix = (mat.map as THREE.DataTexture).image.data
-    expect(pix[0]).toBe(204)
-    expect(pix[4]).toBe(17)
+    expect(mat.alphaTest).toBeGreaterThan(0)
   })
 
   it('Gobkit whale/seal remain marine stand-ins', async () => {

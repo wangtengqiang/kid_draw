@@ -315,9 +315,11 @@ export class HostWorld {
     })
   }
 
-  /** Point the host camera at the first animal's face (preview screenshots). */
+  /** Point the host camera at the newest land pet (the one just sent in). */
   frameFirstAnimal(): boolean {
-    const actor = this.actors.values().next().value as Actor | undefined
+    const actors = [...this.actors.values()]
+    const land = actors.filter((a) => !a.marine)
+    const actor = (land.length ? land : actors).at(-1)
     if (!actor) return false
     const a = actor.angle
     const tx = -Math.sin(a)

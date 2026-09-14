@@ -164,16 +164,38 @@ function keepArtPixel(r: number, g: number, b: number): boolean {
   return false
 }
 
-function paintImage(
-  source: CoatSource,
-): CanvasImageSource | ImageData | HTMLCanvasElement | HTMLImageElement | null {
+function paintImage(source: CoatSource): CanvasImageSource | null {
   if (source instanceof HTMLCanvasElement || source instanceof HTMLImageElement) return source
+  if (typeof source === 'string') {
+    const img = document.createElement('img')
+    img.decoding = 'sync'
+    img.src = source
+    if (img.complete && img.naturalWidth > 0) return img
+    return null
+  }
   if (source instanceof THREE.Texture && source.image) {
-    const img = source.image as HTMLImageElement | HTMLCanvasElement | ImageBitmap | { data?: Uint8Array; width?: number; height?: number }
+    const img = source.image as HTMLImageElement | HTMLCanvasElement | ImageBitmap
     if (img instanceof HTMLCanvasElement || img instanceof HTMLImageElement) return img
     if (typeof ImageBitmap !== 'undefined' && img instanceof ImageBitmap) return img
   }
   return null
+}
+
+function whenPaintReady(source: CoatSource, use: (img: HTMLCanvasElement | HTMLImageElement) => void): void {
+  const now = paintImage(source)
+  if (now instanceof HTMLCanvasElement || now instanceof HTMLImageElement) {
+    use(now)
+    return
+  }
+  if (typeof source === 'string') {
+    const img = document.createElement('img')
+    img.onload = () => use(img)
+    img.src = source
+    return
+  }
+  if (source instanceof THREE.Texture && source.image instanceof HTMLImageElement) {
+    source.image.addEventListener('load', () => use(source.image as HTMLImageElement), { once: true })
+  }
 }
 
 function multiplyCutoutCoat(root: THREE.Group, source: CoatSource): boolean {
@@ -195,17 +217,13 @@ function multiplyCutoutCoat(root: THREE.Group, source: CoatSource): boolean {
     return false
   }
   const base = ctx.getImageData(0, 0, w, h)
+  const paint = paintImage(source)
+  if (!paint) return false
   ctx.save()
   ctx.globalCompositeOperation = 'multiply'
-  const paint = paintImage(source)
-  if (paint) {
-    try {
-      ctx.drawImage(paint as CanvasImageSource, 0, 0, w, h)
-    } catch {
-      ctx.restore()
-      return false
-    }
-  } else {
+  try {
+    ctx.drawImage(paint, 0, 0, w, h)
+  } catch {
     ctx.restore()
     return false
   }
@@ -233,12 +251,20 @@ function multiplyCutoutCoat(root: THREE.Group, source: CoatSource): boolean {
   return true
 }
 
-/** 把画板 / 拍照原图像素贴上身子。已投影过的网格只换贴图。 */
+function applyCutoutCoat(root: THREE.Group, source: CoatSource): void {
+  if (multiplyCutoutCoat(root, source)) return
+  whenPaintReady(source, (img) => {
+    multiplyCutoutCoat(root, img)
+  })
+}
+
+/** 把画板 / 拍照原图像素贴上身子。剪纸只叠乘，绝不把角色图换成涂色纸。 */
 export function applyDrawingCoat(root: THREE.Group, source: CoatSource): void {
   if (root.userData.pack === 'art-cutout') {
-    if (multiplyCutoutCoat(root, source)) return
+    applyCutoutCoat(root, source)
+    return
   }
-  if (!root.userData.drawingUVs && root.userData.pack !== 'art-cutout') {
+  if (!root.userData.drawingUVs) {
     projectBoxUVs(root)
     root.userData.drawingUVs = true
   }

@@ -74,6 +74,7 @@ export class HostScreen {
     this.world = new HostWorld(canvas)
     this.world.applyTheme(room.theme)
     this.world.syncAnimals(hydrateThumbs(room.animals))
+    requestAnimationFrame(() => this.world?.frameFirstAnimal())
     const qr = this.root.querySelector<HTMLImageElement>('#qr')
     if (qr) {
       QRCode.toDataURL(creatorJoinUrl(roomId), {
