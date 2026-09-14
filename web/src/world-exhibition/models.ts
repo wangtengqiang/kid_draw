@@ -12,8 +12,6 @@ import {
   DEER_BODY,
   DEER_EAR_L,
   DEER_EAR_R,
-  DEER_HEAD,
-  DEER_NECK,
   DEER_TAIL,
   LION_BODY,
   LION_EAR_L,
@@ -198,11 +196,9 @@ function deer(painted: Record<string, string>, coat: THREE.Texture): THREE.Group
     return 1
   })
   addBody(g, part(bodyGeo, 'body', a, painted, coat))
-  addBody(g, part(profileVolume(DEER_NECK, 0.1), 'neck', a, painted, coat))
-  addBody(g, part(profileVolume(DEER_HEAD, 0.12, (x) => (x > 1.18 ? 0.62 : 1)), 'head', a, painted, coat))
-  const cheek = mesh(new THREE.SphereGeometry(0.09, 14, 12), colorOf(a, 'head', painted))
-  cheek.position.set(1.04, 1.28, 0)
-  cheek.scale.set(1.15, 0.95, 1.05)
+  const cheek = mesh(new THREE.SphereGeometry(0.14, 16, 14), colorOf(a, 'head', painted))
+  cheek.position.set(1.06, 1.32, 0)
+  cheek.scale.set(1.2, 1.05, 1.15)
   cheek.userData.region = 'head'
   g.add(cheek)
   addBody(g, part(profileVolume(DEER_EAR_L, 0.028), 'earL', a, painted))
@@ -219,12 +215,12 @@ function deer(painted: Record<string, string>, coat: THREE.Texture): THREE.Group
   }
 
   const legs = placeLegs(g, a, painted, [
-    { name: 'legFL', x: 0.4, z: 0.24, hipY: 0.7, radius: 0.04, foot: 'hoof' },
-    { name: 'legFR', x: 0.4, z: -0.24, hipY: 0.7, radius: 0.04, foot: 'hoof' },
-    { name: 'legBL', x: -0.36, z: 0.26, hipY: 0.72, radius: 0.044, foot: 'hoof' },
-    { name: 'legBR', x: -0.36, z: -0.26, hipY: 0.72, radius: 0.044, foot: 'hoof' },
+    { name: 'legFL', x: 0.4, z: 0.24, hipY: 0.7, radius: 0.055, foot: 'hoof' },
+    { name: 'legFR', x: 0.4, z: -0.24, hipY: 0.7, radius: 0.055, foot: 'hoof' },
+    { name: 'legBL', x:  -0.36, z: 0.26, hipY: 0.72, radius: 0.06, foot: 'hoof' },
+    { name: 'legBR', x: -0.36, z: -0.26, hipY: 0.72, radius: 0.06, foot: 'hoof' },
   ])
-  cuteFace(g, 1.12, 1.32, 0.1, 0.92)
+  cuteFace(g, 1.14, 1.34, 0.12, 1.08)
   g.userData.legs = legs
   return g
 }
@@ -290,30 +286,30 @@ function lion(painted: Record<string, string>, coat: THREE.Texture): THREE.Group
     ),
   )
 
-  const manePts: THREE.Vector2[] = []
-  for (let i = 0; i <= 24; i++) {
-    const t = i / 24
-    const ang = t * Math.PI
-    const scallop = 1 + 0.12 * Math.sin(t * Math.PI * 11)
-    const r = (0.18 + Math.sin(ang) * 0.46) * scallop
-    manePts.push(new THREE.Vector2(Math.max(0.12, r), 0.52 + (1 - Math.cos(ang)) * 0.5))
-  }
-  const mane = part(new THREE.LatheGeometry(manePts, 32), 'mane', a, painted)
-  mane.position.x = 0.62
-  addBody(g, mane)
-  addBody(g, part(profileVolume(LION_MANE, 0.2), 'mane', a, painted))
+  const mane = new THREE.Group()
+  mane.userData.region = 'mane'
+  const maneColor = colorOf(a, 'mane', painted)
   for (const [ox, oy, oz, s] of [
-    [0.62, 1.42, 0.18, 0.16],
-    [0.62, 1.42, -0.18, 0.16],
-    [0.42, 1.18, 0.28, 0.14],
-    [0.42, 1.18, -0.28, 0.14],
-    [0.88, 1.28, 0.22, 0.13],
-    [0.88, 1.28, -0.22, 0.13],
+    [0.7, 1.05, 0, 0.42],
+    [0.55, 1.28, 0.12, 0.28],
+    [0.55, 1.28, -0.12, 0.28],
+    [0.48, 0.92, 0.22, 0.24],
+    [0.48, 0.92, -0.22, 0.24],
+    [0.88, 1.18, 0.18, 0.22],
+    [0.88, 1.18, -0.18, 0.22],
+    [0.78, 1.42, 0.08, 0.2],
+    [0.78, 1.42, -0.08, 0.2],
+    [0.42, 1.1, 0, 0.26],
+    [0.95, 0.88, 0.12, 0.18],
+    [0.95, 0.88, -0.12, 0.18],
   ] as const) {
-    const tuft = part(new THREE.SphereGeometry(s, 10, 8), 'mane', a, painted)
+    const tuft = mesh(new THREE.SphereGeometry(s, 12, 10), maneColor)
     tuft.position.set(ox, oy, oz)
-    g.add(tuft)
+    tuft.userData.region = 'mane'
+    mane.add(tuft)
   }
+  g.add(mane)
+  addBody(g, part(profileVolume(LION_MANE, 0.18), 'mane', a, painted))
 
   addBody(g, part(profileVolume(LION_HEAD, 0.2), 'head', a, painted, coat))
   addBody(g, part(profileVolume(LION_MUZZLE, 0.13), 'muzzle', a, painted))

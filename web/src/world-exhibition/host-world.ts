@@ -39,9 +39,9 @@ export class HostWorld {
     this.renderer.setPixelRatio(Math.min(devicePixelRatio, 2))
     this.renderer.shadowMap.enabled = true
     this.camera = new THREE.PerspectiveCamera(42, 1, 0.1, 140)
-    this.camera.position.set(0, 3.2, 9.4)
-    this.camera.lookAt(0, 0.7, 0)
-    this.orbit = new OrbitZoom(canvas, this.camera, new THREE.Vector3(0, 0.7, 0), HOST_ORBIT)
+    this.camera.position.set(2.4, 4.2, 11.2)
+    this.camera.lookAt(0, 0.55, -1.2)
+    this.orbit = new OrbitZoom(canvas, this.camera, new THREE.Vector3(0, 0.55, 0), HOST_ORBIT)
     const grass = new THREE.CanvasTexture(paintGrassGround())
     grass.wrapS = grass.wrapT = THREE.RepeatWrapping
     grass.repeat.set(6, 6)
@@ -196,41 +196,49 @@ export class HostWorld {
     this.decorations.add(backdrop)
 
     this.addStonePath()
-    this.addLake(-7.4, 3.6, 2.7, 0.08)
-    this.addLake(8.6, -5.2, 1.7, 0.12)
+    this.addLake(6.8, -3.2, 2.8, 0.1)
+    this.addLake(-8.2, -1.4, 1.8, -0.08)
 
     for (let i = 0; i < 7; i++) {
       const hill = rollingHill(i)
       const a = (i / 7) * Math.PI * 2 + 0.4
-      hill.position.set(Math.cos(a) * 12.5, 0, Math.sin(a) * 12.5)
+      const z = Math.sin(a) * 13.2
+      if (z > 8) continue
+      hill.position.set(Math.cos(a) * 13.2, 0, z)
       this.decorations.add(hill)
     }
     for (let i = 0; i < 6; i++) {
       const mtn = mountain(i)
-      const a = (i / 6) * Math.PI * 2 + 0.18
-      mtn.position.set(Math.cos(a) * 20, 0, Math.sin(a) * 20)
+      const a = (i / 6) * Math.PI * 2 + 0.35
+      mtn.position.set(Math.cos(a) * 21, 0, Math.sin(a) * 21)
       this.decorations.add(mtn)
     }
 
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * Math.PI * 2 + 0.2
+      const x = Math.cos(a) * 8.4
+      const z = Math.sin(a) * 8.4
+      if (z > 5.8) continue
       const tree = woodTree(i)
-      const a = (i / 18) * Math.PI * 2 + 0.07
-      tree.position.set(Math.cos(a) * 6.8, 0, Math.sin(a) * 6.8)
+      tree.position.set(x, 0, z)
       tree.scale.setScalar(1.05 + (i % 4) * 0.1)
       this.decorations.add(tree)
     }
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 18; i++) {
+      const a = (i / 18) * Math.PI * 2 + 0.41
+      const x = Math.cos(a) * 11.4
+      const z = Math.sin(a) * 11.4
+      if (z > 8.5) continue
       const tree = woodTree(i + 40)
-      const a = (i / 20) * Math.PI * 2 + 0.31
-      tree.position.set(Math.cos(a) * 9.6, 0, Math.sin(a) * 9.6)
-      tree.scale.setScalar(1.35 + (i % 3) * 0.12)
+      tree.position.set(x, 0, z)
+      tree.scale.setScalar(1.4 + (i % 3) * 0.12)
       this.decorations.add(tree)
     }
     for (let i = 0; i < 14; i++) {
       const tree = woodTree(i + 80)
       const a = (i / 14) * Math.PI * 2 + 0.55
-      tree.position.set(Math.cos(a) * 14.2, 0, Math.sin(a) * 14.2)
-      tree.scale.setScalar(1.7)
+      tree.position.set(Math.cos(a) * 15.6, 0, Math.sin(a) * 15.6)
+      tree.scale.setScalar(1.75)
       this.decorations.add(tree)
     }
     for (let i = 0; i < 16; i++) {
@@ -241,7 +249,7 @@ export class HostWorld {
     }
     for (let i = 0; i < 8; i++) {
       const reed = reedClump(i)
-      reed.position.set(-7.4 + Math.cos(i) * 2.2, 0, 3.6 + Math.sin(i * 1.3) * 1.6)
+      reed.position.set(6.8 + Math.cos(i) * 2.4, 0, -3.2 + Math.sin(i * 1.3) * 1.5)
       this.decorations.add(reed)
     }
   }
@@ -318,7 +326,7 @@ export class HostWorld {
       new THREE.MeshPhongMaterial({ color: '#cfe8f6', shininess: 70, specular: '#ffffff' }),
     )
     ice.rotation.x = -Math.PI / 2
-    ice.position.set(-7.2, 0.04, 3.4)
+    ice.position.set(6.6, 0.04, -3.0)
     ice.scale.set(1.2, 1, 0.8)
     ice.userData.water = true
     this.decorations.add(ice)
@@ -459,8 +467,8 @@ function rollingHill(seed: number): THREE.Group {
 
 function mountain(seed: number, snowy = false): THREE.Group {
   const g = new THREE.Group()
-  const h = 5.4 + (seed % 4) * 1.1
-  const r = 3.2 + (seed % 3) * 0.5
+  const h = 7.2 + (seed % 4) * 1.4
+  const r = 3.6 + (seed % 3) * 0.6
   const rock = new THREE.Mesh(
     new THREE.ConeGeometry(r, h, 6 + (seed % 3)),
     new THREE.MeshLambertMaterial({ color: snowy ? '#8aa0b0' : seed % 2 ? '#6d8a62' : '#7f9570' }),

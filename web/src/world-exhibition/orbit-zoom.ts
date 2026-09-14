@@ -17,7 +17,7 @@ export const HOST_ORBIT: OrbitLimits = {
   minRadius: 4.2,
   maxRadius: 18,
   minPhi: (16 * Math.PI) / 180,
-  maxPhi: (68 * Math.PI) / 180,
+  maxPhi: (76 * Math.PI) / 180,
 }
 
 /** 作品夹转台更近，缩放幅度更小。 */
