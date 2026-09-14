@@ -117,8 +117,21 @@ function onHome(btn) {
     go({ name: 'host', roomId: id })
   } else if (btn.id === 'start-draw') {
     const join = sync.joinQuery()
-    if (join && sync.getRoom(join)) go({ name: 'pick', roomId: join })
-    else go({ name: 'need-scan' })
+    if (join) {
+      if (sync.getRoom(join)) go({ name: 'pick', roomId: join })
+      else go({ name: 'need-scan' })
+      return
+    }
+    const roomId = sync.ensurePreviewRoom()
+    storage.createRoom({
+      code: roomId,
+      theme: 'forest',
+      paused: false,
+      ended: false,
+      hostAliveAt: Date.now(),
+      cap: ROOM_CAP,
+    })
+    go({ name: 'pick', roomId: roomId })
   } else if (btn.id === 'paper') {
     const join = sync.joinQuery()
     if (join && sync.getRoom(join)) go({ name: 'paper-pick', roomId: join })

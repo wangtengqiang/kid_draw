@@ -4,8 +4,10 @@ import {
   animalLabel,
   commitRooms,
   createRoom,
+  ensurePreviewRoom,
   getRoom,
   newRoomCode,
+  PREVIEW_ROOM_ID,
   submitAnimal,
   touchHost,
 } from './rooms.ts'
@@ -55,6 +57,22 @@ describe('submit gate', () => {
     })
     expect(full.ok).toBe(false)
     if (!full.ok) expect(full.reason).toBe('full')
+  })
+})
+
+describe('preview draw room', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('opens a local room without ?join=', () => {
+    expect(ensurePreviewRoom()).toBe(PREVIEW_ROOM_ID)
+    expect(getRoom(PREVIEW_ROOM_ID)?.ended).toBe(false)
+    expect(submitAnimal(PREVIEW_ROOM_ID, {
+      animalId: 'deer',
+      creatorId: 'c',
+      label: 'x',
+      thumb: 't',
+      regionColors: {},
+    }).ok).toBe(true)
   })
 })
 

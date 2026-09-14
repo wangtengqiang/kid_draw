@@ -110,6 +110,15 @@ export function createRoom(id: string): RoomState {
   return room
 }
 
+/** 网页预览点「开始画画」用的本机房，不用扫码。真实扫码仍走 ?join=。 */
+export const PREVIEW_ROOM_ID = '1001'
+
+export function ensurePreviewRoom(): string {
+  if (getRoom(PREVIEW_ROOM_ID)) touchHost(PREVIEW_ROOM_ID)
+  else createRoom(PREVIEW_ROOM_ID)
+  return PREVIEW_ROOM_ID
+}
+
 export function getRoom(id: string): RoomState | null {
   const room = loadRooms()[id]
   if (!room || room.ended) return null

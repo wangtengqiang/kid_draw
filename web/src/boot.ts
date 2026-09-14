@@ -8,7 +8,7 @@ import type { ChildGo } from './child-creation'
 import { PaperColoring } from './paper-coloring'
 import type { PaperGo } from './paper-coloring'
 import { storage } from './storage'
-import { createRoom, getRoom, isHostQuery, joinQuery, newRoomCode } from './sync'
+import { createRoom, ensurePreviewRoom, getRoom, isHostQuery, joinQuery, newRoomCode } from './sync'
 import { ROOM_CAP } from './types'
 import { WorldExhibition } from './world-exhibition'
 import type { ExhibitionGo } from './world-exhibition'
@@ -102,8 +102,21 @@ export class App {
     })
     this.root.querySelector('[data-act="draw"]')?.addEventListener('click', () => {
       const join = joinQuery()
-      if (join && getRoom(join)) this.go({ name: 'pick', roomId: join })
-      else this.go({ name: 'need-scan' })
+      if (join) {
+        if (getRoom(join)) this.go({ name: 'pick', roomId: join })
+        else this.go({ name: 'need-scan' })
+        return
+      }
+      const roomId = ensurePreviewRoom()
+      void storage.createRoom({
+        code: roomId,
+        theme: 'forest',
+        paused: false,
+        ended: false,
+        hostAliveAt: Date.now(),
+        cap: ROOM_CAP,
+      })
+      this.go({ name: 'pick', roomId })
     })
     this.root.querySelector('[data-act="paper"]')?.addEventListener('click', () => {
       const join = joinQuery()

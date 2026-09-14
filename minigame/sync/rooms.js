@@ -176,6 +176,14 @@ function submitAnimal(roomId, animal) {
   return { ok: true, placed: placed }
 }
 
+var PREVIEW_ROOM_ID = '1001'
+
+function ensurePreviewRoom() {
+  if (getRoom(PREVIEW_ROOM_ID)) touchHost(PREVIEW_ROOM_ID)
+  else createRoom(PREVIEW_ROOM_ID)
+  return PREVIEW_ROOM_ID
+}
+
 function joinQuery() {
   try {
     const q = wx.getLaunchOptionsSync().query || {}
@@ -200,11 +208,13 @@ function animalLabel(animalId) {
 }
 
 module.exports = {
+  PREVIEW_ROOM_ID,
   animalLabel,
   clearAnimals,
   createRoom,
   creatorId,
   endRoom,
+  ensurePreviewRoom,
   getRoom,
   isHostQuery,
   joinQuery,

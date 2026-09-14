@@ -22,7 +22,7 @@
 | `cloudfunctions/` | 服务端 | `sendToWorld`、`gallery`、`rooms` | **不进小游戏包**。无支付、无 AppSecret |
 | `web/src/boot.ts` / `minigame/main.js` | 入口 | 首页分流：打开世界 / 开始画画 / 拍纸上的画 / 我的画；老师打印线稿是弱入口 | 不实现涂色或森林 |
 
-首页「开始画画」进入 `child-creation/`。「拍纸上的画」进入 `paper-coloring/`。「打开世界」「我的画」进入 `world-exhibition/`。「老师打印线稿」才是下载页。扫码链接只有 `?join=房号`；主机自己的地址是 `?host=1&room=房号`。
+首页「开始画画」进入 `child-creation/`（网页预览会自动进本机演示房，不必扫码）。「拍纸上的画」进入 `paper-coloring/`。「打开世界」「我的画」进入 `world-exhibition/`。「老师打印线稿」才是下载页。扫码链接只有 `?join=房号`；主机自己的地址是 `?host=1&room=房号`。
 
 ## 数据流
 
