@@ -1,5 +1,5 @@
 /**
- * 儿童创作：「送进世界」。
+ * 儿童创作 / 纸上涂色共用：「送进世界」。
  * 网页预览走 StorageBackend（LocalMock）。
  * 正式小游戏改为 wx.cloud.callFunction({ name: 'sendToWorld' })。
  * 本文件不渲染主机森林、不画 3D 预览。
@@ -28,17 +28,18 @@ function cacheGallery(item: GalleryItem): void {
   )
 }
 
-export async function sendToWorld(input: {
+/** 已有贴图和分区色时送进世界。屏上涂色和纸上拍照都走这里。 */
+export async function sendColoredAnimal(input: {
   roomId: string
   animalId: AnimalId
-  paint: PaintSurface
+  thumb: string
+  regionColors: Record<string, string>
 }): Promise<SendResult> {
-  const { thumb, regionColors } = exportTexture(input.paint)
   const item: GalleryItem = {
     id: `g-${Date.now()}`,
     animalId: input.animalId,
-    thumb,
-    regionColors,
+    thumb: input.thumb,
+    regionColors: input.regionColors,
     roomId: input.roomId,
     createdAt: Date.now(),
   }
@@ -47,8 +48,8 @@ export async function sendToWorld(input: {
     animalId: input.animalId,
     creatorId: creatorId(),
     label: animalLabel(input.animalId),
-    thumb,
-    regionColors,
+    thumb: input.thumb,
+    regionColors: input.regionColors,
   })
 
   if (!result.ok) {
@@ -59,14 +60,14 @@ export async function sendToWorld(input: {
   item.id = result.placed.id
   cacheGallery(item)
 
-  const tex = await storage.putTexture(thumb, `${input.animalId}-${item.id}`)
+  const tex = await storage.putTexture(input.thumb, `${input.animalId}-${item.id}`)
   await storage.saveGalleryItem({
     id: item.id,
     creatorId: creatorId(),
     animalId: input.animalId,
     texture: tex,
     thumb: tex,
-    regionColors,
+    regionColors: input.regionColors,
     roomCode: input.roomId,
     createdAt: item.createdAt,
   })
@@ -77,9 +78,23 @@ export async function sendToWorld(input: {
     animalId: input.animalId,
     label: result.placed.label,
     texture: tex,
-    regionColors,
+    regionColors: input.regionColors,
     createdAt: result.placed.createdAt,
   })
 
   return { ok: true, placed: result.placed, item }
+}
+
+export async function sendToWorld(input: {
+  roomId: string
+  animalId: AnimalId
+  paint: PaintSurface
+}): Promise<SendResult> {
+  const { thumb, regionColors } = exportTexture(input.paint)
+  return sendColoredAnimal({
+    roomId: input.roomId,
+    animalId: input.animalId,
+    thumb,
+    regionColors,
+  })
 }

@@ -1,7 +1,6 @@
 /**
- * 儿童创作：「送进世界」。
+ * 儿童创作 / 纸上涂色共用：「送进世界」。
  * 本机 mock 走 storage；正式改为 wx.cloud.callFunction({ name: 'sendToWorld' })。
- * 本文件不渲染主机森林、不画 3D 预览。
  */
 const { storage } = require('../storage/index.js')
 const { LOCAL_GALLERY_KEY } = require('../sync/keys.js')
@@ -22,13 +21,12 @@ function cacheGallery(item) {
   )
 }
 
-function sendToWorld(input) {
-  const exported = exportTexture(input.paint)
+function sendColoredAnimal(input) {
   const item = {
     id: `g-${Date.now()}`,
     animalId: input.animalId,
-    thumb: exported.thumb,
-    regionColors: exported.regionColors,
+    thumb: input.thumb,
+    regionColors: input.regionColors,
     roomId: input.roomId,
     createdAt: Date.now(),
   }
@@ -36,8 +34,8 @@ function sendToWorld(input) {
     animalId: input.animalId,
     creatorId: creatorId(),
     label: animalLabel(input.animalId),
-    thumb: exported.thumb,
-    regionColors: exported.regionColors,
+    thumb: input.thumb,
+    regionColors: input.regionColors,
   })
   if (!result.ok) {
     cacheGallery(item)
@@ -45,7 +43,7 @@ function sendToWorld(input) {
   }
   item.id = result.placed.id
   cacheGallery(item)
-  return storage.putTexture(exported.thumb, `${input.animalId}-${item.id}`).then(function (tex) {
+  return storage.putTexture(input.thumb, `${input.animalId}-${item.id}`).then(function (tex) {
     return storage
       .saveGalleryItem({
         id: item.id,
@@ -53,7 +51,7 @@ function sendToWorld(input) {
         animalId: input.animalId,
         texture: tex,
         thumb: tex,
-        regionColors: exported.regionColors,
+        regionColors: input.regionColors,
         roomCode: input.roomId,
         createdAt: item.createdAt,
       })
@@ -63,4 +61,14 @@ function sendToWorld(input) {
   })
 }
 
-module.exports = { sendToWorld }
+function sendToWorld(input) {
+  const exported = exportTexture(input.paint)
+  return sendColoredAnimal({
+    roomId: input.roomId,
+    animalId: input.animalId,
+    thumb: exported.thumb,
+    regionColors: exported.regionColors,
+  })
+}
+
+module.exports = { sendToWorld, sendColoredAnimal }

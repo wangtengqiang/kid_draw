@@ -15,7 +15,7 @@ function fillBtn(ctx, b, fill, text, size) {
   ctx.fillStyle = fill
   roundRect(ctx, b.x, b.y, b.w, b.h, 22)
   ctx.fill()
-  ctx.fillStyle = '#1a120c'
+  ctx.fillStyle = fill === '#1a120c' ? '#fffaf1' : '#1a120c'
   ctx.font = `800 ${size || 28}px sans-serif`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'

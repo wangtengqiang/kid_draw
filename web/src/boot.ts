@@ -1,28 +1,32 @@
 /**
- * 首页分流：打开世界 / 开始画画 / 我的画。
- * 儿童创作界面在 child-creation/，观展界面在 world-exhibition/。
- * 本文件不涂色、不渲染森林。
+ * 首页分流：打开世界 / 开始画画 / 拍纸上的画 / 我的画。
+ * 打印线稿给老师，不放在孩子默认首页当下载列表。
+ * 屏上涂色在 child-creation/，纸上拍照在 paper-coloring/，观展在 world-exhibition/。
  */
 import { ChildCreation } from './child-creation'
 import type { ChildGo } from './child-creation'
+import { PaperColoring } from './paper-coloring'
+import type { PaperGo } from './paper-coloring'
 import { storage } from './storage'
 import { createRoom, getRoom, isHostQuery, joinQuery, newRoomCode } from './sync'
 import { ROOM_CAP } from './types'
 import { WorldExhibition } from './world-exhibition'
 import type { ExhibitionGo } from './world-exhibition'
 
-type Screen = { name: 'home' } | ChildGo | ExhibitionGo
+type Screen = { name: 'home' } | ChildGo | ExhibitionGo | PaperGo
 
 export class App {
   private root: HTMLElement
   private child: ChildCreation
   private exhibition: WorldExhibition
+  private paper: PaperColoring
   private screen: Screen = { name: 'home' }
 
   constructor(root: HTMLElement) {
     this.root = root
     this.child = new ChildCreation(root, (s) => this.go(s))
     this.exhibition = new WorldExhibition(root, (s) => this.go(s))
+    this.paper = new PaperColoring(root, (s) => this.go(s))
   }
 
   start(): void {
@@ -47,6 +51,7 @@ export class App {
   private go(next: Screen): void {
     this.exhibition.dispose()
     this.child.dispose()
+    this.paper.dispose()
     this.screen = next
     this.render()
   }
@@ -61,7 +66,12 @@ export class App {
     else if (s.name === 'ended') this.child.ended()
     else if (s.name === 'pick') this.child.pick(s.roomId)
     else if (s.name === 'paint') this.child.paintScreen(s.roomId, s.animalId)
-    else this.child.success(s.roomId, s.placed, s.thumb)
+    else if (s.name === 'success') this.child.success(s.roomId, s.placed, s.thumb)
+    else if (s.name === 'paper-print') this.paper.print()
+    else if (s.name === 'paper-need-scan') this.paper.needScan()
+    else if (s.name === 'paper-pick') this.paper.pick(s.roomId)
+    else if (s.name === 'paper-camera') this.paper.camera(s.roomId, s.animalId)
+    else this.paper.success(s.roomId, s.placed, s.thumb)
   }
 
   private home(): void {
@@ -72,7 +82,9 @@ export class App {
         <p class="lead">一台主机打开世界。小朋友只涂色、把画送进去。</p>
         <button class="hit host-hit" data-act="host" type="button">打开世界</button>
         <button class="hit kid-hit" data-act="draw" type="button">开始画画</button>
+        <button class="camera-hit" data-act="paper" type="button">拍纸上的画</button>
         <button class="text-link" data-act="gallery" type="button">我的画</button>
+        <button class="text-link quiet" data-act="print" type="button">老师打印线稿</button>
       </main>`
     this.root.querySelector('[data-act="host"]')?.addEventListener('click', () => {
       const id = newRoomCode()
@@ -93,6 +105,12 @@ export class App {
       if (join && getRoom(join)) this.go({ name: 'pick', roomId: join })
       else this.go({ name: 'need-scan' })
     })
+    this.root.querySelector('[data-act="paper"]')?.addEventListener('click', () => {
+      const join = joinQuery()
+      if (join && getRoom(join)) this.go({ name: 'paper-pick', roomId: join })
+      else this.go({ name: 'paper-need-scan' })
+    })
     this.root.querySelector('[data-act="gallery"]')?.addEventListener('click', () => this.go({ name: 'gallery' }))
+    this.root.querySelector('[data-act="print"]')?.addEventListener('click', () => this.go({ name: 'paper-print' }))
   }
 }

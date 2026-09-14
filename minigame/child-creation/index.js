@@ -6,4 +6,5 @@ module.exports = {
   ChildCreation: require('./screens.js').ChildCreation,
   PaintSurface: require('./paint.js').PaintSurface,
   sendToWorld: require('./send-to-world.js').sendToWorld,
+  sendColoredAnimal: require('./send-to-world.js').sendColoredAnimal,
 }
