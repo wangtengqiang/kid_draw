@@ -247,10 +247,10 @@ function hexToRgb(hex: string): [number, number, number] {
 
 function deerLegs(): { id: number; pts: Ring }[] {
   return [
-    { id: 14, pts: [[-0.46, 0.62], [-0.5, 0.02]] },
-    { id: 15, pts: [[-0.32, 0.62], [-0.26, 0.02]] },
-    { id: 12, pts: [[0.4, 0.56], [0.48, 0.02]] },
-    { id: 13, pts: [[0.52, 0.56], [0.5, 0.02]] },
+    { id: 14, pts: [[-0.4, 0.6], [-0.4, 0.02]] },
+    { id: 15, pts: [[-0.28, 0.6], [-0.28, 0.02]] },
+    { id: 12, pts: [[0.4, 0.56], [0.4, 0.02]] },
+    { id: 13, pts: [[0.52, 0.56], [0.52, 0.02]] },
   ]
 }
 
@@ -292,10 +292,10 @@ function drawDeerLines(ctx: Ctx): void {
 
 function catLegs(backShift = 0): { id: number; pts: Ring }[] {
   return [
-    { id: 11, pts: [[-0.52 + backShift, 0.48], [-0.56 + backShift, 0.02]] },
-    { id: 12, pts: [[-0.36 + backShift, 0.48], [-0.3 + backShift, 0.02]] },
-    { id: 9, pts: [[0.46, 0.44], [0.52, 0.02]] },
-    { id: 10, pts: [[0.6, 0.44], [0.58, 0.02]] },
+    { id: 11, pts: [[-0.5 + backShift, 0.48], [-0.5 + backShift, 0.02]] },
+    { id: 12, pts: [[-0.34 + backShift, 0.48], [-0.34 + backShift, 0.02]] },
+    { id: 9, pts: [[0.48, 0.44], [0.48, 0.02]] },
+    { id: 10, pts: [[0.62, 0.44], [0.62, 0.02]] },
   ]
 }
 
@@ -345,10 +345,10 @@ function drawTigerLines(ctx: Ctx): void {
 
 function lionLegs(): { id: number; pts: Ring }[] {
   return [
-    { id: 10, pts: [[-0.48, 0.48], [-0.52, 0.02]] },
-    { id: 11, pts: [[-0.32, 0.48], [-0.26, 0.02]] },
-    { id: 8, pts: [[0.4, 0.46], [0.46, 0.02]] },
-    { id: 9, pts: [[0.54, 0.46], [0.52, 0.02]] },
+    { id: 10, pts: [[-0.46, 0.48], [-0.46, 0.02]] },
+    { id: 11, pts: [[-0.3, 0.48], [-0.3, 0.02]] },
+    { id: 8, pts: [[0.42, 0.46], [0.42, 0.02]] },
+    { id: 9, pts: [[0.56, 0.46], [0.56, 0.02]] },
   ]
 }
 

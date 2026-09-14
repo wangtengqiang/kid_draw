@@ -1,7 +1,7 @@
 import { Box3, Group, Vector3 } from 'three'
 import { describe, expect, it } from 'vitest'
 import { ANIMAL_IDS } from '../types'
-import { createAnimalModel, profileVolume } from './models'
+import { createAnimalModel, profileVolume, tickWalk } from './models'
 import { DEER_BODY } from '../silhouettes'
 
 function sizeOf(group: Group): Vector3 {
@@ -42,6 +42,23 @@ describe('3D animal volumes', () => {
     const b = geo.boundingBox!
     expect(b.max.z - b.min.z).toBeGreaterThan(0.3)
     expect(b.max.x - b.min.x).toBeGreaterThan(1.5)
+  })
+
+  it('plants four straight legs on the ground', () => {
+    for (const id of ANIMAL_IDS) {
+      const g = createAnimalModel(id, {})
+      tickWalk(g, 0, false)
+      const box = new Box3().setFromObject(g)
+      expect(box.min.y).toBeGreaterThan(-0.08)
+      expect(box.min.y).toBeLessThan(0.08)
+      const legs = g.userData.legs as Group[]
+      expect(legs).toHaveLength(4)
+      for (const leg of legs) {
+        expect(leg.rotation.z).toBe(0)
+        const s = new Box3().setFromObject(leg).getSize(new Vector3())
+        expect(s.y).toBeGreaterThan(s.x * 1.5)
+      }
+    }
   })
 
   it('keeps a coat map on every species', () => {
