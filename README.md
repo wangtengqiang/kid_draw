@@ -54,7 +54,7 @@ npm run dev
 
 点 **打开世界**。大森林能看出远近：高树干、层层树冠、弯岸大海，小路会伸进林子。捏合 / 滚轮可以拉近看动物、拉远看深处。侧栏可换 **森林 / 雪原 / 海底**。陆地动物会自己走路、喝水、休息、坐下（错开节拍，不会一起摆同一个姿势）；海洋动物一直在湾里游，不会走上小路。
 
-**3D 动物**是网上拉下来、可随仓库分发的 **glTF**（`web/public/models/*.glb`），不是运行时用球 / 胶囊拼的，也不是千图网截图。狮 / 鹿 / 虎 / 鱼来自 [Kenney Cube Pets 2.0](https://kenney.nl/assets/cube-pets)（CC0）；海豚用 [Gobkit](https://gobkit.com/freebies) 免费动物包里的鲸（CC0，最接近的可直接下载的海洋哺乳动物）；海龟暂无 CC0 glTF，用仓库里的风格化网格。来源与许可写在 [`web/public/models/NOTICE.md`](web/public/models/NOTICE.md)。孩子涂的色乘在身体网格上，原贴图 atlas（眼睛、花纹）留在 `map` 里。不要把千图网 / 图库 PNG 当模型或贴图。
+**3D 动物**是网上拉下来的 **glTF**（`web/public/models/*.glb`）：狮是 [Zsky Animal Pack](https://opengameart.org/content/animal-pack-0)（CC BY，署名 Zsky）；鹿是 [Quaternius Ultimate Animated Animals](https://quaternius.com/packs/ultimateanimatedanimals.html) 的 Stag（CC0，带 Walk）；虎暂无独立老虎 glTF，用同一套 Zsky 的猫；鱼 / 海豚 / 海龟用 [Gobkit](https://gobkit.com/api/free) CC0（河豚、鲸、海豹——海龟没有可下载的 glTF）。孩子涂的色乘在皮毛材质上，眼睛留在模型上。来源见 [`web/public/models/NOTICE.md`](web/public/models/NOTICE.md)。不要把千图网 PNG 当模型，也不要用胶囊 / marching cubes 拼动物。
 
 **纸上涂色**
 3. 涂色页有大按钮 **重选动物**、**保存草稿**（最多 10 张）和 **我的草稿**。格子满了会让你点一张旧的换掉，不用输房号。首页也可进「我的草稿」。

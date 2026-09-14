@@ -315,7 +315,7 @@ export class HostWorld {
     this.orbit.target.set(p.x, 0.9, p.z)
     this.orbit.radius = 4.4
     this.orbit.phi = (50 * Math.PI) / 180
-    this.orbit.theta = Math.PI / 5
+    this.orbit.theta = Math.PI / 2
     this.orbit.apply()
     return true
   }

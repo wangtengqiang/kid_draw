@@ -1,8 +1,10 @@
 /**
- * Author original kid-cartoon animals as glTF (metaball clay + baked accessories).
- * Not runtime capsules/spheres. No stock / 千图网 images.
- * Run from web/: node scripts/author-animals.mjs
+ * DO NOT RUN for world animals.
+ * Marching-cubes clay is rejected. Download CC0/CC-BY glTF instead
+ * (see web/public/models/NOTICE.md).
  */
+throw new Error('author-animals.mjs is disabled: do not export clay / marching-cubes animals')
+
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'

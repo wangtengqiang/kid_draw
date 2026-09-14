@@ -1,6 +1,6 @@
 /**
- * Load shipped animal glTF (Kenney Cube Pets + Gobkit whale + fallback turtle).
- * Kid paint tints the body mesh; original atlas / vertex colors stay on the map.
+ * Load shipped third-party animal glTF (Zsky / Quaternius / Gobkit).
+ * Kid paint tints coat materials; eyes/nose stay on the model.
  */
 import * as THREE from 'three'
 import { AnimationUtils } from 'three'
@@ -49,6 +49,14 @@ const LEG_ALIASES: [string, string][] = [
   ['legFR', 'leg-front-right'],
   ['legBL', 'leg-back-left'],
   ['legBR', 'leg-back-right'],
+  ['legFL', 'FrontLowerLeg.L'],
+  ['legFR', 'FrontLowerLeg.R'],
+  ['legBL', 'BackLowerLeg.L'],
+  ['legBR', 'BackLowerLeg.R'],
+  ['legFL', 'FrontLowerLegL'],
+  ['legFR', 'FrontLowerLegR'],
+  ['legBL', 'BackLowerLegL'],
+  ['legBR', 'BackLowerLegR'],
   ['legFL', 'LeftLegF'],
   ['legFR', 'RightLegF'],
   ['legBL', 'LeftLegB'],
@@ -56,8 +64,15 @@ const LEG_ALIASES: [string, string][] = [
 ]
 
 const FLIPPER_ALIASES = ['flipperFR', 'flipperFL', 'flipperBR', 'flipperBL', 'wing-right', 'wing-left', 'LeftHand', 'RightHand']
-const TAIL_ALIASES = ['tail', 'Tail']
-const EYE_ALIASES = ['eyeL', 'eyeR', 'LeftEye', 'RightEye']
+const TAIL_ALIASES = ['tail', 'Tail', 'Tail1']
+const EYE_ALIASES = ['eyeL', 'eyeR', 'LeftEye', 'RightEye', 'Eyes_Lion', 'Eyes_Cat', 'Eyes_Fox']
+
+const CLIP_ALIASES: Record<string, string[]> = {
+  walk: ['walk', 'Walk', 'Gallop'],
+  idle: ['idle', 'Idle', 'Idle_2', 'static'],
+  static: ['static', 'Idle', 'idle'],
+  eat: ['eat', 'Eating', 'Idle'],
+}
 
 export function setAnimalModelProvider(fn: (id: AnimalId) => Promise<ArrayBuffer | Uint8Array>): void {
   bufferProvider = fn
@@ -80,12 +95,10 @@ async function readModel(id: AnimalId): Promise<ArrayBuffer> {
 }
 
 function clipsFor(id: AnimalId, raw: THREE.AnimationClip[]): THREE.AnimationClip[] {
-  if (id !== 'dolphin' || raw.length !== 1) return raw
+  if (raw.length !== 1) return raw
+  if (id !== 'dolphin' && id !== 'fish' && id !== 'turtle') return raw
   const master = raw[0]!
-  return [
-    AnimationUtils.subclip(master, 'idle', 0, 30, 24),
-    AnimationUtils.subclip(master, 'walk', 90, 120, 24),
-  ]
+  return [AnimationUtils.subclip(master, 'idle', 0, 30, 24), AnimationUtils.subclip(master, 'walk', 90, 120, 24)]
 }
 
 export async function loadAnimalTemplates(): Promise<void> {
@@ -110,7 +123,7 @@ export async function loadAnimalTemplates(): Promise<void> {
           scene,
           animations: clipsFor(id, gltf.animations || []),
           skinned,
-          zForward: id !== 'turtle',
+          zForward: true,
         })
       }),
     )
@@ -150,6 +163,20 @@ function collectLegs(root: THREE.Object3D): THREE.Object3D[] {
   return found
 }
 
+function collectEyes(root: THREE.Object3D): THREE.Object3D[] {
+  const found: THREE.Object3D[] = []
+  root.traverse((obj) => {
+    if (obj.name.toLowerCase().includes('eye')) found.push(obj)
+  })
+  if (found.length) return found
+  return EYE_ALIASES.map((n) => named(root, [n])).filter((o): o is THREE.Object3D => Boolean(o))
+}
+
+function keepFaceName(name: string): boolean {
+  const n = name.toLowerCase()
+  return n.includes('eye') || n.includes('iris') || n.includes('pupil') || n.includes('shine') || n.includes('nose')
+}
+
 function toonKeepMap(src: THREE.Material, tint: string): THREE.MeshLambertMaterial {
   const map = 'map' in src && src.map instanceof THREE.Texture ? src.map : null
   if (map) {
@@ -157,9 +184,13 @@ function toonKeepMap(src: THREE.Material, tint: string): THREE.MeshLambertMateri
     map.needsUpdate = true
   }
   const color = new THREE.Color(tint)
-  return new THREE.MeshLambertMaterial({
+  if (tint === '#ffffff' && 'color' in src && src.color instanceof THREE.Color) {
+    color.copy(src.color)
+  }
+  const mat = new THREE.MeshLambertMaterial({
     color,
     map,
+    vertexColors: Boolean('vertexColors' in src && src.vertexColors),
     side: THREE.FrontSide,
     transparent: false,
     opacity: 1,
@@ -170,15 +201,26 @@ function toonKeepMap(src: THREE.Material, tint: string): THREE.MeshLambertMateri
     emissive: color.clone().multiplyScalar(map ? 0.03 : 0.08),
     emissiveIntensity: map ? 0.04 : 0.1,
   })
+  mat.name = src.name
+  return mat
 }
 
-function isFaceDetail(obj: THREE.Object3D): boolean {
-  const n = obj.name.toLowerCase()
-  return n.includes('eye') || n.includes('iris') || n.includes('pupil') || n.includes('shine') || n.includes('nose')
-}
-
-function isCoatMesh(obj: THREE.Object3D): boolean {
-  return !isFaceDetail(obj)
+function paintMesh(obj: THREE.Mesh, bodyTint: string): void {
+  const srcs = Array.isArray(obj.material) ? obj.material : [obj.material]
+  const label = `${obj.name} ${obj.parent?.name || ''}`
+  const next = srcs.map((src) => {
+    const keep = keepFaceName(src.name || label)
+    return toonKeepMap(src, keep ? '#ffffff' : bodyTint)
+  })
+  obj.material = next.length === 1 ? next[0]! : next
+  const matName = srcs.map((s) => s.name || '').join(' ')
+  if (keepFaceName(label) || keepFaceName(matName)) {
+    obj.userData.region = /nose/i.test(matName + label) ? 'nose' : 'eye'
+  } else if (/body|torso|cube|lion|cat|stag|fugu|whale|seal|retopo|fur/i.test(label + matName)) {
+    obj.userData.region = 'body'
+  } else obj.userData.region = obj.name
+  obj.castShadow = false
+  obj.receiveShadow = false
 }
 
 export function instanceAnimal(animal: AnimalId, painted: Record<string, string>): THREE.Group {
@@ -189,14 +231,7 @@ export function instanceAnimal(animal: AnimalId, painted: Record<string, string>
   const coat = coatTexture(animal, painted)
   const bodyTint = painted.body || painted.shell || '#ffffff'
   inner.traverse((obj) => {
-    if (!(obj instanceof THREE.Mesh)) return
-    const src = Array.isArray(obj.material) ? obj.material[0] : obj.material
-    const region = String(obj.userData.region || obj.name)
-    obj.userData.region = region
-    const tint = isCoatMesh(obj) ? bodyTint : '#ffffff'
-    obj.material = toonKeepMap(src, tint)
-    obj.castShadow = false
-    obj.receiveShadow = false
+    if (obj instanceof THREE.Mesh) paintMesh(obj, bodyTint)
   })
 
   const orient = new THREE.Group()
@@ -226,8 +261,8 @@ export function instanceAnimal(animal: AnimalId, painted: Record<string, string>
   root.userData.kind = animal
   root.userData.coat = coat
   root.userData.marine = isMarine(animal)
-  root.userData.legs = collectLegs(root)
-  root.userData.eyes = EYE_ALIASES.map((n) => named(root, [n])).filter((o): o is THREE.Object3D => Boolean(o))
+  root.userData.legs = isMarine(animal) ? [] : collectLegs(root)
+  root.userData.eyes = collectEyes(root)
   root.userData.flippers = FLIPPER_ALIASES.map((n) => named(root, [n])).filter((o): o is THREE.Object3D => Boolean(o))
   root.userData.tail = named(root, TAIL_ALIASES)
   root.userData.mixer = mixer
@@ -236,11 +271,25 @@ export function instanceAnimal(animal: AnimalId, painted: Record<string, string>
   return root
 }
 
+function findClipAction(
+  actions: Record<string, THREE.AnimationAction>,
+  clipName: string,
+): THREE.AnimationAction | undefined {
+  const names = CLIP_ALIASES[clipName.toLowerCase()] || [clipName]
+  const keys = Object.keys(actions)
+  for (const n of names) {
+    if (actions[n]) return actions[n]
+    const hit = keys.find((k) => k.toLowerCase() === n.toLowerCase())
+    if (hit) return actions[hit]
+  }
+  return undefined
+}
+
 export function playAnimalClip(group: THREE.Group, clipName: string, dt: number): boolean {
   const mixer = group.userData.mixer as THREE.AnimationMixer | undefined
   const actions = group.userData.actions as Record<string, THREE.AnimationAction> | undefined
   if (!mixer || !actions) return false
-  const next = actions[clipName] || (clipName === 'static' ? actions.idle : actions[clipName === 'eat' ? 'idle' : 'walk']) || actions.idle
+  const next = findClipAction(actions, clipName)
   if (!next) return false
   if (group.userData.activeClip !== next) {
     for (const a of Object.values(actions)) {

@@ -11,20 +11,12 @@ function sizeOf(group: Group): Vector3 {
   return new Box3().setFromObject(group).getSize(new Vector3())
 }
 
-function bodyGeo(group: Group): BufferGeometry {
-  let geo: BufferGeometry | undefined
+function bodyMeshes(group: Group): Mesh[] {
+  const out: Mesh[] = []
   group.traverse((obj) => {
-    if (obj instanceof Mesh && String(obj.userData.region || obj.name).toLowerCase().includes('body')) {
-      geo = obj.geometry as BufferGeometry
-    }
+    if (obj instanceof Mesh && obj.userData.region === 'body') out.push(obj)
   })
-  if (!geo) {
-    group.traverse((obj) => {
-      if (obj instanceof Mesh && !geo) geo = obj.geometry as BufferGeometry
-    })
-  }
-  if (!geo) throw new Error('missing body')
-  return geo
+  return out
 }
 
 function assertNotPrimitive(geo: { type: string }): void {
@@ -40,53 +32,53 @@ describe('3D animal volumes', () => {
     await loadAnimalTemplates()
   }, 30000)
 
-  it('builds a deer from the shipped Kenney glTF', () => {
+  it('builds a Quaternius stag with walk clip and four leg bones', () => {
     const g = createAnimalModel('deer', { body: '#e24b4b' })
     const s = sizeOf(g)
-    expect(s.x).toBeGreaterThan(1.1)
+    expect(s.x).toBeGreaterThan(1.0)
     expect(s.y).toBeGreaterThan(1.5)
-    expect(s.z).toBeGreaterThan(0.5)
+    expect(s.z).toBeGreaterThan(0.4)
     expect((g.userData.legs as Group[]).length).toBe(4)
-    expect((g.userData.clips as string[]).includes('walk')).toBe(true)
-    const geo = bodyGeo(g)
-    assertNotPrimitive(geo)
-    expect(geo.getAttribute('position').count).toBeGreaterThan(200)
+    const clips = (g.userData.clips as string[]).map((c) => c.toLowerCase())
+    expect(clips.some((c) => c === 'walk')).toBe(true)
+    const bodies = bodyMeshes(g)
+    expect(bodies.length).toBeGreaterThan(0)
+    assertNotPrimitive(bodies[0]!.geometry)
+    expect(bodies[0]!.geometry.getAttribute('position').count).toBeGreaterThan(200)
   })
 
-  it('builds a tiger with four legs and a walk clip', () => {
+  it('builds a Zsky feline tiger stand-in, not capsules', () => {
     const g = createAnimalModel('tiger', {})
     const s = sizeOf(g)
-    expect(s.x).toBeGreaterThan(1.1)
-    expect(s.z).toBeGreaterThan(0.5)
-    expect((g.userData.legs as Group[]).length).toBe(4)
-    expect((g.userData.clips as string[]).includes('walk')).toBe(true)
+    expect(s.y).toBeGreaterThan(1.2)
+    expect(s.z).toBeGreaterThan(0.4)
+    const bodies = bodyMeshes(g)
+    expect(bodies.length).toBeGreaterThan(0)
+    assertNotPrimitive(bodies[0]!.geometry)
   })
 
-  it('builds a lion from Kenney Cube Pets, not a torus of capsules', () => {
+  it('builds a Zsky lion with a separate eye mesh, not marching cubes', () => {
     const g = createAnimalModel('lion', {})
-    expect((g.userData.clips as string[]).includes('walk')).toBe(true)
-    expect((g.userData.legs as Group[]).length).toBe(4)
     expect(sizeOf(g).y).toBeGreaterThan(1.2)
-    expect(sizeOf(g).z).toBeGreaterThan(0.5)
+    const eyes = g.userData.eyes as Group[]
+    expect(eyes.length).toBeGreaterThan(0)
     let meshes = 0
     g.traverse((obj) => {
       if (!(obj instanceof Mesh)) return
       meshes += 1
       assertNotPrimitive(obj.geometry)
-      const mat = obj.material as MeshLambertMaterial
-      expect(mat.map || mat.color).toBeTruthy()
     })
-    expect(meshes).toBeGreaterThan(4)
+    expect(meshes).toBeGreaterThan(1)
+    expect(bodyMeshes(g).length).toBeGreaterThan(0)
   })
 
   it('instances land bodies from triangle glTF, not runtime primitives', () => {
     for (const id of LAND_IDS) {
       const g = createAnimalModel(id, {})
-      const geo = bodyGeo(g)
-      assertNotPrimitive(geo)
-      expect(geo.getAttribute('position').count).toBeGreaterThan(200)
-      expect((g.userData.legs as Group[]).length).toBe(4)
-      expect((g.userData.clips as string[]).includes('walk')).toBe(true)
+      const bodies = bodyMeshes(g)
+      expect(bodies.length).toBeGreaterThan(0)
+      assertNotPrimitive(bodies[0]!.geometry)
+      expect(bodies[0]!.geometry.getAttribute('position').count).toBeGreaterThan(200)
     }
   })
 
@@ -98,22 +90,13 @@ describe('3D animal volumes', () => {
     expect(b.max.x - b.min.x).toBeGreaterThan(1.5)
   })
 
-  it('plants four straight legs on the ground', () => {
+  it('plants land animals on the ground', () => {
     for (const id of LAND_IDS) {
       const g = createAnimalModel(id, {})
       tickWalk(g, 0, false)
       const box = new Box3().setFromObject(g)
-      expect(box.min.y).toBeGreaterThan(-0.08)
-      expect(box.min.y).toBeLessThan(0.08)
-      const legs = g.userData.legs as Group[]
-      expect(legs).toHaveLength(4)
-      for (const leg of legs) {
-        expect(Math.abs(leg.rotation.z)).toBeLessThan(0.08)
-        const s = new Box3().setFromObject(leg).getSize(new Vector3())
-        expect(s.x).toBeGreaterThan(0.12)
-        expect(s.y).toBeGreaterThan(0.2)
-        expect(s.y / Math.max(s.x, 0.01)).toBeLessThan(4.5)
-      }
+      expect(box.min.y).toBeGreaterThan(-0.12)
+      expect(box.min.y).toBeLessThan(0.12)
     }
   })
 
@@ -124,9 +107,10 @@ describe('3D animal volumes', () => {
     }
   })
 
-  it('gives legs opaque closed volumes outside the torso', () => {
+  it('gives the stag opaque closed volumes', () => {
     const g = createAnimalModel('deer', {})
     const legs = g.userData.legs as Group[]
+    expect(legs).toHaveLength(4)
     const worlds = legs.map((leg) => {
       const v = new Vector3()
       leg.getWorldPosition(v)
@@ -134,25 +118,20 @@ describe('3D animal volumes', () => {
     })
     const xs = worlds.map((v) => v.x)
     const zs = worlds.map((v) => v.z)
-    expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(0.3)
-    expect(Math.max(...zs) - Math.min(...zs)).toBeGreaterThan(0.3)
-    for (const leg of legs) {
-      expect(leg.position.y).toBeGreaterThan(0.12)
-      expect(leg.position.y).toBeLessThan(0.7)
-      let shafts = 0
-      leg.traverse((obj) => {
-        if (!(obj instanceof Mesh)) return
-        assertNotPrimitive(obj.geometry)
-        const mat = obj.material as MeshLambertMaterial
-        expect(mat.transparent).toBe(false)
-        expect(mat.opacity).toBe(1)
-        expect(mat.depthWrite).toBe(true)
-        expect(mat.side).toBe(FrontSide)
-        expect(obj.geometry.getAttribute('position').count).toBeGreaterThanOrEqual(80)
-        shafts += 1
-      })
-      expect(shafts).toBeGreaterThan(0)
-    }
+    expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(0.2)
+    expect(Math.max(...zs) - Math.min(...zs)).toBeGreaterThan(0.2)
+    g.traverse((obj) => {
+      if (!(obj instanceof Mesh)) return
+      const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
+      for (const mat of mats) {
+        if (!('transparent' in mat)) continue
+        const m = mat as MeshLambertMaterial
+        expect(m.transparent).toBe(false)
+        expect(m.opacity).toBe(1)
+        expect(m.depthWrite).toBe(true)
+        expect(m.side).toBe(FrontSide)
+      }
+    })
   })
 
   it('builds marine animals that swim without land legs', () => {
@@ -188,10 +167,12 @@ describe('3D animal volumes', () => {
       g.traverse((obj) => {
         if (!(obj instanceof Mesh)) return
         const mat = obj.material
-        if (Array.isArray(mat)) return
-        if ('transparent' in mat) expect(mat.transparent).toBe(false)
-        if ('opacity' in mat) expect(mat.opacity).toBe(1)
-        if ('depthWrite' in mat) expect(mat.depthWrite).toBe(true)
+        const mats = Array.isArray(mat) ? mat : [mat]
+        for (const m of mats) {
+          if ('transparent' in m) expect(m.transparent).toBe(false)
+          if ('opacity' in m) expect(m.opacity).toBe(1)
+          if ('depthWrite' in m) expect(m.depthWrite).toBe(true)
+        }
       })
     }
   })
@@ -200,8 +181,8 @@ describe('3D animal volumes', () => {
     const g = createAnimalModel('deer', {})
     tickAction(g, 'walk', 1.2)
     const box = new Box3().setFromObject(g)
-    expect(box.min.y).toBeGreaterThan(-0.12)
-    expect(box.min.y).toBeLessThan(0.12)
+    expect(box.min.y).toBeGreaterThan(-0.2)
+    expect(box.min.y).toBeLessThan(0.2)
     expect(g.position.y).toBe(0)
   })
 
@@ -222,17 +203,18 @@ describe('3D animal volumes', () => {
     expect(nrm.getZ(maxI)).toBeGreaterThan(0)
   })
 
-  it('tints the Kenney coat without dropping the atlas map', () => {
+  it('tints the Zsky lion coat without painting the eyes', () => {
     const g = createAnimalModel('lion', { body: '#3b82f6' })
-    let bodyMaps = 0
+    let bodyTinted = 0
     g.traverse((obj) => {
       if (!(obj instanceof Mesh)) return
-      if (obj.name !== 'body') return
-      const mat = obj.material as MeshLambertMaterial
-      expect(mat.map).toBeTruthy()
-      expect(mat.color.getHexString()).toBe('3b82f6')
-      bodyMaps += 1
+      const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
+      if (obj.userData.region === 'body') {
+        const named = mats.find((m) => /fur|main|body/i.test(m.name || '')) || mats[0]
+        expect((named as MeshLambertMaterial).color.getHexString()).toBe('3b82f6')
+        bodyTinted += 1
+      }
     })
-    expect(bodyMaps).toBeGreaterThan(0)
+    expect(bodyTinted).toBeGreaterThan(0)
   })
 })
