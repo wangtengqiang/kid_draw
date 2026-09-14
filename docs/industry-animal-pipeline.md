@@ -78,6 +78,19 @@
 
 ## 别人怎么用 GL 画动物
 
+王腾强那份总览是对的，也就是我们现在的栈：
+
+| 总览 | 本项目 |
+| --- | --- |
+| 建模 modeling | 下载的 Kenney / Gobkit **glTF 网格**，不在运行时捏椭圆 |
+| 贴图 textures | Kenney `colormap.png` 脸图集；孩子颜色乘在皮毛上 |
+| 灯光 lighting | Ambient + Hemisphere + Directional |
+| 投影 projection | `PerspectiveCamera` |
+| 光栅化 rasterization | `WebGLRenderer`（WebGL） |
+| 引擎 | **网页森林：Vite + Three.js**。微信 3D 业界常用 **Cocos Creator**；本回合不把整包改写成 Cocos |
+
+阴影：`shadowMap.enabled = false`，网格也不 `castShadow`，避免云桌面 / 低端机 GPU 被打崩。
+
 游戏里的动物不是在运行时「画椭圆」。GPU 每帧做的是同一件事：**网格（顶点）+ 贴图（皮毛/脸）+ 灯光 + 投影 + 光栅化**。孩子涂色只改贴图或乘一层颜色，不改三角形。
 
 | 做法 | 是什么 | 什么时候用 | 本项目 |
