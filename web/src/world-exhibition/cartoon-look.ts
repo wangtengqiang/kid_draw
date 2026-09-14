@@ -133,21 +133,17 @@ export function attachCartoonEyes(root: THREE.Object3D, animal: AnimalId): THREE
   }
   if (made.length) return made
 
-  const head = (() => {
-    let hit: THREE.Object3D | undefined
-    root.traverse((obj) => {
-      if (hit) return
-      if (obj.name === 'Head' || obj.name === 'Cube_3') hit = obj
-    })
-    return hit
-  })()
+  let head: THREE.Object3D | undefined
+  root.traverse((obj) => {
+    if (!head && obj.name === 'Head') head = obj
+  })
   if (!head) return made
   const L = stickerEye(iris)
   const R = stickerEye(iris)
-  L.scale.setScalar(0.09)
-  R.scale.setScalar(0.09)
-  L.position.set(-0.07, 0.04, 0.12)
-  R.position.set(0.07, 0.04, 0.12)
+  L.scale.setScalar(0.11)
+  R.scale.setScalar(0.11)
+  L.position.set(-0.08, 0.06, 0.16)
+  R.position.set(0.08, 0.06, 0.16)
   head.add(L, R)
   made.push(L, R)
   return made
