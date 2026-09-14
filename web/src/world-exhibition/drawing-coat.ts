@@ -7,6 +7,7 @@ import * as THREE from 'three'
 export type CoatSource = string | HTMLCanvasElement | HTMLImageElement | THREE.Texture
 
 function keepFace(obj: THREE.Object3D): boolean {
+  if (obj.userData.keepFace) return true
   const n = `${obj.name} ${obj.userData.region || ''} ${obj.parent?.name || ''}`.toLowerCase()
   const mats = obj instanceof THREE.Mesh ? (Array.isArray(obj.material) ? obj.material : [obj.material]) : []
   const matName = mats.map((m) => m.name || '').join(' ').toLowerCase()
@@ -144,14 +145,100 @@ function stampTexture(root: THREE.Object3D, tex: THREE.Texture): void {
       lambert.vertexColors = false
       lambert.transparent = false
       lambert.opacity = 1
+      if (obj.userData.cutout) {
+        lambert.alphaTest = 0.28
+        lambert.side = THREE.DoubleSide
+        lambert.depthWrite = true
+      }
       lambert.needsUpdate = true
     }
   })
 }
 
+function keepArtPixel(r: number, g: number, b: number): boolean {
+  const mx = Math.max(r, g, b)
+  const mn = Math.min(r, g, b)
+  if (mx < 70) return true
+  if (b > r + 28 && b > g + 8 && b > 80) return true
+  if (mn > 222 && mx - mn < 22 && b >= r - 6) return true
+  return false
+}
+
+function paintImage(
+  source: CoatSource,
+): CanvasImageSource | ImageData | HTMLCanvasElement | HTMLImageElement | null {
+  if (source instanceof HTMLCanvasElement || source instanceof HTMLImageElement) return source
+  if (source instanceof THREE.Texture && source.image) {
+    const img = source.image as HTMLImageElement | HTMLCanvasElement | ImageBitmap | { data?: Uint8Array; width?: number; height?: number }
+    if (img instanceof HTMLCanvasElement || img instanceof HTMLImageElement) return img
+    if (typeof ImageBitmap !== 'undefined' && img instanceof ImageBitmap) return img
+  }
+  return null
+}
+
+function multiplyCutoutCoat(root: THREE.Group, source: CoatSource): boolean {
+  const sprite = root.userData.spriteMap as THREE.Texture | undefined
+  const body = root.getObjectByName('body') as THREE.Mesh | undefined
+  if (!sprite || !body || !(body.material instanceof THREE.MeshLambertMaterial)) return false
+  const art = sprite.image as { width?: number; height?: number; naturalWidth?: number; naturalHeight?: number } | undefined
+  const w = art?.width || art?.naturalWidth || 0
+  const h = art?.height || art?.naturalHeight || 0
+  if (w < 4 || h < 4) return false
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext('2d')
+  if (!ctx || typeof ctx.drawImage !== 'function') return false
+  try {
+    ctx.drawImage(sprite.image as CanvasImageSource, 0, 0, w, h)
+  } catch {
+    return false
+  }
+  const base = ctx.getImageData(0, 0, w, h)
+  ctx.save()
+  ctx.globalCompositeOperation = 'multiply'
+  const paint = paintImage(source)
+  if (paint) {
+    try {
+      ctx.drawImage(paint as CanvasImageSource, 0, 0, w, h)
+    } catch {
+      ctx.restore()
+      return false
+    }
+  } else {
+    ctx.restore()
+    return false
+  }
+  ctx.restore()
+  ctx.globalCompositeOperation = 'source-over'
+  const mixed = ctx.getImageData(0, 0, w, h)
+  for (let i = 0; i < base.data.length; i += 4) {
+    mixed.data[i + 3] = base.data[i + 3]!
+    if (keepArtPixel(base.data[i]!, base.data[i + 1]!, base.data[i + 2]!)) {
+      mixed.data[i] = base.data[i]!
+      mixed.data[i + 1] = base.data[i + 1]!
+      mixed.data[i + 2] = base.data[i + 2]!
+    }
+  }
+  ctx.putImageData(mixed, 0, 0)
+  const tex = configure(new THREE.CanvasTexture(canvas))
+  root.userData.drawing = tex
+  root.userData.coat = tex
+  const mat = body.material as THREE.MeshLambertMaterial
+  mat.map = tex
+  mat.color.set('#ffffff')
+  mat.alphaTest = 0.28
+  mat.side = THREE.DoubleSide
+  mat.needsUpdate = true
+  return true
+}
+
 /** 把画板 / 拍照原图像素贴上身子。已投影过的网格只换贴图。 */
 export function applyDrawingCoat(root: THREE.Group, source: CoatSource): void {
-  if (!root.userData.drawingUVs) {
+  if (root.userData.pack === 'art-cutout') {
+    if (multiplyCutoutCoat(root, source)) return
+  }
+  if (!root.userData.drawingUVs && root.userData.pack !== 'art-cutout') {
     projectBoxUVs(root)
     root.userData.drawingUVs = true
   }

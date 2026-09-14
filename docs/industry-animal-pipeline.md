@@ -55,7 +55,7 @@
 
 ## 候选取舍（这一轮又查了一遍）
 
-家长参考是站立、鬃毛蓬松、大眼睛的卡通狮。免费包里没有同时满足「像那张狮、真物种、可走路」的 glTF，所以陆地狮/鹿/虎改为仓库里原创的站立卡通四足（`author-cartoon-cubs.mjs`）。Kenney Cube Pets 只留给鱼。
+家长参考是站立、鬃毛蓬松、大眼睛的卡通狮。免费包里没有同时满足「像那张狮、真物种、可走路」的 glTF，圆球 CSG 四足也不像参考图。陆地狮/鹿/虎改为 **生成角色 PNG 的 2.5D 剪纸**（`extract-art-cutouts.py`），在森林里面向相机走动。Kenney Cube Pets 只留给鱼。
 
 | 候选 | URL | 结论 |
 | --- | --- | --- |
@@ -72,7 +72,7 @@
 | Mixamo | https://www.mixamo.com/ | **拒绝。** 人形库，要 Adobe 登录。 |
 | OGA Micket tiger、低模鹿 | https://opengameart.org/content/tiger · https://opengameart.org/content/deer-low-poly-rigged | **拒绝。** CC0 但是 0 A.D. 写实低模，不是幼崽卡通，还是 .blend/.zip。 |
 | Unity/CGTrader 卡通虎 | 付费资源店 | **拒绝。** 付费 API / 商店。 |
-| 粘土 / 胶囊 / icosphere 鬃毛 / 向日葵幼崽 | 本仓库旧 `author-animals.mjs` 与旧 cub 脚本 | **拒绝。** 陆地改为站立四足：颈鬃是有厚度的 ruff，身子比头长。 |
+| 粘土 / 胶囊 / icosphere 鬃毛 / 向日葵幼崽 / 圆球四足 | 本仓库旧 `author-animals.mjs` 与 `author-cartoon-cubs.mjs` | **拒绝。** 陆地改为生成角色图的 2.5D 剪纸，必须能一眼认出是参考图里的狮/鹿/虎。 |
 
 免登录 zip 里**没有**「又圆又像参考图、又是真老虎」的 glTF。虎和狮、鹿一样用本仓库站立四足，不用狼、也不用 Kenney 方块虎。
 
@@ -117,11 +117,11 @@
 
 **孩子涂色怎么进网格**
 
-博物馆 / LED 案例（上文）都是：纸是 2D 模板，3D 是做好的角色。我们屏上仍是自由蜡笔；识别用开场模板。3D 把画板原图像素贴在四足皮毛 UV 上；鱼仍乘 Kenney 脸图集。
+博物馆 / LED 案例（上文）都是：纸是 2D 模板，3D 是做好的角色。我们屏上仍是自由蜡笔；识别用开场模板。陆地剪纸把画板原图像素**叠乘**在角色图上；鱼仍乘 Kenney 脸图集。
 
 ## 当前默认
 
-- 狮 / 鹿 / 虎 ← 本仓库站立卡通四足 glTF（`author-cartoon-cubs.mjs`），颈鬃有厚度、身子拉长，walk 在文件里。
+- 狮 / 鹿 / 虎 ← 本仓库 2.5D 剪纸（`extract-art-cutouts.py` + `art-cutout.ts`），角色就是 `gen-land-animals-sheet.png` 抠出来的图，walk 是剪纸点头跳。
 - 鱼 ← Kenney Cube Pets（CC0）。
 - 海豚 / 海龟 ← Gobkit Whale / Seal（CC0）。
 - 运行时：`GLTFLoader` + `AnimationMixer`。孩子涂色是画板原图像素，贴在皮毛 UV 上。

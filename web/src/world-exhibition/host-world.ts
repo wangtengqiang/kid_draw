@@ -9,6 +9,7 @@ import { createAnimalModel, tickAction } from './models'
 import { applyDrawingCoat, isBitmapCoat } from './drawing-coat'
 import { HOST_ORBIT, OrbitZoom } from './orbit-zoom'
 import { paintForestPanorama, paintGrassGround, paintWater } from './forest-art'
+import { ART_CUTOUT_PACK, billboardY } from './art-cutout'
 
 interface Actor {
   id: string
@@ -405,17 +406,20 @@ export class HostWorld {
     }
 
     const action = autoLandAction(t, actor.phase)
+    const cutout = actor.group.userData.pack === ART_CUTOUT_PACK
     if (action === 'drink') {
       actor.group.position.set(SHORE_DRINK.x, 0.02, SHORE_DRINK.z + actor.lane * 1.15)
       actor.group.rotation.y = 0
       tickAction(actor.group, 'drink', t)
+      if (cutout) billboardY(actor.group, this.camera)
       return
     }
     if (action === 'rest') {
       const a = actor.angle
-      actor.group.position.set(Math.cos(a) * 1.35, 0.42, Math.sin(a) * 1.35)
+      actor.group.position.set(Math.cos(a) * 1.35, cutout ? 0.02 : 0.42, Math.sin(a) * 1.35)
       actor.group.rotation.y = a
       tickAction(actor.group, 'rest', t)
+      if (cutout) billboardY(actor.group, this.camera)
       return
     }
     if (action === 'sit') {
@@ -423,6 +427,7 @@ export class HostWorld {
       actor.group.position.set(Math.cos(a) * 3.05, 0, Math.sin(a) * 3.05)
       actor.group.rotation.y = a + Math.PI
       tickAction(actor.group, 'sit', t)
+      if (cutout) billboardY(actor.group, this.camera)
       return
     }
 
@@ -430,6 +435,7 @@ export class HostWorld {
     actor.group.position.set(Math.cos(actor.angle) * actor.radius, 0.02, Math.sin(actor.angle) * actor.radius)
     actor.group.rotation.y = -actor.angle + Math.PI / 2
     tickAction(actor.group, 'walk', t + actor.angle)
+    if (actor.group.userData.pack === ART_CUTOUT_PACK) billboardY(actor.group, this.camera)
   }
 
   private addLight(l: THREE.Light): void {

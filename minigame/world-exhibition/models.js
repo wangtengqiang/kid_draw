@@ -1,6 +1,6 @@
 /**
- * 世界观展：把孩子的颜色画在站立四足正面快照上。
- * 不是叠椭圆雪人，也不是兔子耳朵鹿。网页 3D 在 web/src/world-exhibition/models.ts。
+ * 世界观展：把孩子的颜色叠在官方角色正面快照上。
+ * 不是叠椭圆雪人，也不是兔子耳朵鹿。网页 3D 在 web/src/world-exhibition/art-cutout.ts。
  */
 const { DEFAULTS } = require('../types.js')
 const { drawSnapshot } = require('./snapshots.js')

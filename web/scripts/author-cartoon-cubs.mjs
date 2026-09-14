@@ -1,4 +1,7 @@
 /**
+ * NOT the land default. Kept only as a rejected CSG experiment.
+ * Default lion/deer/tiger are 2.5D art cutouts (`extract-art-cutouts.py`).
+ *
  * Author standing cartoon quads: lion / deer / tiger.
  * Style target: gen-lion-turnaround.png + gen-land-animals-sheet.png
  * Neck mane is a 3D ruff (depth in Z, hangs down the chest). Not sunflower petals

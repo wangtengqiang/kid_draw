@@ -1,9 +1,10 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import * as THREE from 'three'
 import { loadAnimalTemplates, playAnimalClip, setAnimalModelProvider } from './gltf-kit'
 import { createAnimalModel } from './models'
+import { ART_CUTOUT_PACK, CUTOUT_SRC } from './art-cutout'
 import type { AnimalId } from '../types'
 
 const PUBLIC = resolve(process.cwd(), 'public')
@@ -29,7 +30,7 @@ function glbJson(file: string): {
   }
 }
 
-describe('authored standing quads as default land lion/deer/tiger', () => {
+describe('art cutouts as default land lion/deer/tiger', () => {
   afterEach(() => {
     setAnimalModelProvider(null)
   })
@@ -39,45 +40,47 @@ describe('authored standing quads as default land lion/deer/tiger', () => {
     await loadAnimalTemplates()
   }
 
-  it('loads standing quads, not Kenney cubes or fox/wolf stand-ins', async () => {
+  it('loads PNG cutouts, not Kenney cubes, fox/wolf, or sphere cubs', async () => {
     await loadShipped()
     for (const kind of ['lion', 'deer', 'tiger'] as AnimalId[]) {
-      const json = glbJson(`models/${kind}.glb`)
-      const nodes = (json.nodes || []).map((n) => n.name || '')
-      expect(nodes).toContain(`animal-${kind}`)
-      expect(nodes).toContain('body')
-      expect(nodes).toContain('leg-front-left')
-      expect(nodes).toContain('eyeL')
-      expect(nodes).toContain('muzzle')
-      expect(nodes).not.toContain('fox')
-      expect(nodes).not.toContain('wolf')
-      expect((json.animations || []).map((c) => c.name)).toEqual(expect.arrayContaining(['walk', 'idle', 'eat', 'static']))
-      expect(json.asset?.generator ?? '').toMatch(/GLTFExporter/i)
-
       const group = createAnimalModel(kind, { body: '#ffffff' })
-      expect(group.userData.pack).toBe('standing-quad')
+      expect(group.userData.pack).toBe(ART_CUTOUT_PACK)
+      expect(group.userData.source).toBe('art-cutout')
       expect(group.getObjectByName(`animal-${kind}`)).toBeTruthy()
       expect(group.getObjectByName('eyeL')).toBeTruthy()
+      expect(group.getObjectByName('muzzle')).toBeTruthy()
+      expect(group.getObjectByName('leg-front-left')).toBeTruthy()
       const body = group.getObjectByName('body') as THREE.Mesh
+      expect(body.geometry).toBeInstanceOf(THREE.PlaneGeometry)
       expect(body.geometry).not.toBeInstanceOf(THREE.BoxGeometry)
       expect(body.geometry).not.toBeInstanceOf(THREE.CapsuleGeometry)
-      body.geometry.computeBoundingBox()
-      const size = body.geometry.boundingBox!.getSize(new THREE.Vector3())
-      expect(size.z).toBeGreaterThan(size.y)
+      expect(body.geometry).not.toBeInstanceOf(THREE.SphereGeometry)
+      expect(body.userData.cutout).toBe(true)
       const mat = body.material as THREE.MeshLambertMaterial
+      expect(mat.map).toBeTruthy()
       expect(mat.transparent).toBe(false)
-      expect(mat.color.getHexString()).not.toBe('ffffff')
+      expect(CUTOUT_SRC[kind]).toMatch(/\/models\/cutouts\/.+\.png/)
+      expect(existsSync(resolve(PUBLIC, `models/cutouts/${kind}.png`))).toBe(true)
+      const png = readFileSync(resolve(PUBLIC, `models/cutouts/${kind}.png`))
+      expect([...png.subarray(0, 8)]).toEqual([137, 80, 78, 71, 13, 10, 26, 10])
+      const names: string[] = []
+      group.traverse((o) => names.push(o.name))
+      expect(names.join(' ')).not.toMatch(/fox|wolf/i)
     }
     const lion = createAnimalModel('lion', { body: '#ffffff' })
-    const mane = lion.getObjectByName('mane') as THREE.Mesh
-    expect(mane).toBeTruthy()
-    mane.geometry.computeBoundingBox()
-    const maneSize = mane.geometry.boundingBox!.getSize(new THREE.Vector3())
-    expect(maneSize.z).toBeGreaterThan(0.45)
+    expect(lion.getObjectByName('mane')).toBeTruthy()
     const deer = createAnimalModel('deer', { body: '#ffffff' })
     expect(deer.getObjectByName('antler-left')).toBeTruthy()
     const tiger = createAnimalModel('tiger', { body: '#ffffff' })
     expect(tiger.getObjectByName('mane')).toBeFalsy()
+  })
+
+  it('does not use standing-quad sphere GLBs as the land default', async () => {
+    await loadShipped()
+    const lion = createAnimalModel('lion', { body: '#ffffff' })
+    expect(lion.userData.pack).not.toBe('standing-quad')
+    const body = lion.getObjectByName('body') as THREE.Mesh
+    expect(body.geometry).not.toBeInstanceOf(THREE.SphereGeometry)
   })
 
   it('plays the walk clip on the lion', async () => {
@@ -121,5 +124,7 @@ describe('authored standing quads as default land lion/deer/tiger', () => {
     const dolphin = createAnimalModel('dolphin', { body: '#ffffff' })
     expect(dolphin.userData.pack).toBe('gobkit')
     expect(playAnimalClip(dolphin, 'walk', 0.016)).toBe(true)
+    const json = glbJson('models/dolphin.glb')
+    expect((json.nodes || []).some((n) => /fox|wolf/i.test(n.name || ''))).toBe(false)
   })
 })

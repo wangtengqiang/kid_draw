@@ -1,6 +1,6 @@
 /**
- * 小游戏用的站立卡通四足 glTF 正面快照。
- * PNG 由网页 Three.js 同一套 GLTFLoader 烘出来，不是椭圆。
+ * 小游戏用的 2.5D 剪纸正面快照。
+ * PNG 由网页 Three.js 同一套剪纸烘出来，不是椭圆。
  */
 const SNAPS = {}
 const SRC = {

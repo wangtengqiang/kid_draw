@@ -1,6 +1,7 @@
 /**
- * Museum/LED stack: standing cartoon quads (lion/deer/tiger) + Kenney fish + Gobkit marine.
- * GLTFLoader + AnimationMixer. Kid paintboard stays the coat UV.
+ * Museum/LED stack: art-cutout land lion/deer/tiger + Kenney fish + Gobkit marine.
+ * Land pets are the generated character PNGs as 2.5D alpha planes, not sphere cubs.
+ * GLTFLoader + AnimationMixer for marine. Kid crayon multiplies onto the coat.
  */
 import * as THREE from 'three'
 import { AnimationUtils } from 'three'
@@ -8,12 +9,14 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js'
 import type { AnimalId } from '../types'
 import { ANIMAL_IDS, isMarine } from '../types'
+import { ART_CUTOUT_PACK, buildArtCutout, loadCutoutTexture } from './art-cutout'
 
 type AnimalTemplate = {
   scene: THREE.Group
   animations: THREE.AnimationClip[]
   skinned: boolean
   zForward: boolean
+  pack?: string
 }
 
 const templates = new Map<AnimalId, AnimalTemplate>()
@@ -113,6 +116,18 @@ export async function loadAnimalTemplates(): Promise<void> {
     const loader = new GLTFLoader()
     await Promise.all(
       ANIMAL_IDS.map(async (id) => {
+        if (!isMarine(id)) {
+          const map = await loadCutoutTexture(id)
+          const scene = buildArtCutout(id, map)
+          templates.set(id, {
+            scene,
+            animations: (scene.userData.cutoutClips as THREE.AnimationClip[]) || [],
+            skinned: false,
+            zForward: false,
+            pack: ART_CUTOUT_PACK,
+          })
+          return
+        }
         const buf = await readModel(id)
         const gltf = await loader.parseAsync(buf, '/models/')
         const scene = gltf.scene
@@ -189,10 +204,26 @@ function opaqueLambert(src: THREE.Material, map: THREE.Texture | null, color: TH
 }
 
 function paintMesh(obj: THREE.Mesh, bodyTint: string): void {
+  if (obj.userData.cutout) {
+    const src = (Array.isArray(obj.material) ? obj.material[0] : obj.material) as THREE.MeshLambertMaterial
+    const copy = src.clone()
+    copy.map = src.map
+    copy.alphaTest = src.alphaTest || 0.28
+    copy.side = THREE.DoubleSide
+    copy.transparent = false
+    copy.depthWrite = true
+    if (bodyTint && bodyTint !== '#ffffff' && bodyTint !== '#fffdf7') copy.color = new THREE.Color(bodyTint)
+    else copy.color = new THREE.Color('#ffffff')
+    obj.material = copy
+    obj.userData.region = 'body'
+    obj.castShadow = false
+    obj.receiveShadow = false
+    return
+  }
   const srcs = Array.isArray(obj.material) ? obj.material : [obj.material]
   const label = `${obj.name} ${obj.parent?.name || ''}`
   const matName = srcs.map((s) => s.name || '').join(' ')
-  const keep = keepFaceName(label) || keepFaceName(matName)
+  const keep = keepFaceName(label) || keepFaceName(matName) || Boolean(obj.userData.keepFace)
   const next = srcs.map((src) => {
     const map = 'map' in src && src.map instanceof THREE.Texture ? src.map : null
     const authored = 'color' in src && src.color ? (src.color as THREE.Color).clone() : new THREE.Color('#ffffff')
@@ -217,8 +248,9 @@ function paintMesh(obj: THREE.Mesh, bodyTint: string): void {
   obj.receiveShadow = false
 }
 
-function packOf(animal: AnimalId): string {
-  if (animal === 'lion' || animal === 'deer' || animal === 'tiger') return 'standing-quad'
+function packOf(animal: AnimalId, tpl?: AnimalTemplate): string {
+  if (tpl?.pack) return tpl.pack
+  if (animal === 'lion' || animal === 'deer' || animal === 'tiger') return ART_CUTOUT_PACK
   if (animal === 'fish') return 'kenney-cube-pets'
   return 'gobkit'
 }
@@ -258,8 +290,9 @@ export function instanceAnimal(animal: AnimalId, painted: Record<string, string>
   }
 
   root.userData.kind = animal
-  root.userData.source = 'gltf'
-  root.userData.pack = packOf(animal)
+  root.userData.source = tpl.pack === ART_CUTOUT_PACK ? 'art-cutout' : 'gltf'
+  root.userData.pack = packOf(animal, tpl)
+  root.userData.spriteMap = inner.userData.spriteMap
   root.userData.marine = isMarine(animal)
   root.userData.legs = isMarine(animal) ? [] : collectLegs(root)
   root.userData.eyes = EYE_ALIASES.map((n) => named(root, [n])).filter((o): o is THREE.Object3D => Boolean(o))

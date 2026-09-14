@@ -54,13 +54,13 @@ npm run dev
 
 点 **打开世界**。大森林能看出远近：高树干、层层树冠、弯岸大海，小路会伸进林子。捏合 / 滚轮可以拉近看动物、拉远看深处。侧栏可换 **森林 / 雪原 / 海底**。陆地动物会自己走路、喝水、休息、坐下（错开节拍，不会一起摆同一个姿势）；海洋动物一直在湾里游，不会走上小路。
 
-**3D 动物**（仅网页）陆地狮 / 鹿 / 虎是仓库里原创的站立卡通四足 glTF（对照 turnaround：颈鬃是蓬松体积、身子拉长、会走路）。不是 Kenney 方块、不是向日葵头幼崽、不是狐狸冒充狮子。海里仍是 Kenney 小鱼 + Gobkit 鲸/海豹：
+**3D 动物**（仅网页）陆地狮 / 鹿 / 虎是生成角色图的 **2.5D 透明剪纸**（对照 `gen-land-animals-sheet.png` / `gen-lion-ingame-target.png`），在小路上面向相机走动。不是 Kenney 方块、不是圆球堆的四足、不是向日葵头幼崽、不是狐狸冒充狮子。海里仍是 Kenney 小鱼 + Gobkit 鲸/海豹：
 
-- 狮 / 鹿 / 虎 — 本仓库 `web/scripts/author-cartoon-cubs.mjs` 写出的站立四足（`walk` / `idle` / `eat` / `static`）
+- 狮 / 鹿 / 虎 — 本仓库 `web/scripts/extract-art-cutouts.py` 抠出的 PNG 剪纸（`walk` / `idle` / `eat` / `static`）
 - 鱼 — [Kenney Cube Pets 2.0](https://kenney.nl/assets/cube-pets)（[CC0](https://creativecommons.org/publicdomain/zero/1.0/)）
 - 海豚 / 海龟 — [Gobkit](https://gobkit.com/api/free) Whale / Seal（CC0）。
 
-孩子在画板上画的条纹会**原样**投影到 3D 皮毛上（画纸像素 = 涂层纹素），不拉直、不按色块平均。识别只用来判断是哪只动物。取舍见 [`docs/industry-animal-pipeline.md`](docs/industry-animal-pipeline.md)。不要把千图网 PNG 当模型或贴图。
+孩子在画板上画的条纹会**叠乘**到剪纸皮毛上，眼睛鼻子还是原画。识别只用来判断是哪只动物。取舍见 [`docs/industry-animal-pipeline.md`](docs/industry-animal-pipeline.md)。不要把千图网 PNG 当模型或贴图。
 
 目标效果图（只作对照，不当贴图）：`web/public/preview-shots/effect-lion-forest.png`、`effect-lion-close.png`。2D 涂色本在 `web/public/lineart/`。
 

@@ -1,19 +1,18 @@
 # 3D models — licenses
 
-Default **lion / deer / tiger** are original in-repo standing cartoon
-quadrupeds (neck ruff, elongated body, big eyes), authored with Three.js
-`GLTFExporter`. Kid paintboard pixels stay the coat UV. Not Kenney cubes,
-not fox/wolf, not sunflower-petal cubs, not 千图网 textures.
+Default **lion / deer / tiger** are 2.5D alpha cutouts of this project's
+generated character art (`gen-land-animals-sheet.png`). They walk on the
+path as camera-facing planes. Kid crayon **multiplies** onto the coat;
+eyes/nose stay from the art. Not Kenney cubes, fox/wolf, sphere cubs,
+sunflower-petal heads, or 千图网.
 
-## Standing quads — lion, deer, tiger (original, this repo)
+## Art cutouts — lion, deer, tiger (this repo)
 
-- Built by `web/scripts/author-cartoon-cubs.mjs`
-- Style target: `gen-lion-turnaround.png` + `gen-land-animals-sheet.png`
-  (front / 3q / side / back standing lion; deer and tiger in the same
-  language). Neck mane is a 3D ruff with Z depth that hangs down the chest,
-  not petals in the face plane. No stock PNG was baked into the mesh.
-- Files: `lion.glb`, `deer.glb`, `tiger.glb`
-- Clips: `walk`, `idle`, `eat`, `static`
+- Built by `web/scripts/extract-art-cutouts.py` (knock out the cream
+  background, crop each animal).
+- Files: `cutouts/{lion,deer,tiger}.png`
+- Runtime pack: `art-cutout` (`web/src/world-exhibition/art-cutout.ts`)
+- Clips: `walk` / `idle` / `eat` / `static` (hop / breathe on the plane)
 - Front snapshots: `snapshots/{lion,deer,tiger}.png`
 
 ## Kenney Cube Pets 2.0 — fish only (CC0 1.0)
@@ -33,10 +32,14 @@ not fox/wolf, not sunflower-petal cubs, not 千图网 textures.
 ## Tried and not the land default
 
 Kenney Cube Pets (too cubic), Quaternius fox/wolf (wrong species), sunflower
-petal-head cubs (rejected), Zsky petal-mane lion (no walk), Sketchfab/Poly
-Pizza (login / API key), marching-cubes clay, 千图网 watermarks.
+petal-head cubs (rejected), CSG sphere-cub quadrupeds (`author-cartoon-cubs.mjs`,
+rejected — balloons, not the generated art), Zsky petal-mane lion (no walk),
+Sketchfab/Poly Pizza (login / API key), marching-cubes clay, 千图网 watermarks.
+
+Leftover `lion.glb` / `deer.glb` / `tiger.glb` are the rejected sphere cubs
+and are **not loaded**.
 
 ## Not in this folder
 
 - No 千图网 / stock-art pixels as textures
-- No marching-cubes / cube-pet / sunflower-cub land defaults
+- No marching-cubes / cube-pet / sunflower-cub / sphere-cub land defaults

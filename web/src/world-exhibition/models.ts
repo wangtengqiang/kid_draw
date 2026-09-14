@@ -1,5 +1,6 @@
 /**
- * 观展动物：下载的 glTF 网格。孩子的涂色烤成皮毛 UV 贴图，不捏胶囊身体。
+ * 观展动物：陆地是生成角色图的 2.5D 剪纸；海里仍是下载的 glTF。
+ * 孩子的蜡笔叠乘到剪纸皮毛上，不捏胶囊身体。
  */
 import * as THREE from 'three'
 import type { AnimalId, WorldAction } from '../types'
@@ -10,6 +11,7 @@ import { instanceAnimal, playAnimalClip } from './gltf-kit'
 export { loadAnimalTemplates, setAnimalModelProvider, animalTemplatesReady } from './gltf-kit'
 
 function keepFace(obj: THREE.Object3D): boolean {
+  if (obj.userData.keepFace) return true
   const n = `${obj.name} ${obj.userData.region || ''}`.toLowerCase()
   return n.includes('eye') || n.includes('iris') || n.includes('pupil') || n.includes('shine') || n.includes('nose')
 }
@@ -162,6 +164,8 @@ export function tickAction(group: THREE.Group, action: WorldAction, t: number): 
     return 'idle'
   }
   const usedClip = Boolean(clips && playAnimalClip(group, clipFor(), dt))
+
+  if (group.userData.pack === 'art-cutout') return
 
   if (marine) {
     const swim = action === 'swim' || action === 'walk'
