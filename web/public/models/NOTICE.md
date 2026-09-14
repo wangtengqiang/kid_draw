@@ -3,7 +3,7 @@
 Default land animals are **downloaded premade glTF**. Kid coloring is a coat
 UV albedo (museum/LED stack), not a generated body.
 
-## Quaternius Ultimate Animated Animals — deer, tiger (CC0 1.0)
+## Quaternius Ultimate Animated Animals — deer, tiger, lion (CC0 1.0)
 
 - Pack: https://quaternius.com/packs/ultimateanimatedanimals.html
 - License: [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
