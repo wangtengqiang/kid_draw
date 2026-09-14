@@ -307,15 +307,22 @@ export class HostWorld {
     })
   }
 
-  /** Point the host camera at the first animal (preview screenshots / pinch-to-see). */
+  /** Point the host camera at the first animal's face (preview screenshots). */
   frameFirstAnimal(): boolean {
     const actor = this.actors.values().next().value as Actor | undefined
     if (!actor) return false
     const p = actor.group.position
-    this.orbit.target.set(p.x, 0.9, p.z)
-    this.orbit.radius = 4.4
-    this.orbit.phi = (50 * Math.PI) / 180
-    this.orbit.theta = Math.PI / 2
+    const a = actor.angle
+    const tx = -Math.sin(a)
+    const tz = Math.cos(a)
+    this.orbit.target.set(p.x, 0.95, p.z)
+    this.camera.position.set(p.x + tx * 4.3, 1.72, p.z + tz * 4.3)
+    const ox = this.camera.position.x - this.orbit.target.x
+    const oy = this.camera.position.y - this.orbit.target.y
+    const oz = this.camera.position.z - this.orbit.target.z
+    this.orbit.radius = Math.hypot(ox, oy, oz)
+    this.orbit.phi = Math.acos(Math.min(1, Math.max(-1, oy / Math.max(this.orbit.radius, 1e-6))))
+    this.orbit.theta = Math.atan2(ox, oz)
     this.orbit.apply()
     return true
   }
