@@ -60,9 +60,11 @@ export class App {
     else if (s.name === 'preview') this.exhibition.showPreview(s.item)
     else if (s.name === 'need-scan') this.child.needScan()
     else if (s.name === 'scan') this.child.scan()
+    else if (s.name === 'drafts') this.child.showDrafts()
+    else if (s.name === 'replace-draft') this.child.showReplaceDraft()
     else if (s.name === 'ended') this.child.ended()
     else if (s.name === 'pick') this.child.pick(s.roomId)
-    else if (s.name === 'paint') this.child.paintScreen(s.roomId, s.animalId)
+    else if (s.name === 'paint') this.child.paintScreen(s.roomId, s.animalId, s.draftId)
     else if (s.name === 'success') this.child.success(s.roomId, s.placed, s.thumb)
     else if (s.name === 'paper-print') this.paper.print()
     else if (s.name === 'paper-need-scan') this.paper.needScan()
@@ -86,6 +88,7 @@ export class App {
         <button class="hit scan-hit" data-act="scan" type="button">扫码进入</button>
         <button class="camera-hit" data-act="paper" type="button">拍纸上的画</button>
         <button class="text-link" data-act="gallery" type="button">我的画</button>
+        <button class="hit draft-hit" data-act="drafts" type="button">我的草稿</button>
         <button class="text-link quiet" data-act="print" type="button">老师打印线稿</button>
       </main>`
     this.root.querySelector('[data-act="host"]')?.addEventListener('click', () => {
@@ -127,6 +130,7 @@ export class App {
       else this.go({ name: 'paper-need-scan' })
     })
     this.root.querySelector('[data-act="gallery"]')?.addEventListener('click', () => this.go({ name: 'gallery' }))
+    this.root.querySelector('[data-act="drafts"]')?.addEventListener('click', () => this.go({ name: 'drafts' }))
     this.root.querySelector('[data-act="print"]')?.addEventListener('click', () => this.go({ name: 'paper-print' }))
   }
 }

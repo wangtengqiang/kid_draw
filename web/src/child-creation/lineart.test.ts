@@ -1,8 +1,57 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { ANIMAL_IDS } from '../types'
 import { COLOR_FRAME } from './coloring-book'
 import { parseJoinFromQr } from './scan-qr'
-import { loadDraft, saveDraft, DRAFT_KEY } from './drafts'
+import { listDrafts, MAX_DRAFTS, replaceDraft, saveDraft, DRAFT_KEY } from './drafts'
+
+describe('paint drafts', () => {
+  beforeEach(() => localStorage.removeItem(DRAFT_KEY))
+
+  it('saves and lists a local coloring', () => {
+    const result = saveDraft({
+      roomId: '1001',
+      animalId: 'deer',
+      colorPng: 'data:image/png;base64,aa',
+      thumb: 'data:image/png;base64,aa',
+    })
+    expect(result.ok).toBe(true)
+    const listed = listDrafts()
+    expect(listed.ok).toBe(true)
+    if (listed.ok) expect(listed.drafts).toHaveLength(1)
+  })
+
+  it('caps at 10 and lets a kid replace one', () => {
+    for (let i = 0; i < MAX_DRAFTS; i++) {
+      const animal = i % 3 === 0 ? 'deer' : i % 3 === 1 ? 'tiger' : 'lion'
+      const r = saveDraft({
+        roomId: '1001',
+        animalId: animal,
+        colorPng: `data:image/png;base64,${i}`,
+        thumb: `data:image/png;base64,${i}`,
+      })
+      expect(r.ok).toBe(true)
+    }
+    const full = saveDraft({
+      roomId: '1001',
+      animalId: 'deer',
+      colorPng: 'data:image/png;base64,new',
+      thumb: 'data:image/png;base64,new',
+    })
+    expect(full.ok).toBe(false)
+    if (!full.ok) expect(full.drafts).toHaveLength(MAX_DRAFTS)
+    const listed = listDrafts()
+    if (!listed.ok) throw new Error('list failed')
+    const replaced = replaceDraft(listed.drafts[0]!.id, {
+      roomId: '1001',
+      animalId: 'lion',
+      colorPng: 'data:image/png;base64,new',
+      thumb: 'data:image/png;base64,new',
+    })
+    expect(replaced?.animalId).toBe('lion')
+    const after = listDrafts()
+    expect(after.ok && after.drafts).toHaveLength(MAX_DRAFTS)
+  })
+})
 
 describe('coloring-book frame', () => {
   for (const id of ANIMAL_IDS) {
@@ -41,14 +90,5 @@ describe('parseJoinFromQr', () => {
 
   it('rejects junk', () => {
     expect(parseJoinFromQr('hello')).toBeNull()
-  })
-})
-
-describe('paint drafts', () => {
-  it('saves and restores a local coloring', () => {
-    localStorage.removeItem(DRAFT_KEY)
-    saveDraft({ roomId: '1001', animalId: 'deer', colorPng: 'data:image/png;base64,aa', savedAt: 1 })
-    expect(loadDraft('1001', 'deer')?.colorPng).toContain('data:image/png')
-    expect(loadDraft('1001', 'tiger')).toBeNull()
   })
 })

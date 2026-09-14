@@ -3,7 +3,7 @@
  * 网页预览可扫主机码进房间。这里不渲染主机森林、不换主题、不画 3D 预览。
  */
 export { exportTexture } from './export-texture'
-export { loadDraft, saveDraft } from './drafts'
+export { emptySlotCount, listDrafts, MAX_DRAFTS, saveDraft } from './drafts'
 export { drawLineArt, drawPreview, drawRegions } from './lineart'
 export { PaintSurface } from './paint'
 export { parseJoinFromQr } from './scan-qr'

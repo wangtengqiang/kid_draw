@@ -2,11 +2,19 @@
  * 儿童创作用例界面：选一只 → 大蜡笔涂色 → 送进世界。
  * 网页预览可直接涂；扫码（摄像头或选图片）进老师的房。不进主机森林。
  */
-import { createRoom, getRoom } from '../sync'
+import { createRoom, ensurePreviewRoom, getRoom } from '../sync'
 import { storage } from '../storage'
 import type { AnimalId, PlacedAnimal } from '../types'
 import { ANIMAL_IDS, ANIMAL_META, PALETTE, ROOM_CAP } from '../types'
-import { loadDraft, saveDraft } from './drafts'
+import {
+  emptySlotCount,
+  getDraft,
+  listDrafts,
+  MAX_DRAFTS,
+  replaceDraft,
+  saveDraft,
+  type PaintDraft,
+} from './drafts'
 import { drawPreview } from './lineart'
 import { PaintSurface } from './paint'
 import { decodeQrFromFile, decodeQrFromImageData, parseJoinFromQr } from './scan-qr'
@@ -16,8 +24,10 @@ export type ChildGo =
   | { name: 'home' }
   | { name: 'need-scan' }
   | { name: 'scan' }
+  | { name: 'drafts' }
+  | { name: 'replace-draft' }
   | { name: 'pick'; roomId: string }
-  | { name: 'paint'; roomId: string; animalId: AnimalId }
+  | { name: 'paint'; roomId: string; animalId: AnimalId; draftId?: string }
   | { name: 'success'; roomId: string; placed: PlacedAnimal; thumb: string }
   | { name: 'ended' }
 
@@ -27,6 +37,13 @@ export class ChildCreation {
   private go: (s: ChildGo) => void
   private media: MediaStream | null = null
   private scanRaf = 0
+  private openDraftId: string | null = null
+  private pendingSave: {
+    roomId: string
+    animalId: AnimalId
+    colorPng: string
+    thumb: string
+  } | null = null
 
   constructor(root: HTMLElement, go: (s: ChildGo) => void) {
     this.root = root
@@ -115,15 +132,15 @@ export class ChildCreation {
       const ctx = c.getContext('2d')
       if (ctx) drawPreview(id, ctx, c.width, c.height)
       const label = document.createElement('strong')
-      const draft = loadDraft(roomId, id)
-      label.textContent = draft ? `${ANIMAL_META[id].name} · 有草稿` : ANIMAL_META[id].name
+      label.textContent = ANIMAL_META[id].name
       card.append(c, label)
       card.addEventListener('click', () => this.go({ name: 'paint', roomId, animalId: id }))
       grid?.append(card)
     }
   }
 
-  paintScreen(roomId: string, animalId: AnimalId): void {
+  paintScreen(roomId: string, animalId: AnimalId, draftId?: string): void {
+    this.openDraftId = draftId || null
     this.paint = new PaintSurface(animalId, () => undefined)
     this.paint.brush = 36
     this.paint.colorHex = PALETTE[3]!.hex
@@ -132,6 +149,7 @@ export class ChildCreation {
         <div class="paint-bar">
           <button class="hit kid-hit" data-act="pick" type="button">重选动物</button>
           <button class="hit draft-hit" data-act="draft" type="button">保存草稿</button>
+          <button class="hit scan-file-hit" data-act="drafts" type="button">我的草稿</button>
         </div>
         <div class="paint-body" id="paint-body">
           <div class="loading-mask" id="paint-load">正在打开画纸…</div>
@@ -158,10 +176,11 @@ export class ChildCreation {
     })
     this.root.querySelector('[data-act="pick"]')?.addEventListener('click', () => this.go({ name: 'pick', roomId }))
     this.root.querySelector('[data-act="draft"]')?.addEventListener('click', () => this.persistDraft(roomId, animalId))
+    this.root.querySelector('[data-act="drafts"]')?.addEventListener('click', () => this.go({ name: 'drafts' }))
     this.root.querySelector('[data-act="send"]')?.addEventListener('click', () => {
       void this.send(roomId, animalId)
     })
-    void this.restoreDraft(roomId, animalId)
+    void this.restoreDraft(draftId)
   }
 
   success(roomId: string, placed: PlacedAnimal, thumb: string): void {
@@ -186,36 +205,179 @@ export class ChildCreation {
   private persistDraft(roomId: string, animalId: AnimalId): void {
     if (!this.paint) return
     this.setMsg('paint-msg', '正在保存草稿…')
+    const payload = {
+      id: this.openDraftId || undefined,
+      roomId,
+      animalId,
+      colorPng: this.paint.colorDataURL(),
+      thumb: this.paint.thumb(),
+    }
     try {
-      saveDraft({
-        roomId,
-        animalId,
-        colorPng: this.paint.colorDataURL(),
-        savedAt: Date.now(),
-      })
-      this.setMsg('paint-msg', '草稿收好了。下次打开这只动物会接着涂。', 'ok')
+      const result = saveDraft(payload)
+      if (!result.ok) {
+        this.pendingSave = payload
+        this.go({ name: 'replace-draft' })
+        return
+      }
+      this.openDraftId = result.draft.id
+      this.setMsg('paint-msg', `草稿收好了。${result.count}/${MAX_DRAFTS} 格。`, 'ok')
     } catch {
       this.setMsg('paint-msg', '草稿没保存上，再试一次。', 'err')
     }
   }
 
-  private async restoreDraft(roomId: string, animalId: AnimalId): Promise<void> {
+  private async restoreDraft(draftId?: string): Promise<void> {
     const mask = this.root.querySelector('#paint-load')
-    const draft = loadDraft(roomId, animalId)
-    if (!draft) {
+    const pending = this.pendingSave
+    if (!draftId && pending && this.paint) {
+      try {
+        await this.paint.restoreColor(pending.colorPng)
+        this.setMsg('paint-msg', '格子还是满的。再点「保存草稿」换一张旧的。', 'err')
+      } catch {
+        this.setMsg('paint-msg', '画纸打不开。', 'err')
+      } finally {
+        mask?.remove()
+      }
+      return
+    }
+    if (!draftId) {
       mask?.remove()
       this.setMsg('paint-msg', '空白画纸。点色块就能涂。')
+      return
+    }
+    const draft = getDraft(draftId)
+    if (!draft) {
+      mask?.remove()
+      this.setMsg('paint-msg', '这张草稿找不到了，给你一张新画纸。', 'err')
+      this.openDraftId = null
       return
     }
     if (!this.paint) return
     try {
       await this.paint.restoreColor(draft.colorPng)
-      this.setMsg('paint-msg', '已恢复草稿。可以接着涂，或点保存草稿。', 'ok')
+      this.openDraftId = draft.id
+      this.setMsg('paint-msg', '已打开这张草稿。可以接着涂。', 'ok')
     } catch {
       this.setMsg('paint-msg', '草稿打不开，给你一张新画纸。', 'err')
+      this.openDraftId = null
     } finally {
       mask?.remove()
     }
+  }
+
+  showDrafts(): void {
+    this.root.innerHTML = `
+      <main class="page kid">
+        <button class="hit kid-hit" data-act="home" type="button">回首页</button>
+        <h1>我的草稿</h1>
+        <p class="lead" id="drafts-lead">正在打开草稿…</p>
+        <div class="draft-grid" id="draft-grid"></div>
+      </main>`
+    this.root.querySelector('[data-act="home"]')?.addEventListener('click', () => this.go({ name: 'home' }))
+    const lead = this.root.querySelector('#drafts-lead')
+    const grid = this.root.querySelector('#draft-grid')
+    const listed = listDrafts()
+    if (!listed.ok) {
+      if (lead) lead.textContent = '草稿打不开。再进一次试试。'
+      grid?.insertAdjacentHTML(
+        'beforeend',
+        `<div class="banner error"><p>格子里的画读不出来。</p></div>`,
+      )
+      return
+    }
+    const drafts = listed.drafts
+    const empty = emptySlotCount(drafts)
+    if (lead) {
+      lead.textContent = drafts.length
+        ? `一共 ${MAX_DRAFTS} 格，用了 ${drafts.length} 格，还空 ${empty} 格。点一张接着涂。`
+        : '还没有草稿。去涂一只，再点「保存草稿」。'
+    }
+    if (!drafts.length) {
+      grid?.insertAdjacentHTML(
+        'beforeend',
+        `<div class="empty"><p>格子是空的。回首页点「开始画画」，涂完按黄色的「保存草稿」。</p></div>`,
+      )
+    }
+    drafts.forEach((d, i) => grid?.append(this.draftCard(d, i + 1, 'open')))
+    for (let i = 0; i < empty; i++) {
+      const slot = document.createElement('div')
+      slot.className = 'draft-card empty-slot'
+      slot.innerHTML = `<span>空</span><strong>第 ${drafts.length + i + 1} 格</strong>`
+      grid?.append(slot)
+    }
+  }
+
+  showReplaceDraft(): void {
+    const pending = this.pendingSave
+    this.root.innerHTML = `
+      <main class="page kid">
+        <button class="hit kid-hit" data-act="back" type="button">再想想</button>
+        <h1>格子满了</h1>
+        <p class="lead">已经有 ${MAX_DRAFTS} 张草稿。点一张旧的换成现在这张。不用输数字。</p>
+        <div class="draft-grid" id="draft-grid"></div>
+        <p class="paint-msg is-error" id="replace-msg"></p>
+      </main>`
+    this.root.querySelector('[data-act="back"]')?.addEventListener('click', () => {
+      if (pending) this.go({ name: 'paint', roomId: pending.roomId, animalId: pending.animalId })
+      else this.go({ name: 'drafts' })
+    })
+    const listed = listDrafts()
+    const grid = this.root.querySelector('#draft-grid')
+    if (!listed.ok) {
+      this.setMsg('replace-msg', '草稿打不开，过一会儿再试。', 'err')
+      return
+    }
+    if (!pending) {
+      this.setMsg('replace-msg', '没有要保存的画。', 'err')
+      return
+    }
+    listed.drafts.forEach((d, i) => grid?.append(this.draftCard(d, i + 1, 'replace')))
+  }
+
+  private draftCard(draft: PaintDraft, slot: number, mode: 'open' | 'replace'): HTMLButtonElement {
+    const card = document.createElement('button')
+    card.type = 'button'
+    card.className = 'draft-card'
+    card.innerHTML = `
+      <img alt="" src="${draft.thumb || draft.colorPng}" />
+      <strong>${ANIMAL_META[draft.animalId].name}</strong>
+      <span>第 ${slot} 格 · ${whenLabel(draft.savedAt)}</span>`
+    card.addEventListener('click', () => {
+      if (mode === 'replace') this.applyReplace(draft.id)
+      else this.openDraft(draft)
+    })
+    return card
+  }
+
+  private applyReplace(id: string): void {
+    const pending = this.pendingSave
+    if (!pending) return
+    const draft = replaceDraft(id, pending)
+    if (!draft) {
+      this.setMsg('replace-msg', '没换上，再点一次。', 'err')
+      return
+    }
+    this.pendingSave = null
+    this.openDraftId = draft.id
+    this.go({ name: 'paint', roomId: draft.roomId, animalId: draft.animalId, draftId: draft.id })
+  }
+
+  private openDraft(draft: PaintDraft): void {
+    const roomId = getRoom(draft.roomId)?.id || ensurePreviewRoom()
+    if (!getRoom(roomId)) {
+      const id = ensurePreviewRoom()
+      void storage.createRoom({
+        code: id,
+        theme: 'forest',
+        paused: false,
+        ended: false,
+        hostAliveAt: Date.now(),
+        cap: ROOM_CAP,
+      })
+      this.go({ name: 'paint', roomId: id, animalId: draft.animalId, draftId: draft.id })
+      return
+    }
+    this.go({ name: 'paint', roomId, animalId: draft.animalId, draftId: draft.id })
   }
 
   private async send(roomId: string, animalId: AnimalId): Promise<void> {
@@ -322,4 +484,12 @@ export class ChildCreation {
     this.setScanMsg('扫到啦，正在进入…', 'ok')
     this.go({ name: 'pick', roomId })
   }
+}
+
+function whenLabel(at: number): string {
+  const diff = Date.now() - at
+  if (diff < 60_000) return '刚刚'
+  if (diff < 3_600_000) return '刚才'
+  const d = new Date(at)
+  return `${d.getMonth() + 1}月${d.getDate()}日`
 }

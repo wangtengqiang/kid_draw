@@ -97,6 +97,46 @@ h1 {
   font-size: 22px;
   margin: 0;
 }
+.paint-bar [data-act="drafts"] {
+  grid-column: 1 / -1;
+  min-height: 56px;
+}
+
+.draft-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.draft-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: #fffaf1;
+  border-radius: 28px;
+  padding: 10px;
+  cursor: pointer;
+  box-shadow: 0 6px 0 #d7c4a4;
+  min-height: 160px;
+}
+.draft-card img {
+  width: 100%;
+  aspect-ratio: 800 / 576;
+  object-fit: cover;
+  border-radius: 18px;
+  background: #fff;
+}
+.draft-card strong { font-size: 22px; }
+.draft-card span { font-size: 14px; opacity: 0.7; }
+.draft-card.empty-slot {
+  cursor: default;
+  box-shadow: none;
+  border: 4px dashed #d7c4a4;
+  background: transparent;
+  justify-content: center;
+}
+.draft-card.empty-slot span { font-size: 28px; opacity: 0.45; }
 .paint-msg.is-error { color: #b43b38; }
 .paint-msg.is-ok { color: #2a6b38; }
 .scan-video {
