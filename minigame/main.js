@@ -5,6 +5,7 @@
  * 世界观展 → world-exhibition/
  */
 const { fillBtn, hit, lead, title } = require('./draw.js')
+const { preloadSnapshots } = require('./world-exhibition/snapshots.js')
 const { ChildCreation } = require('./child-creation/index.js')
 const { PaperColoring } = require('./paper-coloring/index.js')
 const { WorldExhibition } = require('./world-exhibition/index.js')
@@ -43,6 +44,7 @@ function go(next) {
 }
 
 function start() {
+  preloadSnapshots()
   const join = sync.joinQuery()
   if (sync.isHostQuery()) {
     const q = wx.getLaunchOptionsSync().query || {}

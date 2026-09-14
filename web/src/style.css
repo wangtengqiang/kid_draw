@@ -187,8 +187,37 @@ h1 {
   box-shadow: 0 8px 0 #d7c4a4;
 }
 
-.pick-card canvas { width: 100%; height: auto; }
+.pick-card img, .pet-shot {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 320 / 360;
+  object-fit: cover;
+  border-radius: 22px;
+  background: #e8f2d2;
+  display: block;
+}
 .pick-card strong { font-size: 32px; }
+
+.paint-split {
+  display: grid;
+  grid-template-columns: 1fr minmax(132px, 34%);
+  gap: 10px;
+  align-items: stretch;
+}
+.paint-pet {
+  height: auto;
+  min-height: 160px;
+  aspect-ratio: 1 / 1;
+}
+@media (max-width: 560px) {
+  .paint-split {
+    grid-template-columns: 1fr;
+  }
+  .paint-pet {
+    height: 200px;
+    aspect-ratio: auto;
+  }
+}
 
 .paint-page {
   max-width: none;

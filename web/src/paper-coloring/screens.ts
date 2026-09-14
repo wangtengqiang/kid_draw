@@ -6,6 +6,7 @@ import { drawPreview } from '../child-creation/lineart'
 import { getRoom } from '../sync'
 import type { AnimalId, PlacedAnimal } from '../types'
 import { ANIMAL_IDS, ANIMAL_META, LAND_IDS, MARINE_IDS } from '../types'
+import { mountPetImage } from '../world-exhibition/pet-snapshot'
 import { PreviewStage } from '../world-exhibition/preview'
 import { imageDataFrom, mapPhotoToTemplate } from './map'
 import { sendColoredAnimal } from './send-to-world'
@@ -106,14 +107,13 @@ export class PaperColoring {
         const card = document.createElement('button')
         card.type = 'button'
         card.className = 'pick-card'
-        const c = document.createElement('canvas')
-        c.width = 320
-        c.height = 360
-        const ctx = c.getContext('2d')
-        if (ctx) drawPreview(id, ctx, c.width, c.height)
+        const img = document.createElement('img')
+        img.width = 320
+        img.height = 360
+        mountPetImage(img, id)
         const label = document.createElement('strong')
         label.textContent = ANIMAL_META[id].name
-        card.append(c, label)
+        card.append(img, label)
         card.addEventListener('click', () => this.go({ name: 'paper-camera', roomId, animalId: id }))
         grid?.append(card)
       }

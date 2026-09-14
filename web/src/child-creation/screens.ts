@@ -7,6 +7,7 @@ import { storage } from '../storage'
 import type { AnimalId, PlacedAnimal } from '../types'
 import { ANIMAL_META, LAND_IDS, MARINE_IDS, PALETTE, ROOM_CAP } from '../types'
 import { PreviewStage } from '../world-exhibition/preview'
+import { mountPetImage } from '../world-exhibition/pet-snapshot'
 import {
   emptySlotCount,
   getDraft,
@@ -17,7 +18,6 @@ import {
   type PaintDraft,
 } from './drafts'
 import { inferAnimalId, needsAnimalPicker } from './infer-animal'
-import { drawPreview } from './lineart'
 import { BRUSH_SIZES, PaintSurface } from './paint'
 import { decodeQrFromFile, decodeQrFromImageData, parseJoinFromQr } from './scan-qr'
 import { sendToWorld } from './send-to-world'
@@ -37,6 +37,7 @@ export type ChildGo =
 export class ChildCreation {
   private paint: PaintSurface | null = null
   private worldPreview: PreviewStage | null = null
+  private paintPet: PreviewStage | null = null
   private root: HTMLElement
   private go: (s: ChildGo) => void
   private media: MediaStream | null = null
@@ -58,6 +59,8 @@ export class ChildCreation {
     this.paint = null
     this.worldPreview?.dispose()
     this.worldPreview = null
+    this.paintPet?.dispose()
+    this.paintPet = null
     this.stopCamera()
   }
 
@@ -140,14 +143,13 @@ export class ChildCreation {
       const card = document.createElement('button')
       card.type = 'button'
       card.className = 'pick-card'
-      const c = document.createElement('canvas')
-      c.width = 320
-      c.height = 360
-      const ctx = c.getContext('2d')
-      if (ctx) drawPreview(id, ctx, c.width, c.height)
+      const img = document.createElement('img')
+      img.width = 320
+      img.height = 360
+      mountPetImage(img, id)
       const label = document.createElement('strong')
       label.textContent = ANIMAL_META[id].name
-      card.append(c, label)
+      card.append(img, label)
       card.addEventListener('click', () => this.go({ name: 'paint', roomId, animalId: id }))
       grid.append(card)
     }
@@ -160,6 +162,7 @@ export class ChildCreation {
       if (msg && (msg.textContent || '').includes('空白画纸')) {
         this.setMsg('paint-msg', '涂上啦。点「送进世界」就能进去。')
       }
+      this.tintPaintPet()
     })
     this.paint.tool = 'brush'
     this.paint.brush = 36
@@ -171,9 +174,14 @@ export class ChildCreation {
           <button class="hit draft-hit" data-act="draft" type="button">保存草稿</button>
           <button class="hit scan-file-hit" data-act="drafts" type="button">我的草稿</button>
         </div>
-        <p class="lead paint-hint">正在画${ANIMAL_META[animalId].name}。拿蜡笔在纸上随便涂，线只是样子。</p>
-        <div class="paint-body" id="paint-body">
-          <div class="loading-mask" id="paint-load">正在打开画纸…</div>
+        <p class="lead paint-hint">正在画${ANIMAL_META[animalId].name}。拿蜡笔在纸上随便涂，线只是样子。旁边是立体样子。</p>
+        <div class="paint-split">
+          <div class="paint-body" id="paint-body">
+            <div class="loading-mask" id="paint-load">正在打开画纸…</div>
+          </div>
+          <div class="preview-frame paint-pet" id="paint-pet">
+            <canvas id="paint-pet-canvas" aria-label="${ANIMAL_META[animalId].name}三维"></canvas>
+          </div>
         </div>
         <div class="brush-row" id="brush-sizes"></div>
         <div class="crayons" id="crayons"></div>
@@ -185,6 +193,16 @@ export class ChildCreation {
         </div>
       </main>`
     this.root.querySelector('#paint-body')?.append(this.paint.wrap)
+    const petCanvas = this.root.querySelector<HTMLCanvasElement>('#paint-pet-canvas')
+    if (petCanvas) {
+      try {
+        this.paintPet = new PreviewStage(petCanvas)
+        this.paintPet.show(animalId, { body: '#ffffff' })
+        requestAnimationFrame(() => this.paintPet?.resize())
+      } catch {
+        this.root.querySelector('#paint-pet')?.setAttribute('hidden', '')
+      }
+    }
     const sizes = this.root.querySelector('#brush-sizes')
     BRUSH_SIZES.forEach((s) => {
       const b = document.createElement('button')
@@ -268,6 +286,12 @@ export class ChildCreation {
       }
       this.root.querySelector('#success-stage')?.setAttribute('hidden', '')
     }
+  }
+
+  private tintPaintPet(): void {
+    if (!this.paint || !this.paintPet) return
+    const hex = this.paint.averagePaintHex() || '#ffffff'
+    this.paintPet.tint({ body: hex, head: hex, mane: hex, shell: hex })
   }
 
   private setMsg(id: string, text: string, kind: 'ok' | 'err' | '' = ''): void {

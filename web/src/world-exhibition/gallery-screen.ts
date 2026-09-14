@@ -5,6 +5,7 @@
 import { ANIMAL_META } from '../types'
 import type { GalleryItem } from '../types'
 import { getWork, listWorks } from './gallery'
+import { mountPetImage } from './pet-snapshot'
 
 export class GalleryScreen {
   private root: HTMLElement
@@ -36,7 +37,11 @@ export class GalleryScreen {
       const b = document.createElement('button')
       b.type = 'button'
       b.className = 'gallery-card'
-      b.innerHTML = `<img alt="${ANIMAL_META[item.animalId].name}" src="${item.thumb}" />`
+      b.innerHTML = ''
+      const img = document.createElement('img')
+      img.alt = ANIMAL_META[item.animalId].name
+      mountPetImage(img, item.animalId, item.regionColors)
+      b.append(img)
       b.addEventListener('click', () => {
         const fresh = getWork(item.id) ?? item
         this.go({ name: 'preview', item: fresh })

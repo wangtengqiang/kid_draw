@@ -4,7 +4,6 @@
 import * as THREE from 'three'
 import type { AnimalId, WorldAction } from '../types'
 import { type Ring } from '../silhouettes'
-import { coatTexture } from './coat'
 import { instanceAnimal, playAnimalClip } from './gltf-kit'
 
 export { loadAnimalTemplates, setAnimalModelProvider, animalTemplatesReady } from './gltf-kit'
@@ -96,23 +95,26 @@ export function createAnimalModel(
   return instanceAnimal(animal, painted)
 }
 
+export function tintAnimal(group: THREE.Group, painted: Record<string, string>): void {
+  const bodyTint = painted.body || painted.shell || '#ffffff'
+  group.traverse((obj) => {
+    if (!(obj instanceof THREE.Mesh) || keepFace(obj)) return
+    const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
+    for (const mat of mats) {
+      if ('color' in mat && mat.color && typeof (mat.color as THREE.Color).set === 'function') {
+        ;(mat.color as THREE.Color).set(bodyTint)
+      }
+    }
+  })
+}
+
 export function recolorAnimal(
   group: THREE.Group,
   animal: AnimalId,
   painted: Record<string, string>,
 ): void {
-  const coat = coatTexture(animal, painted)
-  group.userData.coat = coat
-  group.traverse((obj) => {
-    if (!(obj instanceof THREE.Mesh) || keepFace(obj)) return
-    const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
-    for (const mat of mats) {
-      if ('map' in mat) mat.map = coat
-      if ('color' in mat && mat.color && typeof (mat.color as THREE.Color).set === 'function') {
-        ;(mat.color as THREE.Color).set('#ffffff')
-      }
-    }
-  })
+  tintAnimal(group, painted)
+  void animal
 }
 
 export function tickWalk(group: THREE.Group, t: number, moving: boolean): void {

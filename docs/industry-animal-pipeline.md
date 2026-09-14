@@ -76,11 +76,42 @@
 
 免登录 zip 里**没有**「又圆又像参考图、又是真老虎」的 glTF。虎用 Kenney `animal-tiger`（真虎、画脸），不用狼。
 
+## 别人怎么用 GL 画动物
+
+游戏里的动物不是在运行时「画椭圆」。GPU 每帧做的是同一件事：**网格（顶点）+ 贴图（皮毛/脸）+ 灯光 + 投影 + 光栅化**。孩子涂色只改贴图或乘一层颜色，不改三角形。
+
+| 做法 | 是什么 | 什么时候用 | 本项目 |
+| --- | --- | --- | --- |
+| **精灵 / 广告牌** | 一张 PNG 永远对着相机 | 2D 微信小游戏、远景粒子 | 小游戏成功页用 **glTF 烘出来的 PNG**，仍是同一只 Kenney 网格的正面，不是手绘椭圆 |
+| **蒙皮网格** | 骨骼带动顶点，`AnimationMixer` / Unity Mecanim 播 Walk | 会走路的 3D 角色 | 网页主机森林：`GLTFLoader` + `AnimationMixer` |
+| **Kenney Cube Pets** | 低模立方卡通 + 一张脸图集 + 文件里的 walk/idle | 独立游戏、网页 demo | **采用。** 狮/鹿/虎/鱼 |
+
+**Three.js（网页留下这一条）**
+
+1. [`GLTFLoader`](https://threejs.org/docs/#examples/en/loaders/GLTFLoader) 读 `.glb`（网格、UV、贴图、剪辑一次进来）。手册：[Loading 3D models](https://threejs.org/docs/#manual/en/introduction/Loading-3D-models)。
+2. [`AnimationMixer`](https://threejs.org/docs/#api/en/animation/AnimationMixer) 播 `walk` / `idle`。说明：[Animation system](https://threejs.org/manual/en/animation-system.html)。蒙皮要 `SkeletonUtils.clone`，不能只 `scene.clone()`。
+3. 卡通光：[toon 示例](https://threejs.org/examples/#webgl_materials_toon)（`MeshToonMaterial` 分层光）。描边常用 [inverted hull / OutlineEffect](https://threejs.org/examples/#webgl_clipping_stencil)。Kenney 已经把笑脸画在图集上，再套一层 OutlinePass 容易糊，所以我们用 **Lambert + 原图集 + 孩子颜色相乘**，不打阴影（主机注释里写了省 GPU）。
+
+**Unity / Unreal 童书式上色**
+
+- Unity：[`SkinnedMeshRenderer`](https://docs.unity3d.com/Manual/class-SkinnedMeshRenderer.html) 播骨骼；孩子的涂色是材质 **albedo / `_Color`**，不是新网格。[Materials from script](https://docs.unity3d.com/Manual/MaterialsAccessingViaScript.html)。
+- Unreal：Skeletal Mesh + Material Instance 动态参数换皮毛色。[Skeletal Mesh actors](https://docs.unrealengine.com/5.3/en-US/skeletal-mesh-actors-in-unreal-engine/)。
+
+**别的引擎，这一轮不换**
+
+- [Babylon.js glTF](https://doc.babylonjs.com/features/featuresDeepDive/importers/glTF)、[PlayCanvas models](https://developer.playcanvas.com/user-manual/assets/models/) 也能播同一份 Kenney glb。没有体积或 API 优势，**继续 Vite + Three.js**。
+- 微信 3D 小游戏业界默认是 **[Cocos Creator 发微信](https://docs.cocos.com/creator/manual/zh/editor/publish/publish-wechatgame.html)**（WebGL + 子包）。也可以 [Three.js + weapp-adapter](https://developers.weixin.qq.com/minigame/dev/guide/)。本回合**不把整包改成 Cocos**；小游戏成功/预览/选动物用网页同一套 glTF 烘的正面 PNG。
+
+**孩子涂色怎么进网格**
+
+博物馆 / LED 案例（上文）都是：纸是 2D 模板，3D 是做好的角色。我们屏上仍是自由蜡笔；识别用开场模板。3D 只把主色乘在 Kenney 皮毛上，脸图集留着。
+
 ## 当前默认
 
 - 狮 / 鹿 / 虎 / 鱼 ← Kenney Cube Pets（CC0），正面是画脸，walk 在文件里。
 - 海豚 / 海龟 ← Gobkit Whale / Seal（CC0）。
 - 运行时：`GLTFLoader` + `AnimationMixer`。孩子涂色**乘在皮毛上**，默认白色所以 Kenney 原画脸能看见。
-- 完整 3D 只在网页 Vite。微信小游戏仍是 2D，本回合不移植 Three.js。
+- 网页：选动物 / 画廊 / 送到啦 / 涂色旁预览 / 主机森林，都是同一份 glTF。
+- 微信小游戏：成功页、选卡片、画廊、2D 主机用 `minigame/models/snapshots/*.png`（网页 Three.js 烘出来的正面）。涂色纸仍是 2D 线样子 + 自由蜡笔。完整 3D 森林仍在网页。不移植整包 Three.js，也不改写成 Cocos。
 
 许可证：`web/public/models/NOTICE.md`。无千图网、无 CloudBase 密钥。

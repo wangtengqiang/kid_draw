@@ -12,6 +12,7 @@ painted cartoon faces, built-in `walk` / `idle`. Not fox, not wolf, not clay.
   `tiger.glb` ← `animal-tiger.glb`, `fish.glb` ← `animal-fish.glb`
 - Atlas: `Textures/colormap.png` (GLBs reference this path; keep it so the
   painted smile / eyes show)
+- Front snapshots (same Three.js camera as 送到啦): `snapshots/{lion,deer,tiger,fish}.png`
 - Clips: `static`, `idle`, `walk`, `run`, `eat`, `dance`, …
 - Author: Kenney (www.kenney.nl)
 

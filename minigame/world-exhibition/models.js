@@ -3,6 +3,7 @@
  * 不是叠椭圆雪人，也不是兔子耳朵鹿。网页 3D 在 web/src/world-exhibition/models.ts。
  */
 const { DEFAULTS } = require('../types.js')
+const { drawSnapshot } = require('./snapshots.js')
 
 function colorsOf(animalId, painted) {
   const base = DEFAULTS[animalId] || {}
@@ -176,6 +177,7 @@ function drawLion(ctx, outlineOnly, c) {
  */
 function drawAnimal(ctx, animalId, painted, box, opts) {
   const outlineOnly = opts && opts.outlineOnly
+  if (!outlineOnly && drawSnapshot(ctx, animalId, painted, box)) return
   const c = colorsOf(animalId, painted)
   const s = Math.min(box.w, box.h) * 0.9
   const x = box.x + box.w / 2

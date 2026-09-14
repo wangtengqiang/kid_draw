@@ -133,15 +133,9 @@ ChildCreation.prototype.success = function (ctx, roomId, placed) {
   title(ctx, '送到啦', W / 2, 70, 44)
   lead(ctx, (ANIMAL_NAMES[placed.animalId] || '') + '走进主机世界了。', W / 2, 108)
   const box = { x: 36, y: 128, w: W - 72, h: H * 0.38 }
-  ctx.fillStyle = '#fffaf1'
+  ctx.fillStyle = '#e8f2d2'
   ctx.fillRect(box.x, box.y, box.w, box.h)
-  const paper = this.sentPaint || this.paint
-  if (paper && paper.strokes && paper.strokes.length) {
-    paper.drawOnto(ctx, box)
-    drawLineGuide(ctx, placed.animalId, box)
-  } else {
-    drawAnimal(ctx, placed.animalId, placed.regionColors, box)
-  }
+  drawAnimal(ctx, placed.animalId, placed.regionColors, box)
   const world = { id: 'open-world', x: 24, y: H - 196, w: W - 48, h: 88, roomId: roomId }
   fillBtn(ctx, world, '#f2c14e', '去看大世界', 34)
   const again = { id: 'pick', x: 28, y: H - 96, w: W - 56, h: 68, roomId: roomId }

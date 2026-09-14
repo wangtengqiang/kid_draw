@@ -13,6 +13,7 @@ import { ROOM_CAP } from './types'
 import { WorldExhibition } from './world-exhibition'
 import type { ExhibitionGo } from './world-exhibition'
 import { loadAnimalTemplates } from './world-exhibition/models'
+import { bakeAllDefaultSnapshots, snapshotPet } from './world-exhibition/pet-snapshot'
 
 type Screen = { name: 'home' } | ChildGo | ExhibitionGo | PaperGo
 
@@ -33,6 +34,12 @@ export class App {
   async start(): Promise<void> {
     this.root.innerHTML = `<main class="page home"><p class="lead">正在打开小动物…</p></main>`
     await loadAnimalTemplates()
+    const w = window as unknown as {
+      __kidDrawSnapshotPet: typeof snapshotPet
+      __kidDrawBakePets: typeof bakeAllDefaultSnapshots
+    }
+    w.__kidDrawSnapshotPet = snapshotPet
+    w.__kidDrawBakePets = bakeAllDefaultSnapshots
     const join = joinQuery()
     if (isHostQuery()) {
       const roomId = new URLSearchParams(location.search).get('room') || newRoomCode()

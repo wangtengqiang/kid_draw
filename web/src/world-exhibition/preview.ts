@@ -3,7 +3,7 @@
  */
 import * as THREE from 'three'
 import type { AnimalId } from '../types'
-import { createAnimalModel, tickWalk } from './models'
+import { createAnimalModel, tickWalk, tintAnimal } from './models'
 import { OrbitZoom, PREVIEW_ORBIT } from './orbit-zoom'
 
 export class PreviewStage {
@@ -50,6 +50,10 @@ export class PreviewStage {
     if (this.model) this.scene.remove(this.model)
     this.model = createAnimalModel(animal, colors, thumb)
     this.scene.add(this.model)
+  }
+
+  tint(colors: Record<string, string>): void {
+    if (this.model) tintAnimal(this.model, colors)
   }
 
   resize(): void {
