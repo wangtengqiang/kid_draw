@@ -12,17 +12,22 @@ describe('3D animal volumes', () => {
   it('builds a deer that is long, tall, and has chest depth', () => {
     const g = createAnimalModel('deer', { body: '#e24b4b' })
     const s = sizeOf(g)
-    expect(s.x).toBeGreaterThan(1.7)
-    expect(s.y).toBeGreaterThan(1.75)
-    expect(s.z).toBeGreaterThan(0.28)
+    expect(s.x).toBeGreaterThan(1.5)
+    expect(s.y).toBeGreaterThan(1.6)
+    expect(s.z).toBeGreaterThan(0.5)
     expect((g.userData.legs as Group[]).length).toBe(4)
+    let spots = 0
+    g.traverse((obj) => {
+      if (String(obj.userData.region || '').startsWith('spot')) spots += 1
+    })
+    expect(spots).toBeGreaterThan(5)
   })
 
   it('builds a tiger with a feline head and four legs', () => {
     const g = createAnimalModel('tiger', {})
     const s = sizeOf(g)
-    expect(s.x).toBeGreaterThan(1.9)
-    expect(s.z).toBeGreaterThan(0.35)
+    expect(s.x).toBeGreaterThan(1.7)
+    expect(s.z).toBeGreaterThan(0.5)
     expect((g.userData.legs as Group[]).length).toBe(4)
   })
 
@@ -32,8 +37,9 @@ describe('3D animal volumes', () => {
     g.traverse((obj) => {
       if (obj.userData.region === 'mane') mane += 1
     })
-    expect(mane).toBeGreaterThan(0)
+    expect(mane).toBeGreaterThan(8)
     expect(sizeOf(g).y).toBeGreaterThan(1.2)
+    expect(sizeOf(g).z).toBeGreaterThan(0.5)
   })
 
   it('extrudes a silhouette with thickness on Z', () => {
@@ -56,7 +62,9 @@ describe('3D animal volumes', () => {
       for (const leg of legs) {
         expect(Math.abs(leg.rotation.z)).toBeLessThan(0.001)
         const s = new Box3().setFromObject(leg).getSize(new Vector3())
-        expect(s.y).toBeGreaterThan(s.x * 1.5)
+        expect(s.x).toBeGreaterThan(0.16)
+        expect(s.y).toBeGreaterThan(0.28)
+        expect(s.y / s.x).toBeLessThan(3.2)
       }
     }
   })
@@ -75,7 +83,8 @@ describe('3D animal volumes', () => {
     expect(Math.max(...zs) - Math.min(...zs)).toBeGreaterThan(0.4)
     for (const leg of legs) {
       expect(Math.abs(leg.position.z)).toBeGreaterThan(0.2)
-      expect(leg.position.y).toBeGreaterThan(0.65)
+      expect(leg.position.y).toBeGreaterThan(0.35)
+      expect(leg.position.y).toBeLessThan(0.55)
       let shafts = 0
       leg.traverse((obj) => {
         if (!(obj instanceof Mesh)) return
@@ -103,6 +112,18 @@ describe('3D animal volumes', () => {
     tickAction(fish, 'swim', 0.8)
     tickAction(dolphin, 'swim', 0.8)
     expect(Math.abs((dolphin.userData.tail as Group).rotation.y)).toBeGreaterThan(0.1)
+  })
+
+  it('keeps sit, drink, and rest poses on land animals', () => {
+    for (const id of LAND_IDS) {
+      const g = createAnimalModel(id, {})
+      tickAction(g, 'sit', 0)
+      expect(g.rotation.x).toBeGreaterThan(0.1)
+      tickAction(g, 'drink', 0)
+      expect(g.rotation.z).toBeLessThan(-0.4)
+      tickAction(g, 'rest', 0)
+      expect(g.rotation.z).toBeGreaterThan(0.8)
+    }
   })
 
   it('does not lift a walking deer off the ground', () => {
