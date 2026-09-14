@@ -15,10 +15,8 @@ describe('orbit clamps', () => {
     expect(far.radius).toBe(PREVIEW_ORBIT.maxRadius)
   })
 
-  it('places the default host camera looking slightly down at the clearing', () => {
-    const o = offsetFromSpherical(14, 0, 0.98)
-    expect(o.z).toBeGreaterThan(10)
-    expect(o.y).toBeGreaterThan(6)
-    expect(Math.abs(o.x)).toBeLessThan(0.01)
+  it('lets the host camera pull back to see the far forest', () => {
+    expect(HOST_ORBIT.maxRadius).toBeGreaterThan(28)
+    expect(HOST_ORBIT.minRadius).toBeLessThan(8)
   })
 })

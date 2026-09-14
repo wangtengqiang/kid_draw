@@ -12,12 +12,12 @@ export type OrbitLimits = {
   maxPhi: number
 }
 
-/** 主机森林默认机位附近，俯仰大约 25°–75°。 */
+/** 主机森林：可以拉远看深处，也可以捏近看小动物。 */
 export const HOST_ORBIT: OrbitLimits = {
-  minRadius: 4.2,
-  maxRadius: 18,
-  minPhi: (16 * Math.PI) / 180,
-  maxPhi: (76 * Math.PI) / 180,
+  minRadius: 5,
+  maxRadius: 34,
+  minPhi: (14 * Math.PI) / 180,
+  maxPhi: (72 * Math.PI) / 180,
 }
 
 /** 作品夹转台更近，缩放幅度更小。 */

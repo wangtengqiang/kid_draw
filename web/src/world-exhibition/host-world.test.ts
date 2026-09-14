@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { OCEAN, SHORE_DRINK, WATER_RING, offsetRing, pointInRing, smoothCoast } from './host-world'
+import { GROUND_RADIUS, OCEAN, SHORE_DRINK, TREE_INSTANCE_CAP, WATER_RING, offsetRing, pointInRing, smoothCoast } from './host-world'
 
 describe('organic coast', () => {
   it('is a wavy polygon, not a rectangle', () => {
@@ -33,5 +33,11 @@ describe('organic coast', () => {
     const sx = sand.reduce((s, p) => s + p[0], 0) / sand.length
     expect(Math.abs(sx - cx)).toBeLessThan(0.4)
     expect(sand.length).toBe(coast.length)
+  })
+
+  it('opens a large world with a coastline that goes into the distance', () => {
+    expect(GROUND_RADIUS).toBeGreaterThan(40)
+    expect(Math.max(...WATER_RING.map((p) => p[0]))).toBeGreaterThan(30)
+    expect(TREE_INSTANCE_CAP).toBeLessThanOrEqual(96)
   })
 })

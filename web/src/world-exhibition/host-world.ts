@@ -26,43 +26,46 @@ interface Actor {
  * 海湾里的游泳圈（必须落在弯岸水面内，别再贴方池角）。
  * 喝水站在沙滩上，面朝水面。
  */
-export const OCEAN = { x: 9.05, z: 1.15, rx: 2.05, rz: 3.25 }
-export const SHORE_DRINK = { x: 4.55, z: 1.28 }
+export const OCEAN = { x: 9.2, z: 1.2, rx: 2.15, rz: 3.4 }
+export const SHORE_DRINK = { x: 4.55, z: 1.32 }
+export const GROUND_RADIUS = 46
+export const TREE_INSTANCE_CAP = 96
 
-/** 水面外轮廓（x, z）：湾、岬、沙滩，不是矩形。 */
+/** 水面外轮廓（x, z）：大湾接向远处的海，不是小方池。 */
 export const WATER_RING: [number, number][] = [
-  [5.35, 5.55],
-  [6.7, 6.35],
-  [8.45, 7.55],
-  [10.7, 6.85],
-  [12.35, 7.45],
-  [13.7, 5.7],
-  [13.45, 3.55],
-  [12.25, 2.15],
-  [13.55, 0.75],
-  [13.85, -1.25],
-  [12.7, -3.05],
-  [13.35, -5.05],
-  [11.7, -6.25],
-  [9.45, -5.95],
-  [7.55, -5.15],
-  [6.15, -3.55],
-  [5.55, -1.75],
-  [6.15, 0.05],
-  [4.95, 1.25],
-  [5.45, 3.15],
-  [5.05, 4.55],
+  [5.45, 6.4],
+  [7.6, 9.8],
+  [11.8, 14.2],
+  [17.6, 18.4],
+  [24.8, 20.2],
+  [31.4, 16.6],
+  [35.8, 9.8],
+  [37.2, 2.4],
+  [35.6, -5.8],
+  [36.4, -13.2],
+  [31.8, -19.0],
+  [23.4, -19.6],
+  [15.6, -16.4],
+  [9.6, -11.8],
+  [6.5, -6.9],
+  [5.55, -2.5],
+  [6.45, 0.15],
+  [5.12, 1.38],
+  [5.65, 3.7],
+  [5.28, 5.15],
 ]
 
 const shared = {
-  trunkGeo: new THREE.CylinderGeometry(0.09, 0.13, 1.1, 6),
-  canopyGeo: new THREE.SphereGeometry(0.55, 8, 7),
-  hillGeo: new THREE.SphereGeometry(1, 10, 8),
+  trunkGeo: new THREE.CylinderGeometry(0.08, 0.13, 1, 6),
+  canopyGeo: new THREE.SphereGeometry(0.55, 7, 6),
+  hillGeo: new THREE.SphereGeometry(1, 9, 7),
   stoneGeo: new THREE.SphereGeometry(0.22, 7, 6),
+  impostorGeo: new THREE.SphereGeometry(0.7, 6, 5),
   trunkMat: new THREE.MeshLambertMaterial({ color: '#5c3a22' }),
   canopyMat: new THREE.MeshLambertMaterial({ color: '#3d8f44' }),
   canopyMat2: new THREE.MeshLambertMaterial({ color: '#2f7a38' }),
-  canopyMat3: new THREE.MeshLambertMaterial({ color: '#4a9a4e' }),
+  canopyMat3: new THREE.MeshLambertMaterial({ color: '#5aa85a' }),
+  farMat: new THREE.MeshLambertMaterial({ color: '#2a5e32' }),
   stoneMat: new THREE.MeshLambertMaterial({ color: '#b7aea3' }),
   dirtMat: new THREE.MeshLambertMaterial({ color: '#b79a72' }),
   shoreMat: new THREE.MeshLambertMaterial({ color: '#d4c09a' }),
@@ -72,6 +75,13 @@ const shared = {
   sideMat: new THREE.MeshLambertMaterial({ color: '#2e7a9c' }),
   rockMat: new THREE.MeshLambertMaterial({ color: '#7f8f70' }),
   snowMat: new THREE.MeshLambertMaterial({ color: '#eef3ea' }),
+}
+
+const _dummy = new THREE.Object3D()
+
+function hash01(n: number): number {
+  const x = Math.sin(n * 127.1 + 311.7) * 43758.5453123
+  return x - Math.floor(x)
 }
 
 let waterTex: THREE.CanvasTexture | null = null
@@ -137,7 +147,7 @@ function flattenXZ(geo: THREE.BufferGeometry, y: number, mat: THREE.Material = s
 }
 
 function makeTerrain(): THREE.BufferGeometry {
-  const geo = new THREE.CircleGeometry(18, 40)
+  const geo = new THREE.CircleGeometry(GROUND_RADIUS, 48)
   geo.rotateX(-Math.PI / 2)
   const pos = geo.getAttribute('position')
   const coast = smoothCoast()
@@ -146,10 +156,11 @@ function makeTerrain(): THREE.BufferGeometry {
     const z = pos.getZ(i)
     const r = Math.hypot(x, z)
     let y =
-      0.2 * Math.sin(x * 0.28 + 0.5) * Math.cos(z * 0.22) + 0.1 * Math.sin(x * 0.62 - z * 0.4)
-    if (r < 5.5) y *= 0.12
-    if (pointInRing(x, z, coast)) y = -0.42
-    else if (x > 3.8 && r < 14) y += 0.08
+      0.28 * Math.sin(x * 0.18 + 0.5) * Math.cos(z * 0.14) + 0.14 * Math.sin(x * 0.42 - z * 0.28)
+    if (r < 6) y *= 0.1
+    else if (r > 22) y += 0.35 * Math.sin(r * 0.2)
+    if (pointInRing(x, z, coast)) y = -0.5
+    else if (x > 3.6 && r < 18) y += 0.06
     pos.setY(i, y)
   }
   geo.computeVertexNormals()
@@ -184,13 +195,13 @@ export class HostWorld {
     this.renderer.setClearColor('#d3e4f0', 1)
     this.renderer.setPixelRatio(1)
     this.renderer.shadowMap.enabled = false
-    this.camera = new THREE.PerspectiveCamera(42, 1, 0.2, 70)
-    this.camera.position.set(2.8, 5.15, 12.6)
-    this.camera.lookAt(4.1, 0.55, 0.15)
-    this.orbit = new OrbitZoom(canvas, this.camera, new THREE.Vector3(4.0, 0.45, 0.35), HOST_ORBIT)
+    this.camera = new THREE.PerspectiveCamera(46, 1, 0.3, 140)
+    this.camera.position.set(4.2, 8.4, 19.5)
+    this.camera.lookAt(5.2, 1.15, -4.5)
+    this.orbit = new OrbitZoom(canvas, this.camera, new THREE.Vector3(4.4, 0.9, -1.2), HOST_ORBIT)
     const grass = new THREE.CanvasTexture(paintGrassGround())
     grass.wrapS = grass.wrapT = THREE.RepeatWrapping
-    grass.repeat.set(4, 4)
+    grass.repeat.set(8, 8)
     grass.premultiplyAlpha = false
     this.ground = new THREE.Mesh(
       makeTerrain(),
@@ -363,25 +374,26 @@ export class HostWorld {
   }
 
   private buildForest(): void {
-    this.scene.background = new THREE.Color('#d3e4f0')
-    this.scene.fog = new THREE.Fog('#cfe0ea', 28, 58)
+    this.scene.background = new THREE.Color('#cfe6f4')
+    this.scene.fog = new THREE.Fog('#c5dcc8', 38, 108)
     ;(this.ground.material as THREE.MeshLambertMaterial).color.set('#7da85a')
-    this.addLight(new THREE.HemisphereLight('#fff4d4', '#3d5c32', 1.25))
-    const sun = new THREE.DirectionalLight('#ffe6b0', 0.75)
-    sun.position.set(6, 12, 8)
+    this.addLight(new THREE.HemisphereLight('#fff6d8', '#3d5c32', 1.18))
+    const sun = new THREE.DirectionalLight('#ffe6b0', 0.85)
+    sun.position.set(14, 18, 9)
     this.addLight(sun)
 
     const woods = new THREE.CanvasTexture(paintForestPanorama())
     woods.colorSpace = THREE.SRGBColorSpace
     const backdrop = new THREE.Mesh(
-      new THREE.CylinderGeometry(22, 22, 14, 20, 1, true),
+      new THREE.CylinderGeometry(54, 54, 20, 24, 1, true),
       new THREE.MeshBasicMaterial({ map: woods, side: THREE.BackSide, fog: false }),
     )
-    backdrop.position.y = 5.5
+    backdrop.position.y = 7.5
     this.decorations.add(backdrop)
 
     this.addHills()
     this.addStonePath()
+    this.addForestTrail()
     this.addOcean()
     this.addMountains()
     this.addWoods()
@@ -389,15 +401,17 @@ export class HostWorld {
 
   private addHills(): void {
     for (const [x, z, sx, sy, sz] of [
-      [-6.4, -5.2, 2.8, 0.85, 2.2],
-      [-8.2, 2.4, 2.4, 0.7, 2.0],
-      [1.6, -7.6, 2.6, 0.75, 2.3],
-      [-3.2, 6.8, 2.2, 0.65, 1.8],
-      [2.8, 7.2, 1.8, 0.55, 1.6],
+      [-9.4, -7.2, 3.6, 1.15, 2.8],
+      [-12.2, 3.4, 3.2, 0.95, 2.6],
+      [2.2, -11.6, 3.4, 1.05, 2.9],
+      [-5.2, 10.8, 2.8, 0.85, 2.2],
+      [3.6, 11.4, 2.4, 0.7, 2.0],
+      [-16.5, -4.0, 4.2, 1.35, 3.2],
+      [-14.8, 12.2, 3.5, 1.1, 2.8],
     ] as const) {
       if (pointInRing(x, z, this.coast)) continue
       const hill = new THREE.Mesh(shared.hillGeo, shared.bankMat)
-      hill.position.set(x, 0.05, z)
+      hill.position.set(x, 0.08, z)
       hill.scale.set(sx, sy, sz)
       this.decorations.add(hill)
     }
@@ -405,10 +419,11 @@ export class HostWorld {
 
   private addMountains(): void {
     const clumps: [number, number, number, number][] = [
-      [-1.2, -14.4, 4.4, 5.6],
-      [-5.4, -15.0, 3.6, 4.8],
-      [4.2, -14.6, 3.8, 5.2],
-      [1.8, -16.2, 2.6, 3.6],
+      [-4.2, -28.4, 6.4, 8.2],
+      [-11.4, -30.0, 5.2, 7.0],
+      [6.2, -29.2, 5.6, 7.6],
+      [1.4, -32.6, 4.0, 5.4],
+      [-18.0, -26.5, 5.0, 6.4],
     ]
     for (const [x, z, r, h] of clumps) {
       const mtn = new THREE.Mesh(shared.hillGeo, shared.rockMat)
@@ -422,39 +437,42 @@ export class HostWorld {
   }
 
   private addWoods(): void {
-    const spots: [number, number, number][] = [
-      [-6.6, -3.1, 1.05],
-      [-7.4, -1.7, 1.22],
-      [-6.2, -0.4, 0.95],
-      [-5.9, 4.0, 1.12],
-      [-4.5, 5.4, 0.98],
-      [-7.8, 3.2, 1.18],
-      [1.1, -7.2, 1.08],
-      [2.5, -8.0, 1.25],
-      [-2.4, -8.6, 1.15],
-      [3.0, 6.6, 1.02],
-      [-8.6, 0.6, 1.28],
-      [-3.8, -6.4, 0.92],
-      [0.4, 7.4, 1.1],
-      [-1.2, -9.4, 1.2],
+    const near: [number, number, number][] = [
+      [-7.2, -4.4, 1.15],
+      [-8.4, -2.2, 1.35],
+      [-6.8, -0.6, 1.05],
+      [-8.8, 3.6, 1.28],
+      [-6.4, 5.8, 1.12],
+      [1.4, -9.2, 1.22],
+      [-2.8, -10.4, 1.3],
+      [2.6, -8.6, 1.08],
     ]
-    for (const [x, z, s] of spots) {
+    for (const [x, z, s] of near) {
       if (pointInRing(x, z, this.coast)) continue
-      if (Math.hypot(x, z) < 5.7) continue
       const tree = woodTree()
       tree.position.set(x, 0.02, z)
       tree.scale.setScalar(s)
       this.decorations.add(tree)
     }
+
+    const tall = scatterTrees(28, 8.5, 16, 11, this.coast)
+    const mid = scatterTrees(36, 15, 26, 23, this.coast)
+    const far = scatterTrees(32, 24, 40, 41, this.coast)
+    const trunks = tall.concat(mid)
+    if (trunks.length) this.decorations.add(instancedTrunks(trunks))
+    if (tall.length) this.decorations.add(instancedCanopies(tall, shared.canopyMat, 1.15))
+    if (mid.length) this.decorations.add(instancedCanopies(mid, shared.canopyMat2, 1.05))
+    if (far.length) this.decorations.add(instancedFar(far))
+
     for (const [x, z] of [
-      [-5.2, 3.2],
-      [2.2, -6.4],
-      [-4.6, -5.8],
-      [3.4, 5.5],
+      [-5.6, 3.4],
+      [2.0, -7.2],
+      [-5.0, -6.6],
+      [3.2, 6.2],
     ] as const) {
-      const bush = new THREE.Mesh(shared.canopyGeo, shared.canopyMat2)
-      bush.position.set(x, 0.28, z)
-      bush.scale.set(1.1, 0.55, 0.95)
+      const bush = new THREE.Mesh(shared.canopyGeo, shared.canopyMat3)
+      bush.position.set(x, 0.32, z)
+      bush.scale.set(1.15, 0.55, 1.0)
       this.decorations.add(bush)
     }
   }
@@ -472,6 +490,24 @@ export class HostWorld {
       stone.scale.set(1.4 + (i % 3) * 0.2, 0.45, 1.2)
       this.decorations.add(stone)
     }
+  }
+
+  private addForestTrail(): void {
+    const curve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-3.4, 0.06, 3.8),
+      new THREE.Vector3(-7.2, 0.08, 6.4),
+      new THREE.Vector3(-11.6, 0.1, 5.6),
+      new THREE.Vector3(-16.4, 0.14, 9.2),
+      new THREE.Vector3(-21.0, 0.18, 13.5),
+    ])
+    const trail = new THREE.Mesh(new THREE.TubeGeometry(curve, 18, 0.48, 5, false), shared.dirtMat)
+    this.decorations.add(trail)
+    const toShore = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(3.4, 0.05, 1.25),
+      new THREE.Vector3(4.4, 0.05, 1.3),
+      new THREE.Vector3(5.05, 0.04, 1.35),
+    ])
+    this.decorations.add(new THREE.Mesh(new THREE.TubeGeometry(toShore, 8, 0.38, 5, false), shared.dirtMat))
   }
 
   private addOcean(): void {
@@ -617,18 +653,84 @@ export class HostWorld {
 function woodTree(): THREE.Group {
   const g = new THREE.Group()
   const trunk = new THREE.Mesh(shared.trunkGeo, shared.trunkMat)
-  trunk.position.y = 0.55
+  trunk.position.y = 1.25
+  trunk.scale.set(1.15, 2.5, 1.15)
   const leaf = new THREE.Mesh(shared.canopyGeo, shared.canopyMat)
-  leaf.position.y = 1.48
-  leaf.scale.set(1.45, 1.15, 1.45)
-  const leaf2 = new THREE.Mesh(shared.canopyGeo, shared.canopyMat2)
-  leaf2.position.set(0.38, 1.72, 0.18)
-  leaf2.scale.set(1.05, 0.9, 1.05)
-  const leaf3 = new THREE.Mesh(shared.canopyGeo, shared.canopyMat3)
-  leaf3.position.set(-0.32, 1.88, -0.22)
-  leaf3.scale.set(0.95, 0.82, 0.95)
+  leaf.position.y = 2.65
+  leaf.scale.set(1.7, 1.35, 1.7)
+  const leaf2 = new THREE.Mesh(shared.canopyGeo, shared.canopyMat3)
+  leaf2.position.set(0.45, 2.95, 0.22)
+  leaf2.scale.set(1.2, 1.0, 1.2)
+  const leaf3 = new THREE.Mesh(shared.canopyGeo, shared.canopyMat2)
+  leaf3.position.set(-0.4, 3.15, -0.28)
+  leaf3.scale.set(1.1, 0.92, 1.1)
   g.add(trunk, leaf, leaf2, leaf3)
   return g
+}
+
+type TreeSpot = { x: number; z: number; s: number; h: number }
+
+function scatterTrees(count: number, r0: number, r1: number, seed: number, coast: [number, number][]): TreeSpot[] {
+  const out: TreeSpot[] = []
+  for (let i = 0; out.length < count && i < count * 4; i++) {
+    const a = hash01(seed + i) * Math.PI * 2
+    const r = r0 + hash01(seed + i + 17) * (r1 - r0)
+    const x = Math.cos(a) * r
+    const z = Math.sin(a) * r
+    if (Math.hypot(x, z) < 6.4) continue
+    if (pointInRing(x, z, coast)) continue
+    out.push({
+      x,
+      z,
+      s: 0.85 + hash01(seed + i + 3) * 0.55,
+      h: 2.1 + hash01(seed + i + 9) * 1.6,
+    })
+  }
+  return out
+}
+
+function instancedTrunks(spots: TreeSpot[]): THREE.InstancedMesh {
+  const mesh = new THREE.InstancedMesh(shared.trunkGeo, shared.trunkMat, spots.length)
+  spots.forEach((p, i) => {
+    _dummy.position.set(p.x, p.h * 0.5, p.z)
+    _dummy.scale.set(p.s * 1.05, p.h, p.s * 1.05)
+    _dummy.rotation.set(0, hash01(i + 4) * 0.8, 0)
+    _dummy.updateMatrix()
+    mesh.setMatrixAt(i, _dummy.matrix)
+  })
+  mesh.instanceMatrix.needsUpdate = true
+  mesh.castShadow = false
+  return mesh
+}
+
+function instancedCanopies(spots: TreeSpot[], mat: THREE.MeshLambertMaterial, lift: number): THREE.InstancedMesh {
+  const mesh = new THREE.InstancedMesh(shared.canopyGeo, mat, spots.length)
+  spots.forEach((p, i) => {
+    _dummy.position.set(p.x + (hash01(i) - 0.5) * 0.25, p.h * lift, p.z)
+    const sc = p.s * (1.7 + hash01(i + 8) * 0.4)
+    _dummy.scale.set(sc, sc * 0.82, sc)
+    _dummy.rotation.set(0, 0, 0)
+    _dummy.updateMatrix()
+    mesh.setMatrixAt(i, _dummy.matrix)
+  })
+  mesh.instanceMatrix.needsUpdate = true
+  mesh.castShadow = false
+  return mesh
+}
+
+function instancedFar(spots: TreeSpot[]): THREE.InstancedMesh {
+  const mesh = new THREE.InstancedMesh(shared.impostorGeo, shared.farMat, spots.length)
+  spots.forEach((p, i) => {
+    _dummy.position.set(p.x, p.h * 0.72, p.z)
+    const sc = p.s * 2.4
+    _dummy.scale.set(sc, sc * 1.5, sc)
+    _dummy.rotation.set(0, 0, 0)
+    _dummy.updateMatrix()
+    mesh.setMatrixAt(i, _dummy.matrix)
+  })
+  mesh.instanceMatrix.needsUpdate = true
+  mesh.castShadow = false
+  return mesh
 }
 
 function makePoints(color: string, count: number, spread: number): THREE.Points {
