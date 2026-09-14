@@ -128,4 +128,4 @@
 - 网页：选动物 / 画廊 / 送到啦 / 涂色旁预览 / 主机森林，都是同一份 glTF。
 - 微信小游戏：成功页、选卡片、画廊、2D 主机用 `minigame/models/snapshots/*.png`（网页 Three.js 烘出来的正面）。涂色纸仍是 2D 线样子 + 自由蜡笔。完整 3D 森林仍在网页。不移植整包 Three.js，也不改写成 Cocos。
 
-许可证：`web/public/models/NOTICE.md`。无千图网、无 CloudBase 密钥。
+许可证：`web/public/models/NOTICE.md`。无千图网、无 CloudBase 密钥。效果图 `preview-shots/effect-lion-*.png` 是目标对照，不当游戏贴图。

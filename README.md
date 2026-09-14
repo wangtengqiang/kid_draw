@@ -62,6 +62,8 @@ npm run dev
 
 孩子在画板上画的条纹会**原样**投影到 3D 皮毛上（画纸像素 = 涂层纹素），不拉直、不按色块平均。识别只用来判断是哪只动物。取舍见 [`docs/industry-animal-pipeline.md`](docs/industry-animal-pipeline.md)。不要把千图网 PNG 当模型或贴图。
 
+目标效果图（只作对照，不当贴图）：`web/public/preview-shots/effect-lion-forest.png`、`effect-lion-close.png`。现状对照：`asis-cub-lion-*`（现在的圆滚幼崽）、`asis-kenney-lion-*`（旧方块狮）。
+
 **纸上涂色**
 
 1. 标签 A 保持主机世界开着。

@@ -134,7 +134,7 @@ function makeLion() {
   head.position.set(0, 0.78, 0.22)
   const face = part('face', ball(0.34, 0.33, 0.3), '#ffe7b8')
   head.add(face)
-  addEyes(head, { y: 0.05, z: 0.22, spread: 0.13, white: 0.135, iris: 0.072 })
+  addEyes(head, { y: 0.05, z: 0.23, spread: 0.13, white: 0.142, iris: 0.076 })
   addSmile(head, 0.27)
   head.add(part('earL', ball(0.09, 0.1, 0.07), '#f0c36a', -0.22, 0.28, -0.02))
   head.add(part('earR', ball(0.09, 0.1, 0.07), '#f0c36a', 0.22, 0.28, -0.02))
@@ -142,19 +142,19 @@ function makeLion() {
   head.add(part('earInR', ball(0.05, 0.055, 0.03), '#f4b4a0', 0.22, 0.28, 0.04))
 
   const mane = mergeGroup('mane', '#e08932', [
-    ...Array.from({ length: 12 }, (_, i) => () => {
-      const a = (i / 12) * Math.PI * 2 - Math.PI / 2
-      const tuft = part(`m${i}`, ball(0.15, 0.2, 0.13), '#e08932', Math.cos(a) * 0.38, Math.sin(a) * 0.36, -0.04)
+    ...Array.from({ length: 14 }, (_, i) => () => {
+      const a = (i / 14) * Math.PI * 2 - Math.PI / 2
+      const tuft = part(`m${i}`, ball(0.145, 0.23, 0.125), '#e08932', Math.cos(a) * 0.4, Math.sin(a) * 0.37, -0.02)
       tuft.rotation.z = a + Math.PI / 2
       return tuft
     }),
-    ...Array.from({ length: 8 }, (_, i) => () => {
-      const a = (i / 8) * Math.PI * 2 + 0.2
-      const tuft = part(`mb${i}`, ball(0.13, 0.16, 0.12), '#c96e22', Math.cos(a) * 0.3, Math.sin(a) * 0.22, -0.22)
+    ...Array.from({ length: 10 }, (_, i) => () => {
+      const a = (i / 10) * Math.PI * 2 + 0.18
+      const tuft = part(`mb${i}`, ball(0.13, 0.17, 0.12), '#c96e22', Math.cos(a) * 0.32, Math.sin(a) * 0.22, -0.24)
       tuft.rotation.z = a
       return tuft
     }),
-    () => part('maneTop', ball(0.18, 0.16, 0.16), '#e08932', 0, 0.4, -0.08),
+    () => part('maneTop', ball(0.18, 0.16, 0.16), '#e08932', 0, 0.42, -0.08),
   ])
   head.add(mane)
   root.add(head)

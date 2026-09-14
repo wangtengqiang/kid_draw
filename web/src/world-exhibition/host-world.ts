@@ -559,6 +559,14 @@ export class HostWorld {
     ])
     const trail = new THREE.Mesh(new THREE.TubeGeometry(curve, 18, 0.48, 5, false), shared.dirtMat)
     this.decorations.add(trail)
+    const steps = curve.getPoints(14)
+    for (let i = 0; i < steps.length; i++) {
+      const stone = new THREE.Mesh(shared.stoneGeo, shared.stoneMat)
+      stone.position.copy(steps[i]!)
+      stone.position.y = 0.08
+      stone.scale.set(1.15 + (i % 3) * 0.18, 0.38, 1.05)
+      this.decorations.add(stone)
+    }
     const toShore = new THREE.CatmullRomCurve3([
       new THREE.Vector3(3.4, 0.05, 1.25),
       new THREE.Vector3(4.4, 0.05, 1.3),
