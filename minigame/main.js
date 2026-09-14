@@ -164,5 +164,19 @@ wx.onTouchStart(function (ev) {
   child.touch(screen, btn, x, y)
 })
 
+wx.onTouchMove(function (ev) {
+  if (screen.name !== 'paint') return
+  const t = ev.touches[0]
+  if (!t) return
+  child.paintMove(t.clientX, t.clientY)
+})
+
+wx.onTouchEnd(function () {
+  child.paintEnd()
+})
+wx.onTouchCancel(function () {
+  child.paintEnd()
+})
+
 start()
 render()

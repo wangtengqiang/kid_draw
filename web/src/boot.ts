@@ -52,6 +52,9 @@ export class App {
     this.child.dispose()
     this.paper.dispose()
     this.screen = next
+    if (next.name === 'host') {
+      history.replaceState({}, '', `${location.pathname}?host=1&room=${next.roomId}`)
+    }
     this.render()
   }
 

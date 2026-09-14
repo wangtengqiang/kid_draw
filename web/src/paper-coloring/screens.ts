@@ -1,17 +1,19 @@
 /**
  * 纸上涂色界面：老师下载线稿；孩子选一只、拍照、送进世界。
- * 字要少。不猜未知动物。不进主机森林。
+ * 字要少。不猜未知动物。送到后可去看大世界。
  */
 import { drawPreview } from '../child-creation/lineart'
 import { getRoom } from '../sync'
 import type { AnimalId, PlacedAnimal } from '../types'
 import { ANIMAL_IDS, ANIMAL_META, LAND_IDS, MARINE_IDS } from '../types'
+import { PreviewStage } from '../world-exhibition/preview'
 import { imageDataFrom, mapPhotoToTemplate } from './map'
 import { sendColoredAnimal } from './send-to-world'
 import { downloadTemplate, lastPaper, rememberLastPaper } from './template'
 
 export type PaperGo =
   | { name: 'home' }
+  | { name: 'host'; roomId: string }
   | { name: 'paper-print' }
   | { name: 'paper-need-scan' }
   | { name: 'paper-pick'; roomId: string }
@@ -23,6 +25,7 @@ export class PaperColoring {
   private go: (s: PaperGo) => void
   private previewThumb = ''
   private previewColors: Record<string, string> = {}
+  private worldPreview: PreviewStage | null = null
 
   constructor(root: HTMLElement, go: (s: PaperGo) => void) {
     this.root = root
@@ -32,6 +35,8 @@ export class PaperColoring {
   dispose(): void {
     this.previewThumb = ''
     this.previewColors = {}
+    this.worldPreview?.dispose()
+    this.worldPreview = null
   }
 
   print(): void {
@@ -164,13 +169,34 @@ export class PaperColoring {
     this.root.innerHTML = `
       <main class="page kid">
         <h1>送到啦</h1>
-        <p class="lead">${ANIMAL_META[placed.animalId].name}走进主机世界了。</p>
-        <img class="sent-thumb" alt="" src="${thumb}" />
+        <p class="lead">${ANIMAL_META[placed.animalId].name}走进主机世界了。点下面就能进去看。</p>
+        <div class="preview-frame success-world" id="success-stage">
+          <canvas id="success-canvas" aria-label="${ANIMAL_META[placed.animalId].name}"></canvas>
+        </div>
+        <img class="sent-thumb" id="success-thumb" alt="" hidden />
+        <button class="hit host-hit world-jump" data-act="world" type="button">去看大世界</button>
         <button class="hit kid-hit" data-act="again" type="button">再拍一张</button>
       </main>`
+    this.root.querySelector('[data-act="world"]')?.addEventListener('click', () =>
+      this.go({ name: 'host', roomId }),
+    )
     this.root.querySelector('[data-act="again"]')?.addEventListener('click', () =>
       this.go({ name: 'paper-pick', roomId }),
     )
+    const canvas = this.root.querySelector<HTMLCanvasElement>('#success-canvas')
+    const fallback = this.root.querySelector<HTMLImageElement>('#success-thumb')
+    if (!canvas) return
+    try {
+      this.worldPreview = new PreviewStage(canvas)
+      this.worldPreview.show(placed.animalId, placed.regionColors, thumb)
+      requestAnimationFrame(() => this.worldPreview?.resize())
+    } catch {
+      if (fallback) {
+        fallback.src = thumb
+        fallback.hidden = false
+      }
+      this.root.querySelector('#success-stage')?.setAttribute('hidden', '')
+    }
   }
 
   private async useFile(file: File, animalId: AnimalId): Promise<void> {

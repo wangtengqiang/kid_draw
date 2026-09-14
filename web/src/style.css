@@ -217,6 +217,49 @@ h1 {
 }
 .paint-lines { pointer-events: none; }
 
+.brush-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 4px;
+  justify-content: safe center;
+  align-items: center;
+}
+.brush-size {
+  flex: 0 0 auto;
+  min-width: 72px;
+  min-height: 52px;
+  border: 0;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 20px;
+  background: #fffaf1;
+  box-shadow: 0 4px 0 #d7c4a4;
+  cursor: pointer;
+  padding: 8px 14px;
+}
+.brush-size.on {
+  background: var(--sun);
+  box-shadow: 0 4px 0 var(--sun-shadow);
+}
+.eraser-hit.on {
+  background: var(--peach);
+  box-shadow: 0 4px 0 var(--peach-shadow);
+}
+.paint-hint { font-size: 18px; margin: 0; }
+.world-jump {
+  min-height: 92px;
+  font-size: 32px;
+}
+.success-world {
+  height: 38dvh;
+  min-height: 220px;
+}
+.picker-row {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+.animal-picker[hidden] { display: none; }
+
 .crayons {
   display: flex;
   gap: 8px;

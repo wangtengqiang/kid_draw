@@ -1,11 +1,12 @@
 /**
- * 儿童创作用例界面：选一只 → 大蜡笔涂色 → 送进世界。
- * 网页预览可直接涂；扫码（摄像头或选图片）进老师的房。不进主机森林。
+ * 儿童创作用例界面：选一只 → 自由蜡笔涂色 → 送进世界。
+ * 网页预览可直接涂；扫码进老师的房。送到后可去看大世界。
  */
 import { createRoom, ensurePreviewRoom, getRoom } from '../sync'
 import { storage } from '../storage'
 import type { AnimalId, PlacedAnimal } from '../types'
 import { ANIMAL_META, LAND_IDS, MARINE_IDS, PALETTE, ROOM_CAP } from '../types'
+import { PreviewStage } from '../world-exhibition/preview'
 import {
   emptySlotCount,
   getDraft,
@@ -15,13 +16,15 @@ import {
   saveDraft,
   type PaintDraft,
 } from './drafts'
+import { inferAnimalId, needsAnimalPicker } from './infer-animal'
 import { drawPreview } from './lineart'
-import { PaintSurface } from './paint'
+import { BRUSH_SIZES, PaintSurface } from './paint'
 import { decodeQrFromFile, decodeQrFromImageData, parseJoinFromQr } from './scan-qr'
 import { sendToWorld } from './send-to-world'
 
 export type ChildGo =
   | { name: 'home' }
+  | { name: 'host'; roomId: string }
   | { name: 'need-scan' }
   | { name: 'scan' }
   | { name: 'drafts' }
@@ -33,6 +36,7 @@ export type ChildGo =
 
 export class ChildCreation {
   private paint: PaintSurface | null = null
+  private worldPreview: PreviewStage | null = null
   private root: HTMLElement
   private go: (s: ChildGo) => void
   private media: MediaStream | null = null
@@ -52,6 +56,8 @@ export class ChildCreation {
 
   dispose(): void {
     this.paint = null
+    this.worldPreview?.dispose()
+    this.worldPreview = null
     this.stopCamera()
   }
 
@@ -150,6 +156,7 @@ export class ChildCreation {
   paintScreen(roomId: string, animalId: AnimalId, draftId?: string): void {
     this.openDraftId = draftId || null
     this.paint = new PaintSurface(animalId, () => undefined)
+    this.paint.tool = 'brush'
     this.paint.brush = 36
     this.paint.colorHex = PALETTE[3]!.hex
     this.root.innerHTML = `
@@ -159,14 +166,47 @@ export class ChildCreation {
           <button class="hit draft-hit" data-act="draft" type="button">保存草稿</button>
           <button class="hit scan-file-hit" data-act="drafts" type="button">我的草稿</button>
         </div>
+        <p class="lead paint-hint">正在画${ANIMAL_META[animalId].name}。拿蜡笔在纸上随便涂，线只是样子。</p>
         <div class="paint-body" id="paint-body">
           <div class="loading-mask" id="paint-load">正在打开画纸…</div>
         </div>
+        <div class="brush-row" id="brush-sizes"></div>
         <div class="crayons" id="crayons"></div>
         <button class="send-hit" data-act="send" type="button">送进世界</button>
-        <p class="paint-msg" id="paint-msg">点色块就能涂。换动物不用输房号。</p>
+        <p class="paint-msg" id="paint-msg">拿蜡笔在纸上随便涂。不用点满色块。</p>
+        <div class="animal-picker" id="animal-picker" hidden>
+          <p class="lead">这是哪只？点一张就送出去。</p>
+          <div class="pick-grid picker-row" id="picker-row"></div>
+        </div>
       </main>`
     this.root.querySelector('#paint-body')?.append(this.paint.wrap)
+    const sizes = this.root.querySelector('#brush-sizes')
+    BRUSH_SIZES.forEach((s) => {
+      const b = document.createElement('button')
+      b.type = 'button'
+      b.className = `brush-size ${s.id === 36 ? 'on' : ''}`
+      b.textContent = s.name
+      b.addEventListener('click', () => {
+        if (!this.paint) return
+        this.paint.brush = s.id
+        this.paint.tool = 'brush'
+        sizes?.querySelectorAll('.brush-size').forEach((el) => el.classList.remove('on'))
+        b.classList.add('on')
+        this.root.querySelector('[data-act="eraser"]')?.classList.remove('on')
+      })
+      sizes?.append(b)
+    })
+    const eraser = document.createElement('button')
+    eraser.type = 'button'
+    eraser.className = 'brush-size eraser-hit'
+    eraser.dataset.act = 'eraser'
+    eraser.textContent = '橡皮'
+    eraser.addEventListener('click', () => {
+      if (!this.paint) return
+      this.paint.tool = this.paint.tool === 'eraser' ? 'brush' : 'eraser'
+      eraser.classList.toggle('on', this.paint.tool === 'eraser')
+    })
+    sizes?.append(eraser)
     const crayons = this.root.querySelector('#crayons')
     PALETTE.forEach((c, i) => {
       const b = document.createElement('button')
@@ -177,8 +217,10 @@ export class ChildCreation {
       b.addEventListener('click', () => {
         if (!this.paint) return
         this.paint.colorHex = c.hex
+        this.paint.tool = 'brush'
         crayons?.querySelectorAll('.crayon').forEach((el) => el.classList.remove('on'))
         b.classList.add('on')
+        this.root.querySelector('[data-act="eraser"]')?.classList.remove('on')
       })
       crayons?.append(b)
     })
@@ -195,11 +237,32 @@ export class ChildCreation {
     this.root.innerHTML = `
       <main class="page kid">
         <h1>送到啦</h1>
-        <p class="lead">${ANIMAL_META[placed.animalId].name}走进主机世界了。你不用走进那片大地图。</p>
-        <img class="sent-thumb" alt="" src="${thumb}" />
+        <p class="lead">${ANIMAL_META[placed.animalId].name}走进主机世界了。点下面就能进去看。</p>
+        <div class="preview-frame success-world" id="success-stage">
+          <canvas id="success-canvas" aria-label="${ANIMAL_META[placed.animalId].name}"></canvas>
+        </div>
+        <img class="sent-thumb" id="success-thumb" alt="" hidden />
+        <button class="hit host-hit world-jump" data-act="world" type="button">去看大世界</button>
         <button class="hit kid-hit" data-act="again" type="button">再画一只</button>
       </main>`
+    this.root.querySelector('[data-act="world"]')?.addEventListener('click', () =>
+      this.go({ name: 'host', roomId }),
+    )
     this.root.querySelector('[data-act="again"]')?.addEventListener('click', () => this.go({ name: 'pick', roomId }))
+    const canvas = this.root.querySelector<HTMLCanvasElement>('#success-canvas')
+    const fallback = this.root.querySelector<HTMLImageElement>('#success-thumb')
+    if (!canvas) return
+    try {
+      this.worldPreview = new PreviewStage(canvas)
+      this.worldPreview.show(placed.animalId, placed.regionColors, thumb)
+      requestAnimationFrame(() => this.worldPreview?.resize())
+    } catch {
+      if (fallback) {
+        fallback.src = thumb
+        fallback.hidden = false
+      }
+      this.root.querySelector('#success-stage')?.setAttribute('hidden', '')
+    }
   }
 
   private setMsg(id: string, text: string, kind: 'ok' | 'err' | '' = ''): void {
@@ -250,7 +313,7 @@ export class ChildCreation {
     }
     if (!draftId) {
       mask?.remove()
-      this.setMsg('paint-msg', '空白画纸。点色块就能涂。')
+      this.setMsg('paint-msg', '空白画纸。拿蜡笔在纸上随便涂。')
       return
     }
     const draft = getDraft(draftId)
@@ -389,6 +452,38 @@ export class ChildCreation {
   }
 
   private async send(roomId: string, animalId: AnimalId): Promise<void> {
+    if (!this.paint) return
+    const inferred = inferAnimalId({
+      startedAs: animalId,
+      averageHex: this.paint.averagePaintHex(),
+    })
+    if (needsAnimalPicker(inferred) && !animalId) {
+      this.showSendPicker(roomId)
+      return
+    }
+    await this.finishSend(roomId, inferred.animalId)
+  }
+
+  private showSendPicker(roomId: string): void {
+    const box = this.root.querySelector<HTMLElement>('#animal-picker')
+    const row = this.root.querySelector('#picker-row')
+    if (!box || !row) return
+    box.hidden = false
+    row.innerHTML = ''
+    this.setMsg('paint-msg', '先点一下这是哪只，再送出去。')
+    ;([...LAND_IDS, ...MARINE_IDS] as AnimalId[]).forEach((id) => {
+      const b = document.createElement('button')
+      b.type = 'button'
+      b.className = 'hit kid-hit'
+      b.textContent = ANIMAL_META[id].name
+      b.addEventListener('click', () => {
+        void this.finishSend(roomId, id)
+      })
+      row.append(b)
+    })
+  }
+
+  private async finishSend(roomId: string, animalId: AnimalId): Promise<void> {
     if (!this.paint) return
     const btn = this.root.querySelector<HTMLButtonElement>('[data-act="send"]')
     if (btn) btn.disabled = true

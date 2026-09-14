@@ -1,6 +1,6 @@
 /**
  * 纸上涂色用例：下载官方线稿、拍照对准、送进世界。
- * 不猜未知动物。没有主机森林。
+ * 不猜未知动物。送到后可去看大世界。
  */
 export { mapPhotoToTemplate } from './map'
 export { PaperColoring } from './screens'

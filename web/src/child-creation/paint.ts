@@ -1,9 +1,18 @@
 /**
  * 儿童创作：只负责在画布上涂。不进主机森林、不写云。
- * 线稿锁在上层；点色块填充分区，拖动是大蜡笔。
+ * 自由蜡笔：可涂纸上任何地方。线稿只是样子，不锁分区。
  */
 import type { AnimalId, ToolId } from '../types'
+import { ANIMAL_META } from '../types'
 import { drawLineArt, drawRegions, regionName } from './lineart'
+
+export const BRUSH_SIZES = [
+  { id: 12, name: '细' },
+  { id: 36, name: '中' },
+  { id: 64, name: '粗' },
+] as const
+
+const PAPER_HEX = '#fffdf7'
 
 export class PaintSurface {
   readonly wrap: HTMLElement
@@ -11,7 +20,7 @@ export class PaintSurface {
   readonly lines: HTMLCanvasElement
   readonly region: HTMLCanvasElement
   animal: AnimalId
-  tool: ToolId = 'fill'
+  tool: ToolId = 'brush'
   colorHex = '#e24b4b'
   brush = 36
   private drawing = false
@@ -48,7 +57,7 @@ export class PaintSurface {
     const lctx = this.lines.getContext('2d')
     const rctx = this.region.getContext('2d')
     if (!cctx || !lctx || !rctx) return
-    cctx.fillStyle = '#fffdf7'
+    cctx.fillStyle = PAPER_HEX
     cctx.fillRect(0, 0, w, h)
     drawRegions(this.animal, rctx, w, h)
     this.regionData = rctx.getImageData(0, 0, w, h)
@@ -130,7 +139,7 @@ export class PaintSurface {
     ctx.fill()
     ctx.restore()
     if (this.tool === 'eraser') {
-      ctx.fillStyle = '#fffdf7'
+      ctx.fillStyle = PAPER_HEX
       ctx.beginPath()
       ctx.arc(x, y, this.brush, 0, Math.PI * 2)
       ctx.fill()
@@ -172,7 +181,40 @@ export class PaintSurface {
     ctx.putImageData(color, 0, 0)
   }
 
+  averagePaintHex(): string | null {
+    const ctx = this.color.getContext('2d')
+    if (!ctx) return null
+    const color = ctx.getImageData(0, 0, this.color.width, this.color.height)
+    let r = 0
+    let g = 0
+    let b = 0
+    let n = 0
+    const d = color.data
+    for (let i = 0; i < d.length; i += 16) {
+      if (isPaper(d[i]!, d[i + 1]!, d[i + 2]!)) continue
+      r += d[i]!
+      g += d[i + 1]!
+      b += d[i + 2]!
+      n++
+    }
+    if (n < 12) return null
+    return rgbToHex(r / n, g / n, b / n)
+  }
+
   sampleRegions(): Record<string, string> {
+    const fromMask = this.sampleMask()
+    const global = this.averagePaintHex()
+    if (!global) return fromMask
+    const painted = Object.values(fromMask).filter((hex) => !isNearPaperHex(hex))
+    if (painted.length) return fromMask
+    const out: Record<string, string> = {}
+    for (const name of Object.keys(ANIMAL_META[this.animal].defaults)) {
+      out[name] = /belly|muzzle|spot/i.test(name) ? lightenHex(global) : global
+    }
+    return out
+  }
+
+  private sampleMask(): Record<string, string> {
     if (!this.regionData) return {}
     const ctx = this.color.getContext('2d')
     if (!ctx) return {}
@@ -182,10 +224,11 @@ export class PaintSurface {
     for (let i = 0; i < r.length; i += 4) {
       const id = r[i]
       if (!id || r[i + 3] < 10) continue
+      if (isPaper(color.data[i]!, color.data[i + 1]!, color.data[i + 2]!)) continue
       const acc = (sums[id] ??= { r: 0, g: 0, b: 0, n: 0 })
-      acc.r += color.data[i]
-      acc.g += color.data[i + 1]
-      acc.b += color.data[i + 2]
+      acc.r += color.data[i]!
+      acc.g += color.data[i + 1]!
+      acc.b += color.data[i + 2]!
       acc.n++
     }
     const out: Record<string, string> = {}
@@ -243,3 +286,18 @@ function rgbToHex(r: number, g: number, b: number): string {
       .padStart(2, '0')
   return `#${c(r)}${c(g)}${c(b)}`
 }
+
+function isPaper(r: number, g: number, b: number): boolean {
+  return r > 245 && g > 244 && b > 230
+}
+
+function isNearPaperHex(hex: string): boolean {
+  const [r, g, b] = hexToRgb(hex)
+  return isPaper(r, g, b)
+}
+
+function lightenHex(hex: string): string {
+  const [r, g, b] = hexToRgb(hex)
+  return rgbToHex(Math.min(255, r + 40), Math.min(255, g + 36), Math.min(255, b + 28))
+}
+

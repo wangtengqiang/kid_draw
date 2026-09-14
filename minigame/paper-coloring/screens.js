@@ -94,12 +94,14 @@ PaperColoring.prototype.camera = function (ctx, roomId, animalId) {
 PaperColoring.prototype.success = function (ctx, roomId, placed) {
   const W = this.api.W
   const H = this.api.H
-  title(ctx, '送到啦', W / 2, 80, 44)
-  lead(ctx, (ANIMAL_NAMES[placed.animalId] || '') + '走进主机世界了。', W / 2, 120)
-  drawAnimal(ctx, placed.animalId, placed.regionColors, { x: 40, y: 140, w: W - 80, h: H * 0.42 })
-  const again = { id: 'paper-pick', roomId: roomId, x: 28, y: H - 120, w: W - 56, h: 76 }
-  fillBtn(ctx, again, '#2f9e5f', '再拍一张', 30)
-  return [again]
+  title(ctx, '送到啦', W / 2, 70, 44)
+  lead(ctx, (ANIMAL_NAMES[placed.animalId] || '') + '走进主机世界了。', W / 2, 108)
+  drawAnimal(ctx, placed.animalId, placed.regionColors, { x: 36, y: 128, w: W - 72, h: H * 0.36 })
+  const world = { id: 'open-world', roomId: roomId, x: 24, y: H - 196, w: W - 48, h: 88 }
+  fillBtn(ctx, world, '#f2c14e', '去看大世界', 34)
+  const again = { id: 'paper-pick', roomId: roomId, x: 28, y: H - 96, w: W - 56, h: 68 }
+  fillBtn(ctx, again, '#2f9e5f', '再拍一张', 28)
+  return [world, again]
 }
 
 PaperColoring.prototype.touch = function (screen, btn) {
@@ -107,6 +109,7 @@ PaperColoring.prototype.touch = function (screen, btn) {
   const self = this
   if (!btn) return
   if (btn.id === 'home') go({ name: 'home' })
+  else if (btn.id === 'open-world') go({ name: 'host', roomId: btn.roomId || screen.roomId })
   else if (btn.id === 'paper-pick') go({ name: 'paper-pick', roomId: btn.roomId || screen.roomId })
   else if (btn.id === 'paper-animal') go({ name: 'paper-camera', roomId: btn.roomId, animalId: btn.animalId })
   else if (btn.id === 'save-sheet') saveSheet(btn.animalId)

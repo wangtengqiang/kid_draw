@@ -1,6 +1,6 @@
 /**
- * 世界观展：把已送出的分区色画成侧视动物。
- * 不读涂色画布。网页 3D 在 web/src/world-exhibition/models.ts。
+ * 世界观展：把孩子的颜色画成 Kenney 方块宠物（正脸）。
+ * 不是叠椭圆雪人，也不是兔子耳朵鹿。网页 3D 在 web/src/world-exhibition/models.ts。
  */
 const { DEFAULTS } = require('../types.js')
 
@@ -13,73 +13,183 @@ function colorsOf(animalId, painted) {
   return out
 }
 
-function poly(ctx, pts, fill, stroke) {
+function rr(ctx, x, y, w, h, r) {
+  const rad = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2)
   ctx.beginPath()
-  ctx.moveTo(pts[0][0], pts[0][1])
-  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1])
+  ctx.moveTo(x + rad, y)
+  ctx.arcTo(x + w, y, x + w, y + h, rad)
+  ctx.arcTo(x + w, y + h, x, y + h, rad)
+  ctx.arcTo(x, y + h, x, y, rad)
+  ctx.arcTo(x, y, x + w, y, rad)
   ctx.closePath()
-  ctx.fillStyle = fill
-  ctx.fill()
-  ctx.strokeStyle = stroke || '#1a120c'
-  ctx.lineWidth = 3
+}
+
+function paintShape(ctx, outlineOnly, fill, draw) {
+  draw()
+  if (!outlineOnly && fill) {
+    ctx.fillStyle = fill
+    ctx.fill()
+  }
+  ctx.strokeStyle = '#1a120c'
   ctx.stroke()
 }
 
-function drawAnimal(ctx, animalId, painted, box) {
+function drawFace(ctx, outlineOnly) {
+  if (outlineOnly) return
+  ctx.fillStyle = '#1a120c'
+  ctx.beginPath()
+  ctx.arc(-0.07, -0.2, 0.032, 0, Math.PI * 2)
+  ctx.arc(0.07, -0.2, 0.032, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.fillStyle = '#fffaf1'
+  ctx.beginPath()
+  ctx.arc(-0.058, -0.212, 0.01, 0, Math.PI * 2)
+  ctx.arc(0.082, -0.212, 0.01, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.strokeStyle = '#1a120c'
+  ctx.lineWidth = 0.026
+  ctx.beginPath()
+  ctx.arc(0, -0.1, 0.09, 0.18 * Math.PI, 0.82 * Math.PI)
+  ctx.stroke()
+}
+
+function drawLegs(ctx, outlineOnly, fill) {
+  ;[
+    [-0.2, 0.22, 0.1, 0.2],
+    [0.1, 0.22, 0.1, 0.2],
+    [-0.28, 0.2, 0.09, 0.18],
+    [0.19, 0.2, 0.09, 0.18],
+  ].forEach((p) => {
+    paintShape(ctx, outlineOnly, fill, function () {
+      rr(ctx, p[0], p[1], p[2], p[3], 0.04)
+    })
+  })
+}
+
+function drawCubeBody(ctx, outlineOnly, body, belly) {
+  paintShape(ctx, outlineOnly, body, function () {
+    rr(ctx, -0.28, -0.06, 0.56, 0.4, 0.08)
+  })
+  paintShape(ctx, outlineOnly, belly || body, function () {
+    rr(ctx, -0.16, 0.08, 0.32, 0.18, 0.08)
+  })
+}
+
+function drawCubeHead(ctx, outlineOnly, head) {
+  paintShape(ctx, outlineOnly, head, function () {
+    rr(ctx, -0.2, -0.44, 0.4, 0.36, 0.08)
+  })
+}
+
+function drawDeer(ctx, outlineOnly, c) {
+  drawLegs(ctx, outlineOnly, c.leg || c.body)
+  drawCubeBody(ctx, outlineOnly, c.body, c.belly)
+  ctx.strokeStyle = c.antler || '#8b6914'
+  ctx.lineWidth = outlineOnly ? 0.03 : 0.045
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+  ctx.beginPath()
+  ctx.moveTo(-0.1, -0.44)
+  ctx.lineTo(-0.16, -0.7)
+  ctx.moveTo(-0.14, -0.6)
+  ctx.lineTo(-0.28, -0.66)
+  ctx.moveTo(0.1, -0.44)
+  ctx.lineTo(0.16, -0.7)
+  ctx.moveTo(0.14, -0.6)
+  ctx.lineTo(0.28, -0.66)
+  ctx.stroke()
+  ctx.strokeStyle = '#1a120c'
+  ctx.lineWidth = 0.028
+  paintShape(ctx, outlineOnly, c.head || c.body, function () {
+    ctx.beginPath()
+    ctx.moveTo(-0.18, -0.42)
+    ctx.lineTo(-0.26, -0.54)
+    ctx.lineTo(-0.08, -0.46)
+    ctx.closePath()
+  })
+  paintShape(ctx, outlineOnly, c.head || c.body, function () {
+    ctx.beginPath()
+    ctx.moveTo(0.18, -0.42)
+    ctx.lineTo(0.26, -0.54)
+    ctx.lineTo(0.08, -0.46)
+    ctx.closePath()
+  })
+  drawCubeHead(ctx, outlineOnly, c.head || c.body)
+  drawFace(ctx, outlineOnly)
+}
+
+function drawTiger(ctx, outlineOnly, c) {
+  drawLegs(ctx, outlineOnly, c.leg || c.body)
+  drawCubeBody(ctx, outlineOnly, c.body, c.belly)
+  paintShape(ctx, outlineOnly, c.head || c.body, function () {
+    ctx.beginPath()
+    ctx.moveTo(-0.16, -0.4)
+    ctx.lineTo(-0.24, -0.56)
+    ctx.lineTo(-0.04, -0.46)
+    ctx.closePath()
+  })
+  paintShape(ctx, outlineOnly, c.head || c.body, function () {
+    ctx.beginPath()
+    ctx.moveTo(0.16, -0.4)
+    ctx.lineTo(0.24, -0.56)
+    ctx.lineTo(0.04, -0.46)
+    ctx.closePath()
+  })
+  drawCubeHead(ctx, outlineOnly, c.head || c.body)
+  if (!outlineOnly) {
+    ctx.strokeStyle = '#1a120c'
+    ctx.lineWidth = 0.03
+    ctx.lineCap = 'round'
+    ;[-0.14, -0.02, 0.1].forEach(function (x) {
+      ctx.beginPath()
+      ctx.moveTo(x, -0.02)
+      ctx.lineTo(x + 0.04, 0.22)
+      ctx.stroke()
+    })
+    ctx.beginPath()
+    ctx.moveTo(-0.12, -0.28)
+    ctx.lineTo(-0.04, -0.16)
+    ctx.moveTo(0.12, -0.28)
+    ctx.lineTo(0.04, -0.16)
+    ctx.stroke()
+  }
+  drawFace(ctx, outlineOnly)
+}
+
+function drawLion(ctx, outlineOnly, c) {
+  drawLegs(ctx, outlineOnly, c.leg || c.body)
+  drawCubeBody(ctx, outlineOnly, c.body, c.belly)
+  const mane = c.mane || '#d4922a'
+  for (let i = 0; i < 10; i++) {
+    const a = (i / 10) * Math.PI * 2 - Math.PI / 2
+    paintShape(ctx, outlineOnly, mane, function () {
+      rr(ctx, Math.cos(a) * 0.28 - 0.09, Math.sin(a) * 0.28 - 0.28, 0.18, 0.18, 0.06)
+    })
+  }
+  drawCubeHead(ctx, outlineOnly, c.head || c.body)
+  drawFace(ctx, outlineOnly)
+}
+
+/**
+ * 在矩形里画一只能认出的方块宠物。
+ * opts.outlineOnly 只描线，给涂色纸当样子，不锁分区。
+ */
+function drawAnimal(ctx, animalId, painted, box, opts) {
+  const outlineOnly = opts && opts.outlineOnly
   const c = colorsOf(animalId, painted)
+  const s = Math.min(box.w, box.h) * 0.9
   const x = box.x + box.w / 2
-  const y = box.y + box.h * 0.62
-  const s = Math.min(box.w, box.h) * 0.38
+  const y = box.y + box.h * 0.56
   ctx.save()
   ctx.translate(x, y)
   ctx.scale(s, s)
-
-  if (animalId === 'deer') {
-    ctx.strokeStyle = '#1a120c'
-    ctx.lineWidth = 0.08
-    ctx.lineCap = 'round'
-    ;[
-      [-0.45, 0.05, -0.5, 0.7],
-      [-0.28, 0.05, -0.22, 0.7],
-      [0.35, 0.0, 0.42, 0.7],
-      [0.5, 0.0, 0.48, 0.7],
-    ].forEach((p) => {
-      ctx.beginPath()
-      ctx.moveTo(p[0], p[1])
-      ctx.lineTo(p[2], p[3])
-      ctx.stroke()
-    })
-    poly(ctx, [[-0.7, -0.05], [-0.55, -0.25], [-0.35, -0.2], [0.15, -0.28], [0.45, -0.15], [0.5, 0.05], [0.35, 0.2], [-0.4, 0.18]], c.body)
-    poly(ctx, [[0.35, -0.15], [0.55, -0.45], [0.72, -0.55], [0.62, -0.28], [0.42, -0.08]], c.head || c.body)
-    ctx.strokeStyle = c.antler || '#8b6914'
-    ctx.lineWidth = 0.07
-    ctx.beginPath()
-    ctx.moveTo(0.55, -0.5)
-    ctx.lineTo(0.48, -0.85)
-    ctx.moveTo(0.52, -0.65)
-    ctx.lineTo(0.35, -0.82)
-    ctx.stroke()
-  } else if (animalId === 'tiger') {
-    poly(ctx, [[-0.75, 0.05], [-0.55, -0.28], [0.35, -0.3], [0.55, -0.1], [0.5, 0.18], [-0.5, 0.2]], c.body)
-    poly(ctx, [[0.4, -0.15], [0.48, -0.48], [0.78, -0.42], [0.85, -0.18], [0.7, 0.02]], c.head || c.body)
-    ctx.strokeStyle = '#1a120c'
-    ctx.lineWidth = 0.05
-    ;[-0.4, -0.15, 0.1].forEach((sx) => {
-      ctx.beginPath()
-      ctx.moveTo(sx, -0.22)
-      ctx.lineTo(sx + 0.08, 0.12)
-      ctx.stroke()
-    })
-  } else {
-    poly(ctx, [[-0.65, 0.08], [-0.45, -0.22], [0.3, -0.24], [0.5, 0.0], [0.4, 0.2], [-0.4, 0.22]], c.body)
-    ctx.beginPath()
-    ctx.arc(0.55, -0.28, 0.42, 0, Math.PI * 2)
-    ctx.fillStyle = c.mane || '#d4922a'
-    ctx.fill()
-    ctx.stroke()
-    poly(ctx, [[0.4, -0.18], [0.5, -0.42], [0.75, -0.38], [0.8, -0.15], [0.62, 0.0]], c.head || c.body)
-  }
+  ctx.lineJoin = 'round'
+  ctx.lineCap = 'round'
+  ctx.lineWidth = 0.028
+  if (animalId === 'deer') drawDeer(ctx, outlineOnly, c)
+  else if (animalId === 'tiger') drawTiger(ctx, outlineOnly, c)
+  else drawLion(ctx, outlineOnly, c)
   ctx.restore()
 }
 
-module.exports = { drawAnimal }
+module.exports = { drawAnimal, colorsOf }
