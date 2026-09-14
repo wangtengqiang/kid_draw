@@ -36,7 +36,7 @@ function extract(geo) {
   return { positions, normals, uvs, indices, verts }
 }
 
-function fuse(balls, resolution = RES) {
+function fuse(balls, resolution = RES, smoothRounds = 3) {
   if (!balls.length) throw new Error('no balls')
   let minX = Infinity
   let minY = Infinity
@@ -90,7 +90,7 @@ function fuse(balls, resolution = RES) {
   }
   dummy.dispose()
   const welded = weld(pos, nrm, vcount)
-  smooth(welded.positions, welded.indices, 3)
+  if (smoothRounds > 0) smooth(welded.positions, welded.indices, smoothRounds)
   recomputeNormals(welded.positions, welded.normals, welded.indices)
   const uvs = planarUv(welded.positions, welded.verts)
   return {
@@ -102,10 +102,11 @@ function fuse(balls, resolution = RES) {
   }
 }
 
-function fuseAt(balls, origin, resolution = RES) {
+function fuseAt(balls, origin, resolution = RES, smoothRounds = 3) {
   return fuse(
     balls.map((b) => ({ ...b, x: b.x - origin[0], y: b.y - origin[1], z: b.z - origin[2] })),
     resolution,
+    smoothRounds,
   )
 }
 
@@ -504,8 +505,8 @@ function cartoonEyes(face, colorIris) {
   for (const s of [-1, 1]) {
     const parent = s > 0 ? 'eyeL' : 'eyeR'
     const origin = [face.x, face.y, s * face.z]
-    const white = ico(0.165, 2)
-    scaleMesh(white, 1.05, 1.18, 0.92)
+    const white = ico(0.2, 2)
+    scaleMesh(white, 1.06, 1.18, 0.98)
     parts.push({
       name: `${parent}White`,
       region: 'eye',
@@ -516,8 +517,8 @@ function cartoonEyes(face, colorIris) {
       parent,
       parentTranslation: origin,
     })
-    const iris = ico(0.1, 2)
-    translate(iris, 0.05, -0.01, 0)
+    const iris = ico(0.11, 2)
+    translate(iris, 0.125, -0.012, 0)
     parts.push({
       name: `${parent}Iris`,
       region: 'eye',
@@ -527,8 +528,8 @@ function cartoonEyes(face, colorIris) {
       parent,
       parentTranslation: origin,
     })
-    const pupil = ico(0.052, 1)
-    translate(pupil, 0.075, -0.012, 0)
+    const pupil = ico(0.055, 1)
+    translate(pupil, 0.175, -0.014, 0)
     parts.push({
       name: `${parent}Pupil`,
       region: 'eye',
@@ -538,8 +539,8 @@ function cartoonEyes(face, colorIris) {
       parent,
       parentTranslation: origin,
     })
-    const hi = ico(0.038, 1)
-    translate(hi, 0.055, 0.055, 0.028)
+    const hi = ico(0.04, 1)
+    translate(hi, 0.15, 0.06, 0.045)
     parts.push({
       name: `${parent}Shine`,
       region: 'eye',
@@ -563,40 +564,47 @@ function lionParts() {
     { x: -0.18, y: 0.56, z: 0, r: 0.33 },
     { x: 0.18, y: 0.56, z: 0, r: 0.32 },
     { x: 0.04, y: 0.4, z: 0, r: 0.26 },
-    { x: 0.5, y: 0.98, z: 0, r: 0.32 },
-    { x: 0.68, y: 0.94, z: 0, r: 0.26 },
-    { x: 0.88, y: 0.84, z: 0, r: 0.16 },
-    { x: 0.82, y: 0.86, z: 0.12, r: 0.12 },
-    { x: 0.82, y: 0.86, z: -0.12, r: 0.12 },
-    { x: 0.54, y: 1.28, z: 0.16, r: 0.08 },
-    { x: 0.54, y: 1.28, z: -0.16, r: 0.08 },
+    { x: 0.48, y: 0.98, z: 0, r: 0.28 },
+    { x: 0.66, y: 0.94, z: 0, r: 0.24 },
   ]
+  const muzzle = fuse(
+    [
+      { x: 0.92, y: 0.86, z: 0, r: 0.13, boost: 1.4 },
+      { x: 0.86, y: 0.86, z: 0.09, r: 0.08 },
+      { x: 0.86, y: 0.86, z: -0.09, r: 0.08 },
+    ],
+    28,
+    2,
+  )
   const mane = []
-  const hx = 0.5
-  const hy = 0.98
-  for (let i = 0; i < 34; i++) {
-    const golden = Math.PI * (3 - Math.sqrt(5))
-    const y = 1 - (i / 33) * 2
-    const rr = Math.sqrt(Math.max(0, 1 - y * y))
-    const theta = golden * i
-    const dx = Math.cos(theta) * rr
-    const dy = y
-    const dz = Math.sin(theta) * rr
-    if (dx > 0.2) continue
-    const rad = 0.4 + 0.08 * hash(i)
+  for (let i = 0; i < 14; i++) {
+    const a = (i / 14) * Math.PI * 2
+    const dx = Math.cos(a)
+    if (dx > 0.42) continue
     mane.push({
-      x: hx + dx * rad,
-      y: hy + dy * rad * 0.9,
-      z: dz * rad,
-      r: 0.155 + 0.04 * hash(i + 3),
-      boost: 1.22,
+      x: 0.46 + dx * 0.36,
+      y: 0.98 + Math.sin(a * 2) * 0.1,
+      z: Math.sin(a) * 0.42,
+      r: 0.17 + 0.045 * hash(i),
+      boost: 1.12,
     })
   }
-  for (let i = 0; i < 10; i++) {
-    const a = (i / 10) * Math.PI * 2
-    if (Math.cos(a) > 0.55) continue
-    mane.push({ x: 0.42 + Math.cos(a) * 0.08, y: 0.74, z: Math.sin(a) * 0.4, r: 0.15, boost: 1.18 })
-  }
+  mane.push(
+    { x: 0.38, y: 1.36, z: 0, r: 0.2, boost: 1.15 },
+    { x: 0.28, y: 1.2, z: 0.26, r: 0.18, boost: 1.12 },
+    { x: 0.28, y: 1.2, z: -0.26, r: 0.18, boost: 1.12 },
+    { x: 0.22, y: 0.92, z: 0, r: 0.2, boost: 1.12 },
+    { x: 0.34, y: 0.7, z: 0.22, r: 0.16, boost: 1.1 },
+    { x: 0.34, y: 0.7, z: -0.22, r: 0.16, boost: 1.1 },
+    { x: 0.52, y: 1.22, z: 0.28, r: 0.14, boost: 1.1 },
+    { x: 0.52, y: 1.22, z: -0.28, r: 0.14, boost: 1.1 },
+  )
+  const earL = ico(0.09, 1)
+  scaleMesh(earL, 0.85, 1.25, 0.7)
+  translate(earL, 0.58, 1.34, 0.18)
+  const earR = ico(0.09, 1)
+  scaleMesh(earR, 0.85, 1.25, 0.7)
+  translate(earR, 0.58, 1.34, -0.18)
   const tailOrigin = [-0.42, 0.62, 0]
   const tailBalls = [
     { x: -0.42, y: 0.62, z: 0, r: 0.055 },
@@ -614,7 +622,10 @@ function lionParts() {
   ]
   return [
     { name: 'body', region: 'body', color: '#e6c36a', coat: true, mesh: fuse(bodyBalls) },
-    { name: 'mane', region: 'mane', color: '#e39a2a', coat: false, mesh: fuse(mane, 44) },
+    { name: 'mane', region: 'mane', color: '#e39a2a', coat: false, mesh: fuse(mane, 40, 1) },
+    { name: 'muzzle', region: 'muzzle', color: '#fff4d4', coat: false, mesh: muzzle },
+    { name: 'earL', region: 'earL', color: '#f0d48a', coat: false, mesh: earL },
+    { name: 'earR', region: 'earR', color: '#f0d48a', coat: false, mesh: earR },
     {
       name: 'tailMesh',
       region: 'tail',
@@ -625,7 +636,7 @@ function lionParts() {
       parentTranslation: tailOrigin,
     },
     ...landLegs('paw', hips),
-    ...cartoonEyes({ x: 0.8, y: 1.02, z: 0.175 }, '#8a4a16'),
+    ...cartoonEyes({ x: 0.98, y: 1.04, z: 0.24 }, '#8a4a16'),
   ]
 }
 
@@ -711,7 +722,7 @@ function deerParts() {
     ...antlerParts,
     ...spots,
     ...landLegs('hoof', hips),
-    ...cartoonEyes({ x: 0.9, y: 1.18, z: 0.16 }, '#5b3318'),
+    ...cartoonEyes({ x: 1.02, y: 1.2, z: 0.2 }, '#5b3318'),
   ]
 }
 
@@ -780,7 +791,7 @@ function tigerParts() {
       parentTranslation: tailOrigin,
     },
     ...landLegs('paw', hips),
-    ...cartoonEyes({ x: 0.84, y: 1.04, z: 0.18 }, '#7a3b12'),
+    ...cartoonEyes({ x: 1.0, y: 1.06, z: 0.23 }, '#7a3b12'),
   ]
 }
 
@@ -813,7 +824,7 @@ function fishParts() {
       parentTranslation: tailOrigin,
     },
     { name: 'fin', region: 'fin', color: '#22d3ee', coat: false, mesh: fuse(fin, 28) },
-    ...cartoonEyes({ x: 0.72, y: 0.56, z: 0.13 }, '#1e3a8a'),
+    ...cartoonEyes({ x: 0.78, y: 0.58, z: 0.16 }, '#1e3a8a'),
   ]
 }
 
@@ -833,7 +844,7 @@ function turtleParts() {
   const parts = [
     { name: 'body', region: 'shell', color: '#2bb673', coat: true, mesh: fuse(shell) },
     { name: 'head', region: 'head', color: '#8fdd74', coat: false, mesh: fuse(head, 28) },
-    ...cartoonEyes({ x: 0.84, y: 0.52, z: 0.11 }, '#1a3a16'),
+    ...cartoonEyes({ x: 0.9, y: 0.54, z: 0.14 }, '#1a3a16'),
   ]
   for (const spec of [
     { name: 'flipperFR', x: 0.32, z: 0.32 },
@@ -890,7 +901,7 @@ function dolphinParts() {
       parent: 'tail',
       parentTranslation: tailOrigin,
     },
-    ...cartoonEyes({ x: 0.72, y: 0.54, z: 0.13 }, '#1e293b'),
+    ...cartoonEyes({ x: 0.82, y: 0.56, z: 0.16 }, '#1e293b'),
   ]
 }
 
