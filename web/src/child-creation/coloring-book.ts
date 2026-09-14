@@ -10,6 +10,9 @@ export const COLOR_FRAME: Record<AnimalId, { minX: number; maxX: number; minY: n
   deer: { minX: -1.12, maxX: 1.62, minY: -0.04, maxY: 2.32 },
   tiger: { minX: -1.62, maxX: 1.68, minY: -0.04, maxY: 1.72 },
   lion: { minX: -1.48, maxX: 1.68, minY: -0.04, maxY: 1.86 },
+  fish: { minX: -1.42, maxX: 1.48, minY: -0.22, maxY: 1.32 },
+  turtle: { minX: -1.28, maxX: 1.52, minY: -0.12, maxY: 1.32 },
+  dolphin: { minX: -1.52, maxX: 1.62, minY: -0.28, maxY: 1.38 },
 }
 
 /** 老虎圆脑袋：侧视猫科，不是竖耳兔子。 */
@@ -451,16 +454,210 @@ export function drawLionLines(ctx: Ctx): void {
   whiskers(ctx, 1.32, 0.98)
 }
 
+const FISH_TAIL: Ring = [
+  [-0.72, 0.52],
+  [-1.28, 0.92],
+  [-1.22, 0.52],
+  [-1.32, 0.12],
+]
+
+export const FISH_OUTLINE: Ring = [
+  [1.38, 0.52],
+  [1.28, 0.34],
+  [1.04, 0.22],
+  [0.62, 0.16],
+  [0.12, 0.18],
+  [-0.28, 0.28],
+  [-0.62, 0.42],
+  ...FISH_TAIL,
+  [-0.58, 0.62],
+  [-0.22, 0.78],
+  [0.18, 0.88],
+  [0.42, 1.12],
+  [0.62, 1.08],
+  [0.52, 0.86],
+  [0.92, 0.82],
+  [1.22, 0.7],
+]
+
+export function drawFishRegions(ctx: Ctx): void {
+  fillId(ctx, 3, () => poly(ctx, FISH_TAIL))
+  fillId(ctx, 4, () => {
+    ctx.beginPath()
+    ctx.moveTo(0.28, 0.82)
+    ctx.lineTo(0.48, 1.14)
+    ctx.lineTo(0.68, 0.8)
+    ctx.closePath()
+  })
+  fillId(ctx, 1, () => oval(ctx, 0.28, 0.52, 0.82, 0.34))
+  fillId(ctx, 2, () => oval(ctx, 0.32, 0.38, 0.5, 0.16))
+  fillId(ctx, 5, () => oval(ctx, 1.08, 0.54, 0.28, 0.22))
+  fillId(ctx, 6, () => oval(ctx, 0.08, 0.58, 0.08, 0.2))
+}
+
+export function drawFishLines(ctx: Ctx): void {
+  ink(ctx, 0.04, () => poly(ctx, FISH_OUTLINE))
+  ink(ctx, 0.022, () => {
+    ctx.beginPath()
+    ctx.moveTo(0.7, 0.42)
+    ctx.quadraticCurveTo(0.2, 0.3, -0.28, 0.42)
+  })
+  ink(ctx, 0.026, () => {
+    ctx.beginPath()
+    for (const x of [-0.08, 0.16, 0.4]) {
+      ctx.moveTo(x, 0.72)
+      ctx.quadraticCurveTo(x + 0.06, 0.52, x, 0.32)
+    }
+  })
+  catEye(ctx, 1.12, 0.58, 1.32, 0.48)
+}
+
+const TURTLE_SHELL: Ring = [
+  [0.72, 0.42],
+  [0.62, 0.82],
+  [0.28, 1.12],
+  [-0.18, 1.18],
+  [-0.58, 0.98],
+  [-0.78, 0.62],
+  [-0.62, 0.28],
+  [-0.18, 0.14],
+  [0.36, 0.18],
+  [0.68, 0.28],
+]
+
+export const TURTLE_OUTLINE: Ring = [
+  [1.42, 0.58],
+  [1.36, 0.42],
+  [1.12, 0.38],
+  [0.88, 0.46],
+  [0.72, 0.32],
+  [0.78, 0.08],
+  [0.58, 0.0],
+  [0.42, 0.16],
+  [0.28, 0.22],
+  [0.22, 0.04],
+  [0.02, 0.0],
+  [-0.08, 0.2],
+  [-0.42, 0.22],
+  [-0.52, 0.04],
+  [-0.72, 0.0],
+  [-0.78, 0.2],
+  [-0.92, 0.28],
+  [-1.12, 0.12],
+  [-1.22, 0.28],
+  [-0.98, 0.48],
+  [-0.82, 0.7],
+  [-0.58, 1.08],
+  [-0.12, 1.24],
+  [0.36, 1.18],
+  [0.7, 0.88],
+  [0.82, 0.62],
+  [0.98, 0.72],
+  [1.18, 0.7],
+  [1.28, 0.82],
+  [1.38, 0.7],
+]
+
+export function drawTurtleRegions(ctx: Ctx): void {
+  fillId(ctx, 4, () => stadium(ctx, 0.58, 0.04, 0.38, 0.1))
+  fillId(ctx, 5, () => stadium(ctx, 0.12, 0.02, 0.28, 0.09))
+  fillId(ctx, 6, () => stadium(ctx, -0.62, 0.02, 0.3, 0.1))
+  fillId(ctx, 7, () => stadium(ctx, -1.02, 0.08, 0.36, 0.1))
+  fillId(ctx, 1, () => poly(ctx, TURTLE_SHELL))
+  fillId(ctx, 2, () => oval(ctx, -0.02, 0.68, 0.32, 0.28))
+  fillId(ctx, 8, () => oval(ctx, 0.02, 0.36, 0.36, 0.12))
+  fillId(ctx, 3, () => oval(ctx, 1.16, 0.58, 0.26, 0.2))
+}
+
+export function drawTurtleLines(ctx: Ctx): void {
+  ink(ctx, 0.04, () => poly(ctx, TURTLE_OUTLINE))
+  ink(ctx, 0.028, () => poly(ctx, TURTLE_SHELL))
+  ink(ctx, 0.02, () => oval(ctx, -0.02, 0.68, 0.32, 0.28))
+  ink(ctx, 0.018, () => {
+    ctx.beginPath()
+    ctx.moveTo(-0.02, 0.4)
+    ctx.lineTo(-0.02, 0.96)
+    ctx.moveTo(-0.28, 0.52)
+    ctx.lineTo(0.24, 0.84)
+    ctx.moveTo(-0.28, 0.84)
+    ctx.lineTo(0.24, 0.52)
+  })
+  catEye(ctx, 1.18, 0.64, 1.36, 0.54)
+}
+
+export const DOLPHIN_OUTLINE: Ring = [
+  [1.52, 0.48],
+  [1.42, 0.34],
+  [1.18, 0.28],
+  [0.72, 0.18],
+  [0.2, 0.16],
+  [-0.28, 0.22],
+  [-0.72, 0.34],
+  [-1.08, 0.28],
+  [-1.42, 0.08],
+  [-1.38, 0.42],
+  [-1.46, 0.72],
+  [-1.08, 0.58],
+  [-0.72, 0.62],
+  [-0.28, 0.72],
+  [0.08, 1.12],
+  [0.28, 1.08],
+  [0.18, 0.78],
+  [0.62, 0.7],
+  [1.08, 0.62],
+  [1.36, 0.58],
+]
+
+export function drawDolphinRegions(ctx: Ctx): void {
+  fillId(ctx, 5, () => {
+    ctx.beginPath()
+    ctx.moveTo(-0.92, 0.48)
+    ctx.lineTo(-1.44, 0.08)
+    ctx.lineTo(-1.48, 0.72)
+    ctx.closePath()
+  })
+  fillId(ctx, 4, () => {
+    ctx.beginPath()
+    ctx.moveTo(-0.02, 0.7)
+    ctx.lineTo(0.12, 1.14)
+    ctx.lineTo(0.32, 0.68)
+    ctx.closePath()
+  })
+  fillId(ctx, 1, () => oval(ctx, 0.12, 0.48, 0.92, 0.3))
+  fillId(ctx, 2, () => oval(ctx, 0.18, 0.34, 0.58, 0.14))
+  fillId(ctx, 3, () => oval(ctx, 1.28, 0.44, 0.26, 0.16))
+}
+
+export function drawDolphinLines(ctx: Ctx): void {
+  ink(ctx, 0.04, () => poly(ctx, DOLPHIN_OUTLINE))
+  ink(ctx, 0.022, () => {
+    ctx.beginPath()
+    ctx.moveTo(0.72, 0.36)
+    ctx.quadraticCurveTo(0.2, 0.24, -0.32, 0.36)
+  })
+  catEye(ctx, 1.12, 0.52, 1.42, 0.42)
+  ink(ctx, 0.018, () => {
+    ctx.beginPath()
+    ctx.arc(1.28, 0.4, 0.12, 1.05 * Math.PI, 1.85 * Math.PI)
+  })
+}
+
 export function drawBookRegions(animal: AnimalId, ctx: Ctx): void {
   if (animal === 'deer') drawDeerRegions(ctx)
   else if (animal === 'tiger') drawTigerRegions(ctx)
-  else drawLionRegions(ctx)
+  else if (animal === 'lion') drawLionRegions(ctx)
+  else if (animal === 'fish') drawFishRegions(ctx)
+  else if (animal === 'turtle') drawTurtleRegions(ctx)
+  else drawDolphinRegions(ctx)
 }
 
 export function drawBookLines(animal: AnimalId, ctx: Ctx): void {
   if (animal === 'deer') drawDeerLines(ctx)
   else if (animal === 'tiger') drawTigerLines(ctx)
-  else drawLionLines(ctx)
+  else if (animal === 'lion') drawLionLines(ctx)
+  else if (animal === 'fish') drawFishLines(ctx)
+  else if (animal === 'turtle') drawTurtleLines(ctx)
+  else drawDolphinLines(ctx)
 }
 
 export function bookFrame(ctx: Ctx, w: number, h: number, animal: AnimalId, fn: () => void): void {

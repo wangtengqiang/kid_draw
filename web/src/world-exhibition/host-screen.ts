@@ -16,8 +16,8 @@ import {
   setTheme,
   touchHost,
 } from '../sync'
-import type { ThemeId } from '../types'
-import { ROOM_CAP, THEME_IDS, THEME_META } from '../types'
+import type { ThemeId, WorldAction } from '../types'
+import { ACTION_META, ROOM_CAP, THEME_IDS, THEME_META, WORLD_ACTIONS } from '../types'
 import { HostWorld } from './host-world'
 
 export class HostScreen {
@@ -60,6 +60,8 @@ export class HostScreen {
           <p class="occ" id="occ">${room.animals.length}/${ROOM_CAP} 只小动物</p>
           <p class="status" id="status">${hostStatus(room.paused, room.animals.length)}</p>
           <div class="theme-row" id="themes"></div>
+          <p class="lead action-lead">点一下，看世界里的动作</p>
+          <div class="action-row" id="actions"></div>
           <div class="host-more">
             <button type="button" data-act="pause">${room.paused ? '继续收画' : '暂停收画'}</button>
             <button type="button" data-act="clear">清场</button>
@@ -70,6 +72,8 @@ export class HostScreen {
     const canvas = this.root.querySelector<HTMLCanvasElement>('#world-canvas')
     if (!canvas) return
     this.world = new HostWorld(canvas)
+    const startAction = new URLSearchParams(location.search).get('action') as WorldAction | null
+    if (startAction && WORLD_ACTIONS.includes(startAction)) this.world.setAction(startAction)
     this.world.applyTheme(room.theme)
     this.world.syncAnimals(room.animals)
     const qr = this.root.querySelector<HTMLImageElement>('#qr')
@@ -105,6 +109,20 @@ export class HostScreen {
           setTheme(roomId, theme)
           void storage.updateRoomMeta(roomId, { theme })
           this.world?.applyTheme(theme)
+          this.refresh(roomId)
+        })
+      })
+    }
+    const actions = this.root.querySelector('#actions')
+    if (actions) {
+      actions.innerHTML = WORLD_ACTIONS.map(
+        (id) =>
+          `<button type="button" class="action-btn ${id === this.world?.getAction() ? 'on' : ''}" data-action="${id}">${ACTION_META[id].name}</button>`,
+      ).join('')
+      actions.querySelectorAll<HTMLButtonElement>('[data-action]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const act = btn.dataset.action as WorldAction
+          this.world?.setAction(act)
           this.refresh(roomId)
         })
       })
@@ -165,6 +183,10 @@ export class HostScreen {
     if (status) status.textContent = hostStatus(room.paused, room.animals.length)
     this.root.querySelectorAll<HTMLButtonElement>('[data-theme]').forEach((btn) => {
       btn.classList.toggle('on', btn.dataset.theme === room.theme)
+    })
+    const current = this.world?.getAction()
+    this.root.querySelectorAll<HTMLButtonElement>('[data-action]').forEach((btn) => {
+      btn.classList.toggle('on', btn.dataset.action === current)
     })
   }
 }

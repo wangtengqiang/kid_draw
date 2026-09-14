@@ -20,7 +20,11 @@ export function coatTexture(animal: AnimalId, painted: Record<string, string>): 
     const body = colorOf(animal, 'body', painted)
     const belly = colorOf(animal, 'belly', painted)
     const head = colorOf(animal, 'head', painted)
-    const neck = colorOf(animal, animal === 'tiger' || animal === 'lion' ? 'head' : 'neck', painted)
+    const neck = colorOf(
+      animal,
+      animal === 'tiger' || animal === 'lion' || animal === 'fish' || animal === 'dolphin' ? 'head' : 'neck',
+      painted,
+    )
     ctx.fillStyle = body
     ctx.fillRect(0, 0, size, size)
 
@@ -48,7 +52,10 @@ export function coatTexture(animal: AnimalId, painted: Record<string, string>): 
 
     if (animal === 'tiger') paintTiger(ctx, size, body, painted)
     else if (animal === 'deer') paintDeer(ctx, size, painted)
-    else paintLion(ctx, size, painted)
+    else if (animal === 'lion') paintLion(ctx, size, painted)
+    else if (animal === 'fish') paintFish(ctx, size, body)
+    else if (animal === 'turtle') paintTurtle(ctx, size, painted)
+    else if (animal === 'dolphin') paintDolphin(ctx, size, painted)
   }
   const tex = new THREE.CanvasTexture(c)
   tex.colorSpace = THREE.SRGBColorSpace
@@ -104,6 +111,32 @@ function paintLion(ctx: CanvasRenderingContext2D, size: number, painted: Record<
   ctx.fillStyle = colorOf('lion', 'belly', painted)
   ctx.beginPath()
   ctx.ellipse(size * 0.45, size * 0.88, size * 0.42, size * 0.24, 0, 0, Math.PI * 2)
+  ctx.fill()
+}
+
+function paintFish(ctx: CanvasRenderingContext2D, size: number, body: string): void {
+  ctx.strokeStyle = darken(body, 0.35)
+  ctx.lineWidth = 10
+  ctx.lineCap = 'round'
+  for (const u of [0.32, 0.46, 0.6]) {
+    ctx.beginPath()
+    ctx.moveTo(u * size, size * 0.22)
+    ctx.quadraticCurveTo(u * size + 12, size * 0.5, u * size, size * 0.78)
+    ctx.stroke()
+  }
+}
+
+function paintTurtle(ctx: CanvasRenderingContext2D, size: number, painted: Record<string, string>): void {
+  ctx.fillStyle = colorOf('turtle', 'scute', painted)
+  ctx.beginPath()
+  ctx.ellipse(size * 0.46, size * 0.42, size * 0.22, size * 0.18, 0, 0, Math.PI * 2)
+  ctx.fill()
+}
+
+function paintDolphin(ctx: CanvasRenderingContext2D, size: number, painted: Record<string, string>): void {
+  ctx.fillStyle = colorOf('dolphin', 'belly', painted)
+  ctx.beginPath()
+  ctx.ellipse(size * 0.46, size * 0.86, size * 0.4, size * 0.22, 0, 0, Math.PI * 2)
   ctx.fill()
 }
 

@@ -3,8 +3,8 @@
  * 不是圆球圆锥，也不是薄片。孩子分区色铺在 UV 皮毛上。
  */
 import * as THREE from 'three'
-import type { AnimalId } from '../types'
-import { ANIMAL_META } from '../types'
+import type { AnimalId, WorldAction } from '../types'
+import { ANIMAL_META, isMarine } from '../types'
 import { coatTexture } from './coat'
 import {
   DEER_ANTLER_L_BEAM,
@@ -13,6 +13,9 @@ import {
   DEER_EAR_L,
   DEER_EAR_R,
   DEER_TAIL,
+  DOLPHIN_BODY,
+  FISH_BODY,
+  FISH_TAIL,
   LION_BODY,
   LION_EAR_L,
   LION_EAR_R,
@@ -25,6 +28,7 @@ import {
   TIGER_EAR_R,
   TIGER_HEAD,
   TIGER_MUZZLE,
+  TURTLE_SHELL,
   type Ring,
 } from '../silhouettes'
 
@@ -165,9 +169,21 @@ export function createAnimalModel(
 ): THREE.Group {
   void thumb
   const coat = coatTexture(animal, painted)
-  const g = animal === 'deer' ? deer(painted, coat) : animal === 'tiger' ? tiger(painted, coat) : lion(painted, coat)
+  const g =
+    animal === 'deer'
+      ? deer(painted, coat)
+      : animal === 'tiger'
+        ? tiger(painted, coat)
+        : animal === 'lion'
+          ? lion(painted, coat)
+          : animal === 'fish'
+            ? fish(painted, coat)
+            : animal === 'turtle'
+              ? turtle(painted, coat)
+              : dolphin(painted, coat)
   g.userData.kind = animal
   g.userData.coat = coat
+  g.userData.marine = isMarine(animal)
   return g
 }
 
@@ -339,6 +355,87 @@ function lion(painted: Record<string, string>, coat: THREE.Texture): THREE.Group
   return g
 }
 
+function fish(painted: Record<string, string>, coat: THREE.Texture): THREE.Group {
+  const g = new THREE.Group()
+  const a: AnimalId = 'fish'
+  addBody(g, part(profileVolume(FISH_BODY, 0.16, () => 1, 8), 'body', a, painted, coat))
+  const tail = part(profileVolume(FISH_TAIL, 0.04, () => 1, 6), 'tail', a, painted)
+  g.add(tail)
+  g.userData.tail = tail
+  const fin = mesh(new THREE.ConeGeometry(0.16, 0.32, 5), colorOf(a, 'fin', painted))
+  fin.position.set(0.1, 0.92, 0)
+  fin.rotation.z = 0.15
+  fin.userData.region = 'fin'
+  g.add(fin)
+  cuteFace(g, 0.92, 0.54, 0.12, 0.9)
+  g.userData.legs = []
+  g.position.y = 0.12
+  return g
+}
+
+function turtle(painted: Record<string, string>, coat: THREE.Texture): THREE.Group {
+  const g = new THREE.Group()
+  const a: AnimalId = 'turtle'
+  const shell = part(profileVolume(TURTLE_SHELL, 0.32, () => 1, 8), 'shell', a, painted, coat)
+  addBody(g, shell)
+  const scute = mesh(new THREE.SphereGeometry(0.28, 10, 8), colorOf(a, 'scute', painted))
+  scute.position.set(-0.08, 0.72, 0)
+  scute.scale.set(1.1, 0.55, 1.15)
+  scute.userData.region = 'scute'
+  g.add(scute)
+  const head = mesh(new THREE.SphereGeometry(0.16, 12, 10), colorOf(a, 'head', painted))
+  head.position.set(0.78, 0.48, 0)
+  head.scale.set(1.25, 0.9, 0.95)
+  head.userData.region = 'head'
+  g.add(head)
+  const flippers: THREE.Group[] = []
+  for (const spec of [
+    { name: 'flipperFR', x: 0.38, z: 0.28, rot: -0.4 },
+    { name: 'flipperFL', x: 0.38, z: -0.28, rot: 0.4 },
+    { name: 'flipperBR', x: -0.42, z: 0.26, rot: -0.5 },
+    { name: 'flipperBL', x: -0.42, z: -0.26, rot: 0.5 },
+  ] as const) {
+    const hip = new THREE.Group()
+    hip.position.set(spec.x, 0.32, spec.z)
+    const pad = mesh(new THREE.SphereGeometry(0.14, 8, 6), colorOf(a, spec.name, painted), undefined, true)
+    pad.scale.set(1.6, 0.35, 0.7)
+    pad.rotation.y = spec.rot
+    pad.userData.region = spec.name
+    hip.add(pad)
+    g.add(hip)
+    flippers.push(hip)
+  }
+  cuteFace(g, 0.86, 0.52, 0.12, 0.85)
+  g.userData.flippers = flippers
+  g.userData.legs = []
+  return g
+}
+
+function dolphin(painted: Record<string, string>, coat: THREE.Texture): THREE.Group {
+  const g = new THREE.Group()
+  const a: AnimalId = 'dolphin'
+  addBody(g, part(profileVolume(DOLPHIN_BODY, 0.18, () => 1, 8), 'body', a, painted, coat))
+  const snout = mesh(new THREE.SphereGeometry(0.14, 10, 8), colorOf(a, 'snout', painted))
+  snout.position.set(1.18, 0.42, 0)
+  snout.scale.set(1.5, 0.7, 0.7)
+  snout.userData.region = 'snout'
+  g.add(snout)
+  const fin = mesh(new THREE.ConeGeometry(0.14, 0.34, 5), colorOf(a, 'fin', painted))
+  fin.position.set(0.05, 0.92, 0)
+  fin.userData.region = 'fin'
+  g.add(fin)
+  const tail = mesh(new THREE.SphereGeometry(0.16, 8, 6), colorOf(a, 'tail', painted), undefined, true)
+  tail.position.set(-0.82, 0.42, 0)
+  tail.scale.set(0.5, 0.35, 1.6)
+  tail.userData.region = 'tail'
+  g.add(tail)
+  g.userData.tail = tail
+  cuteFace(g, 0.92, 0.52, 0.12, 0.9)
+  g.userData.legs = []
+  g.position.y = 0.1
+  return g
+}
+
 type FootKind = 'hoof' | 'paw'
 
 type LegSpec = {
@@ -439,11 +536,71 @@ function cuteFace(g: THREE.Group, x: number, y: number, z: number, scale = 1): v
 }
 
 export function tickWalk(group: THREE.Group, t: number, moving: boolean): void {
+  tickAction(group, 'walk', moving ? t : 0)
+}
+
+function resetPose(group: THREE.Group): void {
+  group.rotation.x = 0
+  group.rotation.z = 0
   const legs = group.userData.legs as THREE.Group[] | undefined
-  if (!legs) return
-  legs.forEach((leg, i) => {
-    const pair = i === 0 || i === 3 ? 1 : -1
-    leg.rotation.z = moving ? Math.sin(t * 5) * 0.05 * pair : 0
+  legs?.forEach((leg) => {
+    leg.rotation.x = 0
+    leg.rotation.z = 0
   })
-  group.position.y = 0
+  const flippers = group.userData.flippers as THREE.Group[] | undefined
+  flippers?.forEach((f) => {
+    f.rotation.x = 0
+    f.rotation.z = 0
+  })
+}
+
+/** 陆地走路/坐下/喝水/休息；海里游泳。陆地动物不会漂起来。 */
+export function tickAction(group: THREE.Group, action: WorldAction, t: number): void {
+  resetPose(group)
+  const marine = Boolean(group.userData.marine)
+  const legs = (group.userData.legs as THREE.Group[] | undefined) || []
+  const flippers = (group.userData.flippers as THREE.Group[] | undefined) || []
+  const tail = group.userData.tail as THREE.Object3D | undefined
+
+  if (marine) {
+    const swim = action === 'swim' || action === 'walk'
+    if (tail) tail.rotation.y = Math.sin(t * (swim ? 6 : 1.6)) * (swim ? 0.45 : 0.12)
+    flippers.forEach((f, i) => {
+      f.rotation.x = Math.sin(t * (swim ? 5 : 1.4) + i) * (swim ? 0.35 : 0.08)
+    })
+    group.rotation.x = swim ? Math.sin(t * 2.2) * 0.12 : 0.04
+    return
+  }
+
+  if (action === 'walk') {
+    legs.forEach((leg, i) => {
+      const pair = i === 0 || i === 3 ? 1 : -1
+      leg.rotation.z = Math.sin(t * 5.2) * 0.28 * pair
+    })
+    return
+  }
+  if (action === 'sit') {
+    if (legs[2]) legs[2].rotation.z = 0.95
+    if (legs[3]) legs[3].rotation.z = 0.95
+    if (legs[0]) legs[0].rotation.z = -0.12
+    if (legs[1]) legs[1].rotation.z = -0.12
+    return
+  }
+  if (action === 'drink') {
+    group.rotation.z = -0.55
+    legs.forEach((leg) => {
+      leg.rotation.z = 0.12
+    })
+    return
+  }
+  if (action === 'rest') {
+    group.rotation.z = 1.12
+    legs.forEach((leg, i) => {
+      leg.rotation.z = i < 2 ? 0.35 : 0.55
+    })
+    return
+  }
+  legs.forEach((leg) => {
+    leg.rotation.z = 0
+  })
 }

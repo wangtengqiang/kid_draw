@@ -62,6 +62,31 @@ const REGIONS: Record<AnimalId, Region[]> = {
     { id: 12, name: 'tail' },
     { id: 13, name: 'tuft' },
   ],
+  fish: [
+    { id: 1, name: 'body' },
+    { id: 2, name: 'belly' },
+    { id: 3, name: 'tail' },
+    { id: 4, name: 'fin' },
+    { id: 5, name: 'head' },
+    { id: 6, name: 'stripe' },
+  ],
+  turtle: [
+    { id: 1, name: 'shell' },
+    { id: 2, name: 'scute' },
+    { id: 3, name: 'head' },
+    { id: 4, name: 'flipperFR' },
+    { id: 5, name: 'flipperFL' },
+    { id: 6, name: 'flipperBL' },
+    { id: 7, name: 'flipperBR' },
+    { id: 8, name: 'belly' },
+  ],
+  dolphin: [
+    { id: 1, name: 'body' },
+    { id: 2, name: 'belly' },
+    { id: 3, name: 'snout' },
+    { id: 4, name: 'fin' },
+    { id: 5, name: 'tail' },
+  ],
 }
 
 export function regionName(animal: AnimalId, id: number): string | null {

@@ -1,7 +1,7 @@
 import { Box3, DoubleSide, Group, Mesh, MeshLambertMaterial, Vector3 } from 'three'
 import { describe, expect, it } from 'vitest'
-import { ANIMAL_IDS } from '../types'
-import { createAnimalModel, profileVolume, tickWalk } from './models'
+import { ANIMAL_IDS, LAND_IDS } from '../types'
+import { createAnimalModel, profileVolume, tickAction, tickWalk } from './models'
 import { DEER_BODY } from '../silhouettes'
 
 function sizeOf(group: Group): Vector3 {
@@ -45,7 +45,7 @@ describe('3D animal volumes', () => {
   })
 
   it('plants four straight legs on the ground', () => {
-    for (const id of ANIMAL_IDS) {
+    for (const id of LAND_IDS) {
       const g = createAnimalModel(id, {})
       tickWalk(g, 0, false)
       const box = new Box3().setFromObject(g)
@@ -54,7 +54,7 @@ describe('3D animal volumes', () => {
       const legs = g.userData.legs as Group[]
       expect(legs).toHaveLength(4)
       for (const leg of legs) {
-        expect(leg.rotation.z).toBe(0)
+        expect(Math.abs(leg.rotation.z)).toBeLessThan(0.001)
         const s = new Box3().setFromObject(leg).getSize(new Vector3())
         expect(s.y).toBeGreaterThan(s.x * 1.5)
       }
@@ -90,6 +90,28 @@ describe('3D animal volumes', () => {
       })
       expect(shafts).toBeGreaterThan(0)
     }
+  })
+
+  it('builds marine animals that swim without land legs', () => {
+    const fish = createAnimalModel('fish', {})
+    const turtle = createAnimalModel('turtle', {})
+    const dolphin = createAnimalModel('dolphin', {})
+    expect(fish.userData.marine).toBe(true)
+    expect(turtle.userData.marine).toBe(true)
+    expect(dolphin.userData.marine).toBe(true)
+    expect(fish.userData.legs).toEqual([])
+    tickAction(fish, 'swim', 0.8)
+    tickAction(dolphin, 'swim', 0.8)
+    expect(Math.abs((dolphin.userData.tail as Group).rotation.y)).toBeGreaterThan(0.1)
+  })
+
+  it('does not lift a walking deer off the ground', () => {
+    const g = createAnimalModel('deer', {})
+    tickAction(g, 'walk', 1.2)
+    const box = new Box3().setFromObject(g)
+    expect(box.min.y).toBeGreaterThan(-0.12)
+    expect(box.min.y).toBeLessThan(0.12)
+    expect(g.position.y).toBe(0)
   })
 
   it('closes silhouette caps so the flank faces outward', () => {

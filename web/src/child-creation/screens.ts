@@ -5,7 +5,7 @@
 import { createRoom, ensurePreviewRoom, getRoom } from '../sync'
 import { storage } from '../storage'
 import type { AnimalId, PlacedAnimal } from '../types'
-import { ANIMAL_IDS, ANIMAL_META, PALETTE, ROOM_CAP } from '../types'
+import { ANIMAL_META, LAND_IDS, MARINE_IDS, PALETTE, ROOM_CAP } from '../types'
 import {
   emptySlotCount,
   getDraft,
@@ -117,12 +117,20 @@ export class ChildCreation {
       <main class="page kid">
         <button class="hit kid-hit" data-act="home" type="button">回首页</button>
         <h1>选一只</h1>
-        <p class="lead">点一张大卡片就开始涂。想换动物，涂色页有大按钮「重选动物」。</p>
-        <div class="pick-grid" id="picks"></div>
+        <p class="lead">陆地上的送进小路，海里的送进大海。点一张大卡片就开始涂。</p>
+        <p class="pick-section">陆地上</p>
+        <div class="pick-grid" id="picks-land"></div>
+        <p class="pick-section">海里</p>
+        <div class="pick-grid" id="picks-sea"></div>
       </main>`
     this.root.querySelector('[data-act="home"]')?.addEventListener('click', () => this.go({ name: 'home' }))
-    const grid = this.root.querySelector('#picks')
-    for (const id of ANIMAL_IDS) {
+    this.fillPicks(this.root.querySelector('#picks-land'), LAND_IDS, roomId)
+    this.fillPicks(this.root.querySelector('#picks-sea'), MARINE_IDS, roomId)
+  }
+
+  private fillPicks(grid: Element | null, ids: readonly AnimalId[], roomId: string): void {
+    if (!grid) return
+    for (const id of ids) {
       const card = document.createElement('button')
       card.type = 'button'
       card.className = 'pick-card'
@@ -135,7 +143,7 @@ export class ChildCreation {
       label.textContent = ANIMAL_META[id].name
       card.append(c, label)
       card.addEventListener('click', () => this.go({ name: 'paint', roomId, animalId: id }))
-      grid?.append(card)
+      grid.append(card)
     }
   }
 

@@ -5,7 +5,7 @@
 import { drawPreview } from '../child-creation/lineart'
 import { getRoom } from '../sync'
 import type { AnimalId, PlacedAnimal } from '../types'
-import { ANIMAL_IDS, ANIMAL_META } from '../types'
+import { ANIMAL_IDS, ANIMAL_META, LAND_IDS, MARINE_IDS } from '../types'
 import { imageDataFrom, mapPhotoToTemplate } from './map'
 import { sendColoredAnimal } from './send-to-world'
 import { downloadTemplate, lastPaper, rememberLastPaper } from './template'
@@ -90,25 +90,31 @@ export class PaperColoring {
     this.root.innerHTML = `
       <main class="page kid">
         <h1>选一只</h1>
-        <p class="lead">纸上也是这三只。不要拍别的画。</p>
-        <div class="pick-grid" id="picks"></div>
+        <p class="lead">纸上也是这些动物。不要拍别的画。</p>
+        <p class="pick-section">陆地上</p>
+        <div class="pick-grid" id="picks-land"></div>
+        <p class="pick-section">海里</p>
+        <div class="pick-grid" id="picks-sea"></div>
       </main>`
-    const grid = this.root.querySelector('#picks')
-    for (const id of ANIMAL_IDS) {
-      const card = document.createElement('button')
-      card.type = 'button'
-      card.className = 'pick-card'
-      const c = document.createElement('canvas')
-      c.width = 320
-      c.height = 360
-      const ctx = c.getContext('2d')
-      if (ctx) drawPreview(id, ctx, c.width, c.height)
-      const label = document.createElement('strong')
-      label.textContent = ANIMAL_META[id].name
-      card.append(c, label)
-      card.addEventListener('click', () => this.go({ name: 'paper-camera', roomId, animalId: id }))
-      grid?.append(card)
+    const fill = (grid: Element | null, ids: readonly AnimalId[]) => {
+      for (const id of ids) {
+        const card = document.createElement('button')
+        card.type = 'button'
+        card.className = 'pick-card'
+        const c = document.createElement('canvas')
+        c.width = 320
+        c.height = 360
+        const ctx = c.getContext('2d')
+        if (ctx) drawPreview(id, ctx, c.width, c.height)
+        const label = document.createElement('strong')
+        label.textContent = ANIMAL_META[id].name
+        card.append(c, label)
+        card.addEventListener('click', () => this.go({ name: 'paper-camera', roomId, animalId: id }))
+        grid?.append(card)
+      }
     }
+    fill(this.root.querySelector('#picks-land'), LAND_IDS)
+    fill(this.root.querySelector('#picks-sea'), MARINE_IDS)
   }
 
   camera(roomId: string, animalId: AnimalId): void {

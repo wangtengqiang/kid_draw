@@ -91,7 +91,7 @@ function recolorBody(ctx: CanvasRenderingContext2D, animal: AnimalId, w: number,
   drawRegions(animal, rctx, w, h)
   const map = rctx.getImageData(0, 0, w, h)
   const color = ctx.getImageData(0, 0, w, h)
-  const bodyId = animal === 'lion' ? 6 : 7
+  const bodyId = animal === 'lion' ? 6 : animal === 'deer' || animal === 'tiger' ? 7 : 1
   const rgb = hexToRgb(PALETTE[3]!.hex)
   for (let i = 0; i < map.data.length; i += 4) {
     if (map.data[i] === bodyId && map.data[i + 3] > 10) {

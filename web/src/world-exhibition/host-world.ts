@@ -3,8 +3,9 @@
  * 网格、灯光、贴图都要省，避免把浏览器 GPU 打崩。
  */
 import * as THREE from 'three'
-import type { AnimalId, EmoteId, PlacedAnimal, ThemeId } from '../types'
-import { createAnimalModel, tickWalk } from './models'
+import type { AnimalId, EmoteId, PlacedAnimal, ThemeId, WorldAction } from '../types'
+import { isMarine } from '../types'
+import { createAnimalModel, tickAction } from './models'
 import { HOST_ORBIT, OrbitZoom } from './orbit-zoom'
 import { paintBushSprite, paintForestPanorama, paintGrassGround, paintTreeSprite } from './forest-art'
 
@@ -15,9 +16,15 @@ interface Actor {
   angle: number
   radius: number
   speed: number
+  lane: number
+  marine: boolean
   emote: THREE.Sprite | null
   emoteUntil: number
 }
+
+/** 森林右侧大海：岸在小路外，海面铺开。 */
+export const OCEAN = { x: 10.2, z: 0.5, rx: 4.9, rz: 7.4 }
+export const SHORE_DRINK = { x: 5.25, z: 1.15 }
 
 const shared = {
   trunkGeo: new THREE.CylinderGeometry(0.08, 0.12, 1, 5),
@@ -75,6 +82,7 @@ export class HostWorld {
   private lights: THREE.Light[] = []
   private particles: THREE.Points | null = null
   private theme: ThemeId = 'forest'
+  private action: WorldAction = 'walk'
   private clock = new THREE.Clock()
   private running = true
   private raf = 0
@@ -91,9 +99,9 @@ export class HostWorld {
     this.renderer.setPixelRatio(1)
     this.renderer.shadowMap.enabled = false
     this.camera = new THREE.PerspectiveCamera(42, 1, 0.2, 70)
-    this.camera.position.set(1.8, 4.6, 12.4)
-    this.camera.lookAt(0, 1.15, -4)
-    this.orbit = new OrbitZoom(canvas, this.camera, new THREE.Vector3(0, 0.7, -1.2), HOST_ORBIT)
+    this.camera.position.set(2.4, 4.8, 12.6)
+    this.camera.lookAt(2.2, 1.0, -2.2)
+    this.orbit = new OrbitZoom(canvas, this.camera, new THREE.Vector3(2.0, 0.65, -0.2), HOST_ORBIT)
     const grass = new THREE.CanvasTexture(paintGrassGround())
     grass.wrapS = grass.wrapT = THREE.RepeatWrapping
     grass.repeat.set(4, 4)
@@ -137,6 +145,14 @@ export class HostWorld {
     else this.buildUnderwater()
   }
 
+  setAction(action: WorldAction): void {
+    this.action = action
+  }
+
+  getAction(): WorldAction {
+    return this.action
+  }
+
   syncAnimals(list: PlacedAnimal[]): void {
     const seen = new Set(list.map((a) => a.id))
     for (const [id, actor] of this.actors) {
@@ -148,14 +164,17 @@ export class HostWorld {
     list.forEach((item, i) => {
       if (this.actors.has(item.id)) return
       const group = createAnimalModel(item.animalId, item.regionColors, item.thumb || undefined)
-      group.scale.setScalar(1.05)
+      group.scale.setScalar(isMarine(item.animalId) ? 0.92 : 1.05)
+      const marine = isMarine(item.animalId)
       const actor: Actor = {
         id: item.id,
         animalId: item.animalId,
         group,
         angle: Math.PI / 2 + i * 0.85,
-        radius: 3.35 + (i % 3) * 0.55,
-        speed: 0.18 + Math.random() * 0.12,
+        radius: marine ? 2.7 + (i % 3) * 0.45 : 3.35 + (i % 3) * 0.55,
+        speed: (marine ? 0.28 : 0.18) + Math.random() * 0.12,
+        lane: (i % 5) - 2,
+        marine,
         emote: null,
         emoteUntil: 0,
       }
@@ -188,10 +207,7 @@ export class HostWorld {
     const t = this.clock.getElapsedTime()
     const dt = this.clock.getDelta()
     for (const actor of this.actors.values()) {
-      actor.angle += actor.speed * Math.min(dt, 0.05)
-      actor.group.position.set(Math.cos(actor.angle) * actor.radius, 0, Math.sin(actor.angle) * actor.radius)
-      actor.group.rotation.y = -actor.angle + Math.PI / 2
-      tickWalk(actor.group, t + actor.angle, true)
+      this.placeActor(actor, t, dt)
       if (actor.emote && performance.now() > actor.emoteUntil) {
         actor.group.remove(actor.emote)
         actor.emote = null
@@ -208,6 +224,47 @@ export class HostWorld {
       pos.needsUpdate = true
     }
     this.renderer.render(this.scene, this.camera)
+  }
+
+  private placeActor(actor: Actor, t: number, dt: number): void {
+    const step = Math.min(dt, 0.05)
+    if (actor.marine) {
+      const swimming = this.action === 'swim' || this.action === 'walk' || this.action === 'drink'
+      actor.angle += (swimming ? actor.speed : 0.03) * step
+      const x = OCEAN.x + Math.cos(actor.angle) * actor.radius
+      const z = OCEAN.z + Math.sin(actor.angle) * actor.radius * 0.72
+      const bob = swimming ? Math.sin(t * 3.1 + actor.angle) * 0.1 : 0.02
+      actor.group.position.set(x, 0.24 + bob, z)
+      actor.group.rotation.y = -actor.angle + Math.PI / 2
+      tickAction(actor.group, swimming ? 'swim' : this.action, t + actor.angle)
+      return
+    }
+
+    if (this.action === 'drink') {
+      actor.group.position.set(SHORE_DRINK.x, 0, SHORE_DRINK.z + actor.lane * 0.55)
+      actor.group.rotation.y = 0
+      tickAction(actor.group, 'drink', t)
+      return
+    }
+    if (this.action === 'rest') {
+      const a = actor.angle
+      actor.group.position.set(Math.cos(a) * 1.35, 0.42, Math.sin(a) * 1.35)
+      actor.group.rotation.y = a
+      tickAction(actor.group, 'rest', t)
+      return
+    }
+    if (this.action === 'sit') {
+      const a = actor.angle
+      actor.group.position.set(Math.cos(a) * 2.15, 0, Math.sin(a) * 2.15)
+      actor.group.rotation.y = a + Math.PI
+      tickAction(actor.group, 'sit', t)
+      return
+    }
+
+    actor.angle += actor.speed * step
+    actor.group.position.set(Math.cos(actor.angle) * actor.radius, 0, Math.sin(actor.angle) * actor.radius)
+    actor.group.rotation.y = -actor.angle + Math.PI / 2
+    tickAction(actor.group, 'walk', t + actor.angle)
   }
 
   private addLight(l: THREE.Light): void {
@@ -234,7 +291,7 @@ export class HostWorld {
     this.decorations.add(backdrop)
 
     this.addStonePath()
-    this.addLake(6.4, -3.0, 2.6)
+    this.addOcean()
 
     ;[
       [0, -14.2, 6.2],
@@ -252,19 +309,21 @@ export class HostWorld {
 
     for (let i = 0; i < 12; i++) {
       const a = (i / 12) * Math.PI * 2 + 0.25
+      const x = Math.cos(a) * 8.6
       const z = Math.sin(a) * 8.6
-      if (z > 5.5) continue
+      if (z > 5.5 || x > 4.6) continue
       const tree = woodTree()
-      tree.position.set(Math.cos(a) * 8.6, 0, z)
+      tree.position.set(x, 0, z)
       tree.scale.setScalar(1.05 + (i % 3) * 0.08)
       this.decorations.add(tree)
     }
     for (let i = 0; i < 8; i++) {
       const a = (i / 8) * Math.PI * 2 + 0.5
+      const x = Math.cos(a) * 12.2
       const z = Math.sin(a) * 12.2
-      if (z > 6) continue
+      if (z > 6 || x > 5) continue
       const tree = woodTree()
-      tree.position.set(Math.cos(a) * 12.2, 0, z)
+      tree.position.set(x, 0, z)
       tree.scale.setScalar(1.25)
       this.decorations.add(tree)
     }
@@ -287,6 +346,38 @@ export class HostWorld {
       const stone = new THREE.Mesh(shared.stoneGeo, shared.stoneMat)
       stone.position.set(Math.cos(a) * r, 0.04, Math.sin(a) * r)
       this.decorations.add(stone)
+    }
+  }
+
+  private addOcean(): void {
+    const shore = new THREE.Mesh(shared.diskGeo, shared.shoreMat)
+    shore.rotation.x = -Math.PI / 2
+    shore.position.set(OCEAN.x - 0.35, 0.016, OCEAN.z)
+    shore.scale.set(OCEAN.rx * 1.22, 1, OCEAN.rz * 1.12)
+    const water = new THREE.Mesh(
+      shared.diskGeo,
+      new THREE.MeshLambertMaterial({ color: '#3a8fb5' }),
+    )
+    water.rotation.x = -Math.PI / 2
+    water.position.set(OCEAN.x, 0.028, OCEAN.z)
+    water.scale.set(OCEAN.rx, 1, OCEAN.rz)
+    const deep = new THREE.Mesh(
+      shared.diskGeo,
+      new THREE.MeshLambertMaterial({ color: '#2a6f96' }),
+    )
+    deep.rotation.x = -Math.PI / 2
+    deep.position.set(OCEAN.x + 1.4, 0.034, OCEAN.z)
+    deep.scale.set(OCEAN.rx * 0.62, 1, OCEAN.rz * 0.7)
+    this.decorations.add(shore, water, deep)
+    for (const [x, z, s] of [
+      [5.7, 2.6, 1.1],
+      [6.1, -1.4, 0.85],
+      [5.5, 0.2, 0.7],
+    ] as const) {
+      const rock = new THREE.Mesh(shared.stoneGeo, shared.rockMat)
+      rock.position.set(x, 0.06, z)
+      rock.scale.set(s * 1.8, s, s * 1.6)
+      this.decorations.add(rock)
     }
   }
 

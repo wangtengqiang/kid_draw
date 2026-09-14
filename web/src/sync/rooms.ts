@@ -236,6 +236,13 @@ export function creatorJoinUrl(roomId: string): string {
 }
 
 export function animalLabel(animalId: AnimalId): string {
-  const names = { deer: '小鹿', tiger: '小老虎', lion: '小狮子' }
+  const names: Record<AnimalId, string> = {
+    deer: '小鹿',
+    tiger: '小老虎',
+    lion: '小狮子',
+    fish: '小鱼',
+    turtle: '海龟',
+    dolphin: '海豚',
+  }
   return `小朋友的${names[animalId]}`
 }

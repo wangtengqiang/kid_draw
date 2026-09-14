@@ -1,10 +1,27 @@
-export type AnimalId = 'deer' | 'tiger' | 'lion'
+export type AnimalId = 'deer' | 'tiger' | 'lion' | 'fish' | 'turtle' | 'dolphin'
 export type AnimalKind = AnimalId
+export type Habitat = 'land' | 'marine'
 export type ThemeId = 'forest' | 'snow' | 'underwater'
 export type ToolId = 'brush' | 'fill' | 'eraser'
+export type WorldAction = 'walk' | 'swim' | 'drink' | 'rest' | 'sit'
 
-export const ANIMAL_IDS: AnimalId[] = ['deer', 'tiger', 'lion']
+export const LAND_IDS: AnimalId[] = ['deer', 'tiger', 'lion']
+export const MARINE_IDS: AnimalId[] = ['fish', 'turtle', 'dolphin']
+export const ANIMAL_IDS: AnimalId[] = [...LAND_IDS, ...MARINE_IDS]
 export const THEME_IDS: ThemeId[] = ['forest', 'snow', 'underwater']
+export const WORLD_ACTIONS: WorldAction[] = ['walk', 'swim', 'drink', 'rest', 'sit']
+
+export function isMarine(id: AnimalId): boolean {
+  return id === 'fish' || id === 'turtle' || id === 'dolphin'
+}
+
+export const ACTION_META: Record<WorldAction, { name: string }> = {
+  walk: { name: '走路' },
+  swim: { name: '游泳' },
+  drink: { name: '喝水' },
+  rest: { name: '休息' },
+  sit: { name: '坐下' },
+}
 
 export const ANIMAL_META: Record<
   AnimalId,
@@ -49,6 +66,44 @@ export const ANIMAL_META: Record<
       legBL: '#d88920',
       legBR: '#d88920',
       tail: '#e89a2d',
+    },
+  },
+  fish: {
+    name: '小鱼',
+    hint: '',
+    defaults: {
+      body: '#3b82f6',
+      belly: '#fff8e7',
+      tail: '#2563eb',
+      fin: '#22d3ee',
+      head: '#60a5fa',
+      stripe: '#1e3a8a',
+    },
+  },
+  turtle: {
+    name: '海龟',
+    hint: '',
+    defaults: {
+      shell: '#2bb673',
+      body: '#2bb673',
+      scute: '#a3e635',
+      head: '#8fdd74',
+      flipperFL: '#3d8f44',
+      flipperFR: '#3d8f44',
+      flipperBL: '#3d8f44',
+      flipperBR: '#3d8f44',
+      belly: '#f3e0c2',
+    },
+  },
+  dolphin: {
+    name: '海豚',
+    hint: '',
+    defaults: {
+      body: '#64748b',
+      belly: '#fff8e7',
+      snout: '#94a3b8',
+      fin: '#475569',
+      tail: '#334155',
     },
   },
   lion: {
