@@ -1,12 +1,19 @@
 /**
  * 小游戏用的 2.5D 剪纸正面快照。
  * PNG 由网页 Three.js 同一套剪纸烘出来，不是椭圆。
+ *
+ * 微信开发者工具从仓库根导入（project.config.json / game.js）。
+ * 静态扫描字符串字面量时按「仓库根」解析，所以第一份必须是
+ * models/snapshots/*.png，不能只写 minigame/models/snapshots/。
  */
 const SNAPS = {}
 const SRC = {
-  deer: 'models/snapshots/deer.png',
-  tiger: 'models/snapshots/tiger.png',
-  lion: 'models/snapshots/lion.png',
+  deer: ['models/snapshots/deer.png', 'minigame/models/snapshots/deer.png'],
+  tiger: ['models/snapshots/tiger.png', 'minigame/models/snapshots/tiger.png'],
+  lion: ['models/snapshots/lion.png', 'minigame/models/snapshots/lion.png'],
+  fish: ['models/snapshots/fish.png', 'minigame/models/snapshots/fish.png'],
+  dolphin: ['models/snapshots/dolphin.png', 'minigame/models/snapshots/dolphin.png'],
+  turtle: ['models/snapshots/turtle.png', 'minigame/models/snapshots/turtle.png'],
 }
 
 function loadImage(src) {
@@ -22,10 +29,21 @@ function loadImage(src) {
   })
 }
 
+function loadFirst(srcs) {
+  return srcs.reduce(
+    (p, src) =>
+      p.then((img) => {
+        if (img && img.width) return img
+        return loadImage(src)
+      }),
+    Promise.resolve(null),
+  )
+}
+
 function preloadSnapshots() {
   return Promise.all(
     Object.keys(SRC).map((id) =>
-      loadImage(SRC[id]).then((img) => {
+      loadFirst(SRC[id]).then((img) => {
         if (img) SNAPS[id] = img
       }),
     ),
@@ -51,4 +69,4 @@ function drawSnapshot(ctx, animalId, painted, box) {
   return true
 }
 
-module.exports = { preloadSnapshots, drawSnapshot, SNAPS }
+module.exports = { preloadSnapshots, drawSnapshot, SNAPS, SRC }

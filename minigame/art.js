@@ -1,6 +1,7 @@
 /**
  * 官方 2D 图：选一只卡片、涂色线稿、打印线稿。
  * 不是椭圆雪人，也不是 3D 快照。快照在 snapshots.js。
+ * 微信从仓库根导入：字面量 picks/*.png、lineart/*.png 必须在根目录存在。
  */
 const PICKS = {}
 const LINES = {}

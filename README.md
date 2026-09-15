@@ -82,7 +82,7 @@ npm run build
 ## 微信开发者工具 · 导入
 
 1. 安装[微信开发者工具](https://developers.weixin.qq.com/minigame/dev/devtools/download.html)。
-2. **导入仓库根目录**（能看见 `project.config.json`、`game.js`、`game.json` 的那一层）。不要选 `minigame/`，也不要选 `web/`。
+2. **导入仓库根目录**（能看见 `project.config.json`、`game.js`、`game.json` 的那一层）。不要选 `minigame/`，也不要选 `web/`。开发者工具按仓库根解析图片字符串，例如 `models/snapshots/lion.png`、`picks/lion.png`、`lineart/lion.png` 必须在这一层（已入库）。`web/public/` 里还有一份，给 Vite 森林用，不要删。
 3. AppID 用 `wxac4e2e55fc8f4a30`（已写在 `project.config.json`）。`compileType` 是 `game`。
 4. **不要在工具里填 CloudBase / AppSecret**；本仓库没有这些密钥，网页预览也不需要。
 5. 入口是 `game.js` → `minigame/main.js`（2D 涂色 / 拍纸 / 侧视世界）。**带 Three.js 的 3D 森林只在网页** `cd web && npm run dev`（端口 43187）；本回合没有把 3D 移植进微信。
