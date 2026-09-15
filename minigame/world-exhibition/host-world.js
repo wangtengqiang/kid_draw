@@ -3,17 +3,7 @@
  * 不是把照片左右平移，也不是 Three.js（完整 3D 只在网页）。
  */
 const { drawAnimal, drawCoat } = require('./models.js')
-const { cutoutAspect, drawStandingCutout } = require('./cutouts.js')
-
-const LAND_BEATS = [
-  { action: 'walk', duration: 9 },
-  { action: 'drink', duration: 3.2 },
-  { action: 'walk', duration: 6.5 },
-  { action: 'sit', duration: 3.6 },
-  { action: 'walk', duration: 7.5 },
-  { action: 'rest', duration: 4 },
-]
-const LAND_CYCLE = LAND_BEATS.reduce((sum, beat) => sum + beat.duration, 0)
+const { cutoutAspect, cutoutImage, drawStandingCutout } = require('./cutouts.js')
 
 const TREES = [
   { x: -0.92, z: 0.18, s: 1.15 },
@@ -25,15 +15,6 @@ const TREES = [
   { x: -1.05, z: 0.58, s: 1.05 },
   { x: 1.02, z: 0.62, s: 1.1 },
 ]
-
-function autoLandAction(t, phase) {
-  let u = ((t + phase) % LAND_CYCLE + LAND_CYCLE) % LAND_CYCLE
-  for (let i = 0; i < LAND_BEATS.length; i++) {
-    if (u < LAND_BEATS[i].duration) return LAND_BEATS[i].action
-    u -= LAND_BEATS[i].duration
-  }
-  return 'walk'
-}
 
 function HostWorld() {
   this.theme = 'forest'
@@ -62,9 +43,8 @@ HostWorld.prototype.syncAnimals = function (list) {
       regionColors: a.regionColors,
       thumb: a.thumb || '',
       angle: (i / Math.max(1, (list || []).length)) * Math.PI * 2 + 0.35,
-      radius: 0.58 + (i % 3) * 0.08,
-      speed: 0.28 + (i % 4) * 0.05,
-      phase: i * 11.3,
+      radius: 0.62 + (i % 3) * 0.1,
+      speed: 0.16 + (i % 4) * 0.03,
       wx: 0,
       wz: 0.45,
       flip: false,
@@ -109,33 +89,14 @@ function drawTree(ctx, p, size, theme) {
   blob(ctx, p.x + 12 * p.persp * size, p.y - h * 0.4, 16 * p.persp * size, 18 * p.persp * size, leaf2)
 }
 
-HostWorld.prototype.placeActor = function (actor, t, dt) {
-  const swim = this.theme === 'underwater'
-  const action = swim ? 'swim' : autoLandAction(t, actor.phase)
-  actor.action = action
-  if (action === 'walk' || action === 'swim') {
-    actor.angle += actor.speed * dt * (swim ? 1.2 : 1)
-  }
-  const vx = -Math.sin(actor.angle) * actor.radius
-  actor.flip = vx < 0
-  if (action === 'drink') {
-    actor.wx = 0.62 + actor.phase * 0.002
-    actor.wz = 0.6
-    actor.flip = false
-    return
-  }
-  if (action === 'rest') {
-    actor.wx = Math.cos(actor.angle) * 0.2
-    actor.wz = 0.38 + Math.sin(actor.angle) * 0.06
-    return
-  }
-  if (action === 'sit') {
-    actor.wx = Math.cos(actor.angle) * 0.42
-    actor.wz = 0.52 + Math.sin(actor.angle) * 0.08
-    return
-  }
+HostWorld.prototype.placeActor = function (actor, dt) {
+  actor.action = this.theme === 'underwater' ? 'swim' : 'walk'
+  actor.angle += actor.speed * dt
   actor.wx = Math.cos(actor.angle) * actor.radius
-  actor.wz = 0.28 + (Math.sin(actor.angle) * 0.5 + 0.5) * 0.4
+  actor.wz = 0.3 + (Math.sin(actor.angle) * 0.5 + 0.5) * 0.38
+  const vx = -Math.sin(actor.angle)
+  if (vx > 0.18) actor.flip = false
+  else if (vx < -0.18) actor.flip = true
 }
 
 HostWorld.prototype.drawSet = function (ctx, box) {
@@ -181,47 +142,70 @@ HostWorld.prototype.drawSet = function (ctx, box) {
   blob(ctx, x + w / 2, y + h * 0.78, w * 0.48, h * 0.1, this.theme === 'snow' ? 'rgba(210,226,240,0.55)' : 'rgba(46,96,42,0.28)')
 }
 
-HostWorld.prototype.drawPet = function (ctx, actor, p, t) {
-  let h = 168 * p.persp
-  if (actor.action === 'sit') h *= 0.8
-  if (actor.action === 'rest' || actor.action === 'drink') h *= 0.9
-  const hop =
-    actor.action === 'walk'
-      ? Math.abs(Math.sin(t * 8.2 + actor.phase)) * 11 * p.persp
-      : actor.action === 'swim'
-        ? Math.sin(t * 3.1 + actor.phase) * 10 * p.persp
-        : actor.action === 'drink'
-          ? Math.sin(t * 4) * 3 * p.persp
-          : 0
-  const lean = actor.action === 'walk' ? Math.sin(t * 8.2 + actor.phase) * 0.07 : 0
-  const feetY = p.y - hop
-  ctx.fillStyle = 'rgba(26,18,12,0.18)'
-  blob(ctx, p.x, p.y + 4, 28 * p.persp, 8 * p.persp, 'rgba(26,18,12,0.18)')
+HostWorld.prototype.petSheet = function (w, h) {
+  const cw = Math.max(32, Math.ceil(w))
+  const ch = Math.max(32, Math.ceil(h))
+  if (!this._sheet || this._sheet.w < cw || this._sheet.h < ch) {
+    let canvas = null
+    if (typeof wx !== 'undefined' && wx.createOffscreenCanvas) {
+      try {
+        canvas = wx.createOffscreenCanvas({ type: '2d', width: cw, height: ch })
+      } catch (e) {
+        canvas = null
+      }
+    }
+    if (!canvas && typeof document !== 'undefined') {
+      canvas = document.createElement('canvas')
+    }
+    if (!canvas) return null
+    canvas.width = cw
+    canvas.height = ch
+    this._sheet = { canvas: canvas, ctx: canvas.getContext('2d'), w: cw, h: ch }
+  }
+  return this._sheet
+}
 
+HostWorld.prototype.drawPet = function (ctx, actor, p) {
+  const h = 168 * p.persp
   const aspect = cutoutAspect(actor.animalId)
   const w = h * aspect
+  blob(ctx, p.x, p.y + 4, 28 * p.persp, 8 * p.persp, 'rgba(26,18,12,0.18)')
   ctx.save()
-  ctx.translate(p.x, feetY)
+  ctx.translate(p.x, p.y)
   if (actor.flip) ctx.scale(-1, 1)
-  ctx.rotate(lean)
+  const img = cutoutImage(actor.animalId)
   const local = { x: -w / 2, y: -h, w: w, h: h }
-  const cut = drawStandingCutout(ctx, actor.animalId, 0, 0, h, null)
-  if (!cut) {
-    drawAnimal(ctx, actor.animalId, actor.regionColors, local, { coat: actor.thumb, stand: true })
-  } else if (actor.thumb) {
-    drawCoat(ctx, actor.thumb, local)
+  if (img && img.width) {
+    const sheet = this.petSheet(w, h)
+    if (sheet && sheet.ctx) {
+      const o = sheet.ctx
+      o.globalCompositeOperation = 'source-over'
+      o.clearRect(0, 0, sheet.w, sheet.h)
+      o.drawImage(img, 0, 0, w, h)
+      if (actor.thumb) {
+        o.save()
+        o.globalCompositeOperation = 'source-atop'
+        drawCoat(o, actor.thumb, { x: 0, y: 0, w: w, h: h })
+        o.restore()
+      }
+      ctx.drawImage(sheet.canvas, 0, 0, w, h, -w / 2, -h, w, h)
+    } else {
+      drawStandingCutout(ctx, actor.animalId, 0, 0, h, null)
+      if (actor.thumb) drawCoat(ctx, actor.thumb, local)
+    }
+  } else {
+    drawAnimal(ctx, actor.animalId, {}, local, { coat: actor.thumb, stand: true, blank: true })
   }
   ctx.restore()
 }
 
 HostWorld.prototype.render = function (ctx, box) {
   const now = Date.now()
-  const t = (now - this.t0) / 1000
   const dt = Math.min(0.05, Math.max(0, (now - this.last) / 1000))
   this.last = now
 
   this.drawSet(ctx, box)
-  this.actors.forEach((a) => this.placeActor(a, t, dt))
+  this.actors.forEach((a) => this.placeActor(a, dt))
 
   const sprites = TREES.map((tree) => ({
     kind: 'tree',
@@ -237,7 +221,7 @@ HostWorld.prototype.render = function (ctx, box) {
   sprites.sort((a, b) => a.p.z - b.p.z)
   sprites.forEach((s) => {
     if (s.kind === 'tree') drawTree(ctx, s.p, s.tree.s, this.theme)
-    else this.drawPet(ctx, s.actor, s.p, t)
+    else this.drawPet(ctx, s.actor, s.p)
   })
 }
 
@@ -245,4 +229,4 @@ HostWorld.prototype.dispose = function () {
   this.actors = []
 }
 
-module.exports = { HostWorld, autoLandAction, LAND_BEATS, project }
+module.exports = { HostWorld, project }

@@ -14,6 +14,15 @@ function colorsOf(animalId, painted) {
   return out
 }
 
+function blankColors(animalId) {
+  const base = DEFAULTS[animalId] || {}
+  const out = {}
+  Object.keys(base).forEach((k) => {
+    out[k] = '#fffdf7'
+  })
+  return out
+}
+
 function rr(ctx, x, y, w, h, r) {
   const rad = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2)
   ctx.beginPath()
@@ -246,7 +255,7 @@ function drawAnimal(ctx, animalId, painted, box, opts) {
     if (coat) drawCoat(ctx, coat, box)
     return
   }
-  const c = colorsOf(animalId, painted)
+  const c = opts && opts.blank ? blankColors(animalId) : colorsOf(animalId, painted)
   const s = Math.min(box.w, box.h) * 0.9
   const x = box.x + box.w / 2
   const y = box.y + box.h * 0.56
