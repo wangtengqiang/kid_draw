@@ -1,10 +1,11 @@
 /**
- * 陆地角色透明剪纸。站在地面上画，不要 512 方块快照（那张自带背景，看起来像相框）。
- * 没涂的皮毛收成白胚，只留眼睛鼻子等深色。
+ * 陆地角色透明剪纸、立体树。站在地面上画。
+ * 世界里默认用原画颜色，小朋友涂的再叠上去。
  * 微信从仓库根扫字面量，路径必须写在源码里。
  */
 const CUTOUTS = {}
 const WHITE = {}
+const TREES = {}
 const SRC = {
   deer: [
     'models/cutouts/deer.png',
@@ -21,6 +22,10 @@ const SRC = {
     'minigame/models/cutouts/lion.png',
     'public/models/cutouts/lion.png',
   ],
+}
+const TREE_SRC = {
+  oak: ['models/trees/oak.png', 'minigame/models/trees/oak.png'],
+  pine: ['models/trees/pine.png', 'minigame/models/trees/pine.png'],
 }
 
 function loadImage(src) {
@@ -108,13 +113,21 @@ function whitenCutout(img) {
 
 function preloadCutouts() {
   return Promise.all(
-    Object.keys(SRC).map((id) =>
-      loadFirst(SRC[id]).then((img) => {
-        if (!img) return
-        CUTOUTS[id] = img
-        WHITE[id] = whitenCutout(img)
-      }),
-    ),
+    Object.keys(SRC)
+      .map((id) =>
+        loadFirst(SRC[id]).then((img) => {
+          if (!img) return
+          CUTOUTS[id] = img
+          WHITE[id] = whitenCutout(img)
+        }),
+      )
+      .concat(
+        Object.keys(TREE_SRC).map((id) =>
+          loadFirst(TREE_SRC[id]).then((img) => {
+            if (img && img.width) TREES[id] = img
+          }),
+        ),
+      ),
   )
 }
 
@@ -127,8 +140,18 @@ function cutoutAspect(animalId) {
 }
 
 function cutoutImage(animalId, opts) {
-  if (opts && opts.natural) return CUTOUTS[animalId] || WHITE[animalId]
-  return WHITE[animalId] || CUTOUTS[animalId]
+  if (opts && opts.blank) return WHITE[animalId] || CUTOUTS[animalId]
+  return CUTOUTS[animalId] || WHITE[animalId]
+}
+
+function treeImage(kind) {
+  return TREES[kind] || TREES.oak || TREES.pine
+}
+
+function treeAspect(kind) {
+  const img = treeImage(kind)
+  if (img && img.width && img.height) return img.width / img.height
+  return kind === 'pine' ? 760 / 1069 : 824 / 1072
 }
 
 /**
@@ -136,7 +159,7 @@ function cutoutImage(animalId, opts) {
  * 返回角色占用的屏幕盒，失败返回 null。
  */
 function drawStandingCutout(ctx, animalId, feetX, feetY, height, opts) {
-  const img = cutoutImage(animalId)
+  const img = cutoutImage(animalId, opts)
   if (!img || !img.width) return null
   const h = height
   const w = h * (img.width / img.height)
@@ -151,10 +174,13 @@ function drawStandingCutout(ctx, animalId, feetX, feetY, height, opts) {
 module.exports = {
   CUTOUTS,
   SRC,
+  TREES,
   WHITE,
   makeCanvas,
   preloadCutouts,
   cutoutAspect,
   cutoutImage,
   drawStandingCutout,
+  treeAspect,
+  treeImage,
 }

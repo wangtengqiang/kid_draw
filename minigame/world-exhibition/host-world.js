@@ -3,8 +3,7 @@
  * 不是把照片左右平移，也不是 Three.js（完整 3D 只在网页）。
  */
 const { drawAnimal, drawCoat, isNatural } = require('./models.js')
-const { cutoutAspect, cutoutImage, drawStandingCutout, makeCanvas } = require('./cutouts.js')
-const { drawRiggedCutout } = require('./rig.js')
+const { cutoutAspect, cutoutImage, makeCanvas, treeAspect, treeImage } = require('./cutouts.js')
 
 const X_MIN = -1.28
 const X_MAX = 1.28
@@ -55,15 +54,15 @@ function pickWander(actor, others) {
   actor.hold = 2.2 + Math.random() * 5.5
 }
 
-const TREES = [
-  { x: -1.05, z: 0.1, s: 1.15 },
-  { x: 1.02, z: 0.12, s: 1.25 },
-  { x: -0.86, z: 0.34, s: 0.82 },
-  { x: 0.9, z: 0.38, s: 0.9 },
-  { x: -0.4, z: 0.06, s: 0.7 },
-  { x: 0.36, z: 0.05, s: 0.62 },
-  { x: -1.22, z: 0.52, s: 1.05 },
-  { x: 1.2, z: 0.58, s: 1.1 },
+const PLANTS = [
+  { x: -1.2, z: 0.07, s: 0.92, kind: 'pine' },
+  { x: 1.18, z: 0.08, s: 1.02, kind: 'pine' },
+  { x: -0.46, z: 0.04, s: 0.52, kind: 'oak' },
+  { x: 0.5, z: 0.045, s: 0.48, kind: 'oak' },
+  { x: -1.08, z: 0.3, s: 1.18, kind: 'oak' },
+  { x: 1.06, z: 0.34, s: 1.22, kind: 'oak' },
+  { x: -1.26, z: 0.54, s: 0.86, kind: 'pine' },
+  { x: 1.24, z: 0.58, s: 0.9, kind: 'oak' },
 ]
 
 function HostWorld() {
@@ -141,15 +140,25 @@ function blob(ctx, x, y, rx, ry, fill) {
   ctx.restore()
 }
 
-function drawTree(ctx, p, size, theme) {
-  const h = 110 * p.persp * size
-  const trunkW = Math.max(5, 9 * p.persp * size)
+function drawTree(ctx, plant, p, theme) {
+  const img = treeImage(plant.kind)
+  const h = 210 * p.persp * plant.s
+  const aspect = img && img.width ? img.width / img.height : treeAspect(plant.kind)
+  const w = h * aspect
+  blob(ctx, p.x, p.y + 4, 22 * p.persp * plant.s, 7 * p.persp * plant.s, 'rgba(28, 22, 12, 0.2)')
+  if (img && img.width) {
+    ctx.drawImage(img, p.x - w / 2, p.y - h, w, h)
+    if (theme === 'snow') {
+      blob(ctx, p.x - w * 0.08, p.y - h * 0.78, w * 0.18, h * 0.08, 'rgba(255,255,255,0.72)')
+      blob(ctx, p.x + w * 0.1, p.y - h * 0.7, w * 0.14, h * 0.06, 'rgba(255,255,255,0.55)')
+    }
+    return
+  }
+  const trunkW = Math.max(5, 9 * p.persp * plant.s)
   ctx.fillStyle = theme === 'snow' ? '#6b5344' : '#8b5a2b'
   ctx.fillRect(p.x - trunkW / 2, p.y - h * 0.42, trunkW, h * 0.48)
   const leaf = theme === 'snow' ? '#eef6ff' : theme === 'underwater' ? '#2a8f78' : '#3f7a3a'
-  const leaf2 = theme === 'snow' ? '#d7e8f6' : '#2f6a32'
-  blob(ctx, p.x, p.y - h * 0.52, 24 * p.persp * size, 28 * p.persp * size, leaf)
-  blob(ctx, p.x + 12 * p.persp * size, p.y - h * 0.4, 16 * p.persp * size, 18 * p.persp * size, leaf2)
+  blob(ctx, p.x, p.y - h * 0.52, 24 * p.persp * plant.s, 28 * p.persp * plant.s, leaf)
 }
 
 HostWorld.prototype.placeActor = function (actor, dt, others) {
@@ -189,18 +198,19 @@ HostWorld.prototype.placeActor = function (actor, dt, others) {
 
 HostWorld.prototype.drawSet = function (ctx, box) {
   const { x, y, w, h } = box
-  const horizon = y + h * 0.36
+  const horizon = y + h * 0.32
   if (this.theme === 'snow') {
     const g = ctx.createLinearGradient(0, y, 0, y + h)
-    g.addColorStop(0, '#cfe6f4')
-    g.addColorStop(0.36, '#e7f2fb')
+    g.addColorStop(0, '#9ec8e4')
+    g.addColorStop(0.32, '#e7f2fb')
     g.addColorStop(1, '#f4f8ff')
     ctx.fillStyle = g
     ctx.fillRect(x, y, w, h)
-    blob(ctx, x + w * 0.82, y + h * 0.14, 28, 28, '#fffef8')
+    blob(ctx, x + w * 0.82, y + h * 0.12, 34, 34, '#fffef8')
+    blob(ctx, x + w * 0.82, y + h * 0.12, 52, 52, 'rgba(255,253,240,0.35)')
   } else if (this.theme === 'underwater') {
     const g = ctx.createLinearGradient(0, y, 0, y + h)
-    g.addColorStop(0, '#0b4f6c')
+    g.addColorStop(0, '#083a54')
     g.addColorStop(0.4, '#147a8c')
     g.addColorStop(1, '#c2b280')
     ctx.fillStyle = g
@@ -209,70 +219,66 @@ HostWorld.prototype.drawSet = function (ctx, box) {
     blob(ctx, x + w * 0.7, y + h * 0.16, 9, 14, 'rgba(255,255,255,0.12)')
   } else {
     const g = ctx.createLinearGradient(0, y, 0, y + h)
-    g.addColorStop(0, '#b9dff5')
-    g.addColorStop(0.34, '#cfe6c4')
-    g.addColorStop(1, '#4c8a46')
+    g.addColorStop(0, '#7ec4ef')
+    g.addColorStop(0.22, '#c5e7a8')
+    g.addColorStop(0.48, '#6aaa55')
+    g.addColorStop(1, '#3f7a3c')
     ctx.fillStyle = g
     ctx.fillRect(x, y, w, h)
-    blob(ctx, x + w * 0.84, y + h * 0.12, 30, 30, '#ffe066')
-    blob(ctx, x + w * 0.22, horizon - 18, w * 0.28, 36, '#7da85a')
-    blob(ctx, x + w * 0.7, horizon - 10, w * 0.34, 28, '#6fa35a')
+    blob(ctx, x + w * 0.84, y + h * 0.11, 36, 36, '#ffe566')
+    blob(ctx, x + w * 0.84, y + h * 0.11, 58, 58, 'rgba(255,224,120,0.28)')
+    blob(ctx, x + w * 0.18, y + h * 0.1, 42, 16, 'rgba(255,255,255,0.55)')
+    blob(ctx, x + w * 0.28, y + h * 0.115, 22, 12, 'rgba(255,255,255,0.4)')
+    blob(ctx, x + w * 0.58, y + h * 0.08, 36, 14, 'rgba(255,255,255,0.42)')
+    blob(ctx, x + w * 0.2, horizon - 8, w * 0.38, 28, '#7fb35f')
+    blob(ctx, x + w * 0.72, horizon - 2, w * 0.4, 26, '#6fa35a')
+    blob(ctx, x + w * 0.48, horizon + 10, w * 0.7, 18, '#5e9650')
   }
   ctx.fillStyle =
-    this.theme === 'snow' ? 'rgba(244,248,255,0.92)' : this.theme === 'underwater' ? '#c2b280' : '#4c8a46'
+    this.theme === 'snow' ? 'rgba(244,248,255,0.92)' : this.theme === 'underwater' ? '#c2b280' : '#4e8b48'
   ctx.beginPath()
   ctx.moveTo(x, horizon)
-  ctx.quadraticCurveTo(x + w * 0.5, horizon - 24, x + w, horizon)
+  ctx.quadraticCurveTo(x + w * 0.5, horizon - 18, x + w, horizon)
   ctx.lineTo(x + w, y + h)
   ctx.lineTo(x, y + h)
   ctx.closePath()
   ctx.fill()
-  blob(
-    ctx,
-    x + w / 2,
-    y + h * 0.76,
-    w * 0.52,
-    h * 0.14,
-    this.theme === 'snow' ? 'rgba(210,226,240,0.55)' : 'rgba(46,96,42,0.28)',
-  )
-}
-
-HostWorld.prototype.petSheet = function (w, h) {
-  const cw = Math.max(32, Math.ceil(w))
-  const ch = Math.max(32, Math.ceil(h))
-  if (!this._sheet || this._sheet.w < cw || this._sheet.h < ch) {
-    let canvas = null
-    if (typeof wx !== 'undefined' && wx.createOffscreenCanvas) {
-      try {
-        canvas = wx.createOffscreenCanvas({ type: '2d', width: cw, height: ch })
-      } catch (e) {
-        canvas = null
-      }
-    }
-    if (!canvas && typeof document !== 'undefined') {
-      canvas = document.createElement('canvas')
-    }
-    if (!canvas) return null
-    canvas.width = cw
-    canvas.height = ch
-    this._sheet = { canvas: canvas, ctx: canvas.getContext('2d'), w: cw, h: ch }
+  if (this.theme === 'forest') {
+    const lawn = ctx.createLinearGradient(0, horizon, 0, y + h)
+    lawn.addColorStop(0, '#5b9a4c')
+    lawn.addColorStop(0.45, '#4a8a42')
+    lawn.addColorStop(1, '#3a7340')
+    ctx.fillStyle = lawn
+    ctx.fillRect(x, horizon, w, y + h - horizon)
+    blob(ctx, x + w / 2, y + h * 0.76, w * 0.52, h * 0.14, 'rgba(46,96,42,0.22)')
+    blob(ctx, x + w * 0.22, y + h * 0.62, w * 0.18, h * 0.04, 'rgba(255,255,255,0.06)')
+    blob(ctx, x + w * 0.78, y + h * 0.7, w * 0.16, h * 0.035, 'rgba(20,50,18,0.1)')
+  } else {
+    blob(
+      ctx,
+      x + w / 2,
+      y + h * 0.76,
+      w * 0.52,
+      h * 0.14,
+      this.theme === 'snow' ? 'rgba(210,226,240,0.55)' : 'rgba(46,96,42,0.28)',
+    )
   }
-  return this._sheet
 }
 
-HostWorld.prototype.coatSheet = function (actor, white) {
-  if (!actor.thumb || !white) return white
+HostWorld.prototype.coatSheet = function (actor, base) {
+  if (!base) return base
+  if (isNatural(actor.thumb) || !actor.thumb) return base
   if (actor._coat && actor._coatThumb === actor.thumb) return actor._coat
-  const iw = white.width || 256
-  const ih = white.height || 256
+  const iw = base.width || 256
+  const ih = base.height || 256
   const canvas = makeCanvas(iw, ih)
-  if (!canvas) return white
+  if (!canvas) return base
   const c = canvas.getContext('2d')
-  if (!c) return white
+  if (!c) return base
   c.clearRect(0, 0, iw, ih)
-  c.drawImage(white, 0, 0, iw, ih)
+  c.drawImage(base, 0, 0, iw, ih)
   c.save()
-  c.globalCompositeOperation = 'source-atop'
+  c.globalCompositeOperation = 'multiply'
   drawCoat(c, actor.thumb, { x: 0, y: 0, w: iw, h: ih })
   c.restore()
   actor._coat = canvas
@@ -281,38 +287,24 @@ HostWorld.prototype.coatSheet = function (actor, white) {
 }
 
 HostWorld.prototype.drawPet = function (ctx, actor, p) {
-  const h = 168 * p.persp
+  const h = 176 * p.persp
   const aspect = cutoutAspect(actor.animalId)
   const w = h * aspect
-  blob(ctx, p.x, p.y + 4, 28 * p.persp, 8 * p.persp, 'rgba(26,18,12,0.18)')
+  blob(ctx, p.x + 4 * p.persp, p.y + 6, 32 * p.persp, 9 * p.persp, 'rgba(26,18,12,0.2)')
   ctx.save()
   ctx.translate(p.x, p.y)
+  const bob = Math.sin((actor.gait || 0) * 2) * 3.2 * p.persp
+  const sway = Math.sin(actor.gait || 0) * 0.03
+  ctx.translate(0, -bob)
+  ctx.rotate(sway)
   if (actor.flip) ctx.scale(-1, 1)
-  const natural = isNatural(actor.thumb)
-  const img = cutoutImage(actor.animalId, { natural: natural })
+  const img = cutoutImage(actor.animalId)
   const local = { x: -w / 2, y: -h, w: w, h: h }
   if (img && img.width) {
-    const src = natural ? img : this.coatSheet(actor, img)
-    const padX = Math.ceil(w * 0.14)
-    const padY = Math.ceil(h * 0.12)
-    const sheet = this.petSheet(w + padX * 2, h + padY)
-    if (sheet && sheet.ctx) {
-      const o = sheet.ctx
-      o.globalCompositeOperation = 'source-over'
-      o.clearRect(0, 0, sheet.w, sheet.h)
-      o.save()
-      o.translate(padX, 0)
-      if (!drawRiggedCutout(o, src, actor.animalId, w, h, actor.gait || 0)) {
-        o.drawImage(src, 0, 0, w, h)
-      }
-      o.restore()
-      ctx.drawImage(sheet.canvas, 0, 0, sheet.w, sheet.h, -w / 2 - padX, -h, sheet.w, sheet.h)
-    } else {
-      drawStandingCutout(ctx, actor.animalId, 0, 0, h, null)
-      if (!natural && actor.thumb) drawCoat(ctx, actor.thumb, local)
-    }
+    const src = this.coatSheet(actor, img)
+    ctx.drawImage(src, -w / 2, -h, w, h)
   } else {
-    drawAnimal(ctx, actor.animalId, {}, local, { coat: actor.thumb, stand: true, blank: !natural })
+    drawAnimal(ctx, actor.animalId, actor.regionColors || {}, local, { coat: actor.thumb, stand: true })
   }
   ctx.restore()
 }
@@ -325,7 +317,7 @@ HostWorld.prototype.render = function (ctx, box) {
   this.drawSet(ctx, box)
   this.actors.forEach((a) => this.placeActor(a, dt, this.actors))
 
-  const sprites = TREES.map((tree) => ({
+  const sprites = PLANTS.map((tree) => ({
     kind: 'tree',
     tree: tree,
     p: project(tree.x, tree.z, box),
@@ -338,7 +330,7 @@ HostWorld.prototype.render = function (ctx, box) {
   )
   sprites.sort((a, b) => a.p.z - b.p.z)
   sprites.forEach((s) => {
-    if (s.kind === 'tree') drawTree(ctx, s.p, s.tree.s, this.theme)
+    if (s.kind === 'tree') drawTree(ctx, s.tree, s.p, this.theme)
     else this.drawPet(ctx, s.actor, s.p)
   })
 }
