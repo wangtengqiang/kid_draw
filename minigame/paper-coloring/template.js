@@ -3,6 +3,7 @@
  * 陆地三只用仓库里的涂色本 PNG，不再画椭圆雪人。
  */
 const { ANIMAL_NAMES } = require('../types.js')
+const { font } = require('../draw.js')
 const { drawLineArt } = require('../art.js')
 
 function drawSheet(ctx, animalId, box) {
@@ -21,7 +22,7 @@ function drawSheet(ctx, animalId, box) {
     h: box.h - 70,
   })
   ctx.fillStyle = '#1a120c'
-  ctx.font = '20px sans-serif'
+  ctx.font = font(18, 500)
   ctx.textAlign = 'center'
   ctx.fillText(ANIMAL_NAMES[animalId] || '', box.x + box.w / 2, box.y + box.h - 16)
 }

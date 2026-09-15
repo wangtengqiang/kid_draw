@@ -2,8 +2,8 @@
  * 儿童创作用例界面：选一只 → 自由蜡笔涂色 → 送进世界。
  * 送到后可进主机世界。不打开网页 Three.js。
  */
-const { crayonChip, fillBtn, fillCard, hit, lead, leadWrap, roundRect, title } = require('../draw.js')
-const { ANIMAL_IDS, ANIMAL_NAMES, PALETTE } = require('../types.js')
+const { crayonChip, fillBtn, fillCard, font, hit, lead, leadWrap, roundRect, title } = require('../draw.js')
+const { ANIMAL_IDS, ANIMAL_NAMES, DEFAULTS, PALETTE } = require('../types.js')
 const { drawPickCard } = require('../art.js')
 const { drawLineGuide } = require('./lineart.js')
 const { drawAnimal } = require('../world-exhibition/models.js')
@@ -66,7 +66,7 @@ ChildCreation.prototype.pick = function (ctx, roomId) {
     fillCard(ctx, b)
     drawPickCard(ctx, id, { x: b.x + 12, y: b.y + 8, w: b.w - 24, h: b.h - 48 })
     ctx.fillStyle = '#4a3428'
-    ctx.font = '800 26px sans-serif'
+    ctx.font = font(24, 600)
     ctx.textAlign = 'center'
     ctx.textBaseline = 'alphabetic'
     ctx.fillText(ANIMAL_NAMES[id], W / 2, b.y + b.h - 18)
@@ -91,8 +91,14 @@ ChildCreation.prototype.paintScreen = function (ctx, roomId, animalId) {
   ctx.save()
   roundRect(ctx, stage.x + 4, stage.y + 4, stage.w - 8, stage.h - 10, 22)
   ctx.clip()
-  this.paint.drawOnto(ctx, stage)
-  drawLineGuide(ctx, animalId, stage)
+  if (this.paint.natural) {
+    ctx.fillStyle = '#fffdf7'
+    ctx.fillRect(stage.x, stage.y, stage.w, stage.h)
+    drawPickCard(ctx, animalId, stage)
+  } else {
+    this.paint.drawOnto(ctx, stage)
+    drawLineGuide(ctx, animalId, stage)
+  }
   ctx.restore()
 
   const sizes = []
@@ -110,7 +116,7 @@ ChildCreation.prototype.paintScreen = function (ctx, roomId, animalId) {
     ctx.fillStyle = this.paint.colorHex
     ctx.fill()
     ctx.fillStyle = '#4a3428'
-    ctx.font = '700 13px sans-serif'
+    ctx.font = font(13, 500)
     ctx.textAlign = 'center'
     ctx.textBaseline = 'alphabetic'
     ctx.fillText(item.name, cx, b.y + b.h - 12)
@@ -130,17 +136,25 @@ ChildCreation.prototype.paintScreen = function (ctx, roomId, animalId) {
       w: cw,
       h: 50,
     }
-    crayonChip(ctx, b, c.hex, this.paint.colorHex === c.hex && this.paint.tool === 'brush')
+    crayonChip(ctx, b, c.hex, this.paint.colorHex === c.hex && this.paint.tool === 'brush' && !this.paint.natural)
     crayons.push(b)
   })
+  const natural = {
+    id: 'natural',
+    x: 20,
+    y: sy + 124,
+    w: W - 40,
+    h: 52,
+  }
+  fillBtn(ctx, natural, this.paint.natural ? '#ffe066' : (DEFAULTS[animalId] && DEFAULTS[animalId].body) || '#f0b14a', '标准色', 20)
   const send = { id: 'send', x: 20, y: H - 96, w: W - 40, h: 76, roomId: roomId, animalId: animalId }
   fillBtn(ctx, send, this.sending ? '#c98989' : '#ff8fa3', this.sending ? '正在送…' : '送进世界', 30)
-  ctx.fillStyle = 'rgba(74,52,40,0.7)'
-  ctx.font = '17px sans-serif'
+  ctx.fillStyle = 'rgba(74,52,40,0.62)'
+  ctx.font = font(16, 400)
   ctx.textAlign = 'center'
   ctx.textBaseline = 'alphabetic'
-  ctx.fillText(this.msg || '拿蜡笔在纸上随便涂。线是样子。', W / 2, H - 108)
-  return [back, home].concat(sizes, [eraser], crayons, [send], [stage])
+  ctx.fillText(this.msg || '涂自己的，或点标准色用原来的样子。', W / 2, H - 108)
+  return [back, home].concat(sizes, [eraser], crayons, [natural, send], [stage])
 }
 
 ChildCreation.prototype.success = function (ctx, roomId, placed) {
@@ -178,9 +192,12 @@ ChildCreation.prototype.touch = function (screen, btn, x, y) {
     this.paint.tool = 'brush'
   } else if (btn.id === 'eraser' && this.paint) {
     this.paint.tool = this.paint.tool === 'eraser' ? 'brush' : 'eraser'
+  } else if (btn.id === 'natural' && this.paint) {
+    this.paint.applyNatural()
   } else if (btn.id === 'crayon' && this.paint) {
     this.paint.colorHex = btn.hex
     this.paint.tool = 'brush'
+    this.paint.natural = false
   } else if (btn.id === 'stage' && this.paint) {
     this.painting = true
     this.stageBox = btn

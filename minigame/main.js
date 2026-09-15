@@ -66,26 +66,44 @@ function start() {
 }
 
 function renderHome() {
-  const mark = { x: W / 2 - 52, y: 20, w: 104, h: 86 }
+  const markH = Math.round(Math.min(132, H * 0.155))
+  const markW = Math.round(markH * 1.22)
+  const mark = { x: W / 2 - markW / 2, y: 16, w: markW, h: markH }
   fillCard(ctx, mark)
-  drawPickCard(ctx, 'lion', { x: mark.x + 8, y: mark.y + 4, w: mark.w - 16, h: mark.h - 18 })
-  title(ctx, '彩绘动物进森林', W / 2, 132, 28)
-  leadWrap(ctx, '老师打开世界，小朋友涂色送进去。', W / 2, 142, W - 72)
-  const top = 204
-  const gap = 8
-  const hBtn = Math.min(62, Math.max(52, (H - top - 88) / 4 - gap))
-  const host = { id: 'open-world', x: 24, y: top, w: W - 48, h: hBtn }
-  const draw = { id: 'start-draw', x: 24, y: top + 22 + (hBtn + gap), w: W - 48, h: hBtn }
-  const cam = { id: 'paper', x: 24, y: draw.y + hBtn + gap, w: W - 48, h: hBtn }
-  const scan = { id: 'scan', x: 24, y: cam.y + hBtn + gap, w: W - 48, h: hBtn }
-  const gal = { id: 'my-art', x: 24, y: scan.y + hBtn + 10, w: (W - 56) / 2, h: 44 }
-  const print = { id: 'print', x: gal.x + gal.w + 8, y: gal.y, w: gal.w, h: 44 }
-  kicker(ctx, '老师 · 主机', W / 2, host.y - 8)
-  fillBtn(ctx, host, '#ffe066', '打开世界', 26)
-  kicker(ctx, '小朋友', W / 2, draw.y - 8)
-  fillBtn(ctx, draw, '#8fdd74', '开始画画', 26)
-  fillBtn(ctx, cam, '#ffb38a', '拍纸上的画', 26)
-  fillBtn(ctx, scan, '#8fd8f2', '扫码进入', 24)
+  drawPickCard(ctx, 'lion', { x: mark.x + 10, y: mark.y + 6, w: mark.w - 20, h: mark.h - 20 })
+  const titleY = mark.y + mark.h + 38
+  title(ctx, '彩绘动物进森林', W / 2, titleY, 34)
+  leadWrap(ctx, '老师打开世界，小朋友涂色送进去。', W / 2, titleY + 10, W - 56)
+
+  const footerH = 56
+  const footerY = H - 24 - footerH
+  const blockTop = titleY + 56
+  const blockH = Math.max(280, footerY - blockTop)
+  const kickerH = 26
+  const inner = blockH - kickerH * 2
+  const hBtn = Math.min(92, Math.max(60, (inner - 36) / 4))
+  const extra = blockH - kickerH * 2 - hBtn * 4
+  const gap = Math.max(10, extra / 5)
+
+  let y = blockTop
+  kicker(ctx, '老师 · 主机', W / 2, y + 16)
+  y += kickerH
+  const host = { id: 'open-world', x: 24, y: y, w: W - 48, h: hBtn }
+  y += hBtn + gap
+  kicker(ctx, '小朋友', W / 2, y + 16)
+  y += kickerH
+  const draw = { id: 'start-draw', x: 24, y: y, w: W - 48, h: hBtn }
+  y += hBtn + gap
+  const cam = { id: 'paper', x: 24, y: y, w: W - 48, h: hBtn }
+  y += hBtn + gap
+  const scan = { id: 'scan', x: 24, y: y, w: W - 48, h: hBtn }
+  const gal = { id: 'my-art', x: 28, y: footerY, w: (W - 64) / 2, h: footerH }
+  const print = { id: 'print', x: gal.x + gal.w + 8, y: footerY, w: gal.w, h: footerH }
+  const type = Math.round(Math.min(30, hBtn * 0.4))
+  fillBtn(ctx, host, '#ffe066', '打开世界', type)
+  fillBtn(ctx, draw, '#8fdd74', '开始画画', type)
+  fillBtn(ctx, cam, '#ffb38a', '拍纸上的画', type)
+  fillBtn(ctx, scan, '#8fd8f2', '扫码进入', type)
   textLink(ctx, gal, '我的画', 18)
   textLink(ctx, print, '打印线稿', 18)
   return [host, draw, cam, scan, gal, print]
@@ -124,8 +142,7 @@ function render() {
 
 function onHome(btn) {
   if (btn.id === 'open-world') {
-    const id = sync.newRoomCode()
-    sync.createRoom(id)
+    const id = sync.ensurePreviewRoom()
     storage.createRoom({
       code: id,
       theme: 'forest',

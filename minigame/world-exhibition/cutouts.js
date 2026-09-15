@@ -76,13 +76,25 @@ function whitenCutout(img) {
     const data = ctx.getImageData(0, 0, img.width, img.height)
     const px = data.data
     for (let i = 0; i < px.length; i += 4) {
-      if (px[i + 3] < 16) continue
-      const luma = 0.2126 * px[i] + 0.7152 * px[i + 1] + 0.0722 * px[i + 2]
-      if (luma > 28) {
-        px[i] = 255
-        px[i + 1] = 253
-        px[i + 2] = 247
+      if (px[i + 3] < 10) continue
+      const r = px[i]
+      const g = px[i + 1]
+      const b = px[i + 2]
+      const a = px[i + 3]
+      const row = Math.floor(i / 4 / img.width) / img.height
+      const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b
+      const sat = Math.max(r, g, b) - Math.min(r, g, b)
+      if (row > 0.84 && a < 220 && sat < 36) {
+        px[i + 3] = 0
+        continue
       }
+      if (a >= 40) px[i + 3] = 255
+      const eye = b > 95 && b > r + 12 && b > g * 0.82
+      const ink = luma < 22
+      if (eye || ink) continue
+      px[i] = 255
+      px[i + 1] = 253
+      px[i + 2] = 247
     }
     ctx.putImageData(data, 0, 0)
   } catch (e) {
@@ -114,7 +126,8 @@ function cutoutAspect(animalId) {
   return 511 / 584
 }
 
-function cutoutImage(animalId) {
+function cutoutImage(animalId, opts) {
+  if (opts && opts.natural) return CUTOUTS[animalId] || WHITE[animalId]
   return WHITE[animalId] || CUTOUTS[animalId]
 }
 
@@ -139,6 +152,7 @@ module.exports = {
   CUTOUTS,
   SRC,
   WHITE,
+  makeCanvas,
   preloadCutouts,
   cutoutAspect,
   cutoutImage,

@@ -22,6 +22,7 @@ function PaintSurface(animalId) {
   this.tool = 'brush'
   this.strokes = []
   this.current = null
+  this.natural = false
 }
 
 PaintSurface.prototype.widthOf = function (brush) {
@@ -29,6 +30,7 @@ PaintSurface.prototype.widthOf = function (brush) {
 }
 
 PaintSurface.prototype.brushAt = function (nx, ny) {
+  this.natural = false
   const x = Math.max(0, Math.min(1, nx))
   const y = Math.max(0, Math.min(1, ny))
   const hex = this.tool === 'eraser' ? PAPER : this.colorHex
@@ -84,8 +86,16 @@ PaintSurface.prototype.drawOnto = function (ctx, box) {
   })
 }
 
+PaintSurface.prototype.applyNatural = function () {
+  this.natural = true
+  this.strokes = []
+  this.current = null
+  this.tool = 'brush'
+}
+
 PaintSurface.prototype.sampleRegions = function () {
   const out = colorsOf(this.animalId, {})
+  if (this.natural) return out
   const ink = []
   this.strokes.forEach((stroke) => {
     if (stroke.hex === PAPER) return
@@ -118,7 +128,7 @@ PaintSurface.prototype.averagePaintHex = function () {
 }
 
 PaintSurface.prototype.thumb = function () {
-  return JSON.stringify({ animalId: this.animalId, strokes: this.strokes.slice() })
+  return JSON.stringify({ animalId: this.animalId, strokes: this.strokes.slice(), natural: !!this.natural })
 }
 
 function rgbToHex(r, g, b) {

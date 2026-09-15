@@ -2,7 +2,7 @@
  * 世界观展用例界面：主机世界、画廊缩略图、只读预览。
  * 不包含选动物 / 涂色 / 送进世界。
  */
-const { fillBtn, fillCard, lead, roundRect, title } = require('../draw.js')
+const { fillBtn, fillCard, font, lead, roundRect, title } = require('../draw.js')
 const { ANIMAL_NAMES, ROOM_CAP, THEME_IDS, THEME_NAMES } = require('../types.js')
 const { storage } = require('../storage/index.js')
 const sync = require('../sync/index.js')
@@ -29,7 +29,7 @@ function overlayChip(ctx, text, x, y, w, h) {
   roundRect(ctx, x, y, w, h, h / 2)
   ctx.fill()
   ctx.fillStyle = '#4a3428'
-  ctx.font = '700 15px sans-serif'
+  ctx.font = font(15, 500)
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillText(text, x + w / 2, y + h / 2)
@@ -59,7 +59,7 @@ WorldExhibition.prototype.renderHost = function (ctx, roomId) {
     roundRect(ctx, 28, H * 0.52, W - 56, 52, 18)
     ctx.fill()
     ctx.fillStyle = '#4a3428'
-    ctx.font = '20px sans-serif'
+    ctx.font = font(18, 500)
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillText('等小朋友把动物送进来', W / 2, H * 0.52 + 26)
@@ -118,7 +118,7 @@ WorldExhibition.prototype.renderGallery = function (ctx) {
     }
     drawAnimal(ctx, item.animalId, painted, { x: b.x + 8, y: b.y + 6, w: b.w - 16, h: b.h - 28 })
     ctx.fillStyle = '#4a3428'
-    ctx.font = '800 16px sans-serif'
+    ctx.font = font(16, 600)
     ctx.textAlign = 'center'
     ctx.fillText(ANIMAL_NAMES[item.animalId] || '', b.x + b.w / 2, b.y + b.h - 12)
     buttons.push(b)

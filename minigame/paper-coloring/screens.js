@@ -1,7 +1,7 @@
 /**
  * 纸上涂色界面：老师下载线稿；孩子选一只、拍照、送进世界。
  */
-const { fillBtn, fillCard, lead, leadWrap, title } = require('../draw.js')
+const { fillBtn, fillCard, font, lead, leadWrap, title } = require('../draw.js')
 const { ANIMAL_IDS, ANIMAL_NAMES } = require('../types.js')
 const { drawPickCard } = require('../art.js')
 const { drawAnimal } = require('../world-exhibition/models.js')
@@ -66,7 +66,7 @@ PaperColoring.prototype.pick = function (ctx, roomId) {
     fillCard(ctx, b)
     drawPickCard(ctx, id, { x: b.x + 12, y: b.y + 8, w: b.w - 24, h: b.h - 48 })
     ctx.fillStyle = '#4a3428'
-    ctx.font = '800 26px sans-serif'
+    ctx.font = font(24, 600)
     ctx.textAlign = 'center'
     ctx.fillText(ANIMAL_NAMES[id], W / 2, b.y + b.h - 18)
     buttons.push(b)
@@ -101,8 +101,8 @@ PaperColoring.prototype.camera = function (ctx, roomId, animalId) {
     fillBtn(ctx, send, '#ff8fa3', '送进世界', 26)
     buttons.push(send)
   }
-  ctx.fillStyle = 'rgba(74,52,40,0.7)'
-  ctx.font = '18px sans-serif'
+  ctx.fillStyle = 'rgba(74,52,40,0.62)'
+  ctx.font = font(16, 400)
   ctx.textAlign = 'center'
   ctx.fillText(this.msg, W / 2, H - 204)
   return buttons

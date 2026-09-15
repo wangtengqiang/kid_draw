@@ -4,6 +4,11 @@ const INK = '#4a3428'
 const PAPER = '#fff6df'
 const CREAM = '#fffaf0'
 const CARD_SHADOW = '#d7c4a4'
+const FACE = '"PingFang SC","Hiragino Sans GB","Heiti SC","Noto Sans SC",sans-serif'
+
+function font(size, weight) {
+  return (weight || 600) + ' ' + Math.round(size) + 'px ' + FACE
+}
 
 const STYLES = {
   '#ffe066': { ink: INK, shadow: '#e8b03a' },
@@ -19,6 +24,10 @@ const STYLES = {
   '#fff6e8': { ink: INK, shadow: CARD_SHADOW },
   '#ff8fa3': { ink: '#fffaf0', shadow: '#e06880' },
   '#e24b4b': { ink: '#fffaf0', shadow: '#e06880' },
+  '#e89a2d': { ink: INK, shadow: '#c47a18' },
+  '#f0b14a': { ink: INK, shadow: '#d49430' },
+  '#c9965a': { ink: INK, shadow: '#a07840' },
+  '#e6c36a': { ink: INK, shadow: '#c4a048' },
   '#1a120c': { ink: '#fffaf0', shadow: '#3a2a22' },
   '#c98989': { ink: INK, shadow: '#a56a6a' },
 }
@@ -73,7 +82,7 @@ function fillBtn(ctx, b, fillColor, text, fontSize) {
   roundRect(ctx, b.x, b.y, b.w, b.h - lift, radius)
   fillPath(ctx)
   ctx.fillStyle = style.ink
-  ctx.font = '800 ' + (fontSize || 26) + 'px sans-serif'
+  ctx.font = font(fontSize || Math.min(30, b.h * 0.42), 600)
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillText(text == null ? '' : String(text), b.x + b.w / 2, b.y + (b.h - lift) / 2)
@@ -90,16 +99,16 @@ function fillCard(ctx, b, fillColor) {
 }
 
 function textLink(ctx, b, text, size) {
-  ctx.fillStyle = 'rgba(74,52,40,0.5)'
-  ctx.font = `800 ${size || 20}px sans-serif`
+  ctx.fillStyle = 'rgba(74,52,40,0.48)'
+  ctx.font = font(size || 20, 500)
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillText(text, b.x + b.w / 2, b.y + b.h / 2)
 }
 
 function kicker(ctx, text, x, y) {
-  ctx.fillStyle = 'rgba(74,52,40,0.45)'
-  ctx.font = '700 13px sans-serif'
+  ctx.fillStyle = 'rgba(74,52,40,0.42)'
+  ctx.font = font(14, 500)
   ctx.textAlign = 'center'
   ctx.textBaseline = 'alphabetic'
   ctx.fillText(text, x, y)
@@ -132,23 +141,23 @@ function hit(buttons, x, y) {
 
 function title(ctx, text, x, y, size) {
   ctx.fillStyle = INK
-  ctx.font = `800 ${size || 40}px sans-serif`
+  ctx.font = font(size || 36, 600)
   ctx.textAlign = 'center'
   ctx.textBaseline = 'alphabetic'
   ctx.fillText(text, x, y)
 }
 
 function lead(ctx, text, x, y) {
-  ctx.fillStyle = 'rgba(74,52,40,0.72)'
-  ctx.font = '20px sans-serif'
+  ctx.fillStyle = 'rgba(74,52,40,0.68)'
+  ctx.font = font(18, 400)
   ctx.textAlign = 'center'
   ctx.textBaseline = 'alphabetic'
   ctx.fillText(text, x, y)
 }
 
 function leadWrap(ctx, text, x, y, maxW) {
-  ctx.fillStyle = 'rgba(74,52,40,0.72)'
-  ctx.font = '18px sans-serif'
+  ctx.fillStyle = 'rgba(74,52,40,0.68)'
+  ctx.font = font(17, 400)
   ctx.textAlign = 'center'
   ctx.textBaseline = 'top'
   const chars = String(text || '').split('')
@@ -169,11 +178,13 @@ function leadWrap(ctx, text, x, y, maxW) {
 module.exports = {
   CARD_SHADOW,
   CREAM,
+  FACE,
   INK,
   PAPER,
   crayonChip,
   fillBtn,
   fillCard,
+  font,
   hit,
   kicker,
   lead,

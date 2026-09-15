@@ -188,6 +188,16 @@ function coatText(thumb) {
   return ''
 }
 
+function isNatural(thumb) {
+  const raw = coatText(thumb)
+  if (!raw || raw.charAt(0) !== '{') return false
+  try {
+    return !!JSON.parse(raw).natural
+  } catch (e) {
+    return false
+  }
+}
+
 function drawCoat(ctx, thumb, box) {
   const raw = coatText(thumb)
   if (!raw || raw.charAt(0) !== '{') return
@@ -272,4 +282,4 @@ function drawAnimal(ctx, animalId, painted, box, opts) {
   if (!outlineOnly && coat) drawCoat(ctx, coat, box)
 }
 
-module.exports = { drawAnimal, colorsOf, drawCoat, coatText }
+module.exports = { drawAnimal, colorsOf, drawCoat, coatText, isNatural }
