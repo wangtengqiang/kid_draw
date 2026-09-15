@@ -1,8 +1,4 @@
-/**
- * 陆地角色透明剪纸、立体树。站在地面上画。
- * 世界里默认用原画颜色，小朋友涂的再叠上去。
- * 微信从仓库根扫字面量，路径必须写在源码里。
- */
+const { drawCoat, isNatural, drawAnimal } = require('./models.js')
 const CUTOUTS = {}
 const WHITE = {}
 const TREES = {}
@@ -154,6 +150,63 @@ function treeAspect(kind) {
   return kind === 'pine' ? 760 / 1069 : 824 / 1072
 }
 
+const PAINT_SHEETS = {}
+
+function paintKey(animalId, thumb, dw, dh) {
+  const raw = typeof thumb === 'string' ? thumb : thumb && thumb.url ? String(thumb.url) : ''
+  return animalId + '|' + Math.round(dw) + 'x' + Math.round(dh) + '|' + raw.length + '|' + raw.slice(0, 80)
+}
+
+function drawPaintedPet(ctx, animalId, thumb, box) {
+  const img = cutoutImage(animalId)
+  if (!img || !img.width) {
+    drawAnimal(ctx, animalId, {}, box, { coat: thumb })
+    return
+  }
+  const pad = Math.min(box.w, box.h) * 0.06
+  const aspect = img.width / img.height
+  let dh = box.h - pad * 2
+  let dw = dh * aspect
+  if (dw > box.w - pad * 2) {
+    dw = box.w - pad * 2
+    dh = dw / aspect
+  }
+  const dx = box.x + (box.w - dw) / 2
+  const dy = box.y + (box.h - dh) / 2
+  if (isNatural(thumb) || !thumb) {
+    ctx.drawImage(img, dx, dy, dw, dh)
+    return
+  }
+  const key = paintKey(animalId, thumb, dw, dh)
+  let sheet = PAINT_SHEETS[key]
+  if (!sheet) {
+    const canvas = makeCanvas(Math.max(32, Math.ceil(dw)), Math.max(32, Math.ceil(dh)))
+    if (!canvas) {
+      ctx.drawImage(img, dx, dy, dw, dh)
+      ctx.save()
+      ctx.beginPath()
+      ctx.rect(dx, dy, dw, dh)
+      ctx.clip()
+      ctx.globalCompositeOperation = 'source-atop'
+      drawCoat(ctx, thumb, { x: dx, y: dy, w: dw, h: dh })
+      ctx.restore()
+      return
+    }
+    const c = canvas.getContext('2d')
+    c.clearRect(0, 0, canvas.width, canvas.height)
+    c.drawImage(img, 0, 0, dw, dh)
+    c.save()
+    c.globalCompositeOperation = 'source-atop'
+    drawCoat(c, thumb, { x: 0, y: 0, w: dw, h: dh })
+    c.restore()
+    sheet = canvas
+    const keys = Object.keys(PAINT_SHEETS)
+    if (keys.length > 16) delete PAINT_SHEETS[keys[0]]
+    PAINT_SHEETS[key] = sheet
+  }
+  ctx.drawImage(sheet, 0, 0, dw, dh, dx, dy, dw, dh)
+}
+
 /**
  * 脚底对齐 (feetX, feetY)，向上长 height。
  * 返回角色占用的屏幕盒，失败返回 null。
@@ -180,6 +233,7 @@ module.exports = {
   preloadCutouts,
   cutoutAspect,
   cutoutImage,
+  drawPaintedPet,
   drawStandingCutout,
   treeAspect,
   treeImage,

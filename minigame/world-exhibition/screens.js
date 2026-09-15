@@ -6,10 +6,10 @@ const { fillBtn, fillCard, font, lead, roundRect, title } = require('../draw.js'
 const { ANIMAL_NAMES, ROOM_CAP, THEME_IDS, THEME_NAMES } = require('../types.js')
 const { storage } = require('../storage/index.js')
 const sync = require('../sync/index.js')
-const { getWork, listWorks } = require('./gallery.js')
+const { getWork, listWorks, removeWork } = require('./gallery.js')
 const { HostWorld } = require('./host-world.js')
 const { PreviewStage } = require('./preview.js')
-const { drawAnimal } = require('./models.js')
+const { drawPaintedPet } = require('./cutouts.js')
 
 function WorldExhibition(api) {
   this.api = api
@@ -108,20 +108,18 @@ WorldExhibition.prototype.renderGallery = function (ctx) {
     const y = 120 + Math.floor(i / col) * (cw + 28)
     const b = { id: 'work', itemId: item.id, x: x, y: y, w: cw, h: cw }
     fillCard(ctx, b)
-    let painted = item.regionColors
-    if (!painted && item.thumb && item.thumb[0] === '{') {
-      try {
-        painted = JSON.parse(item.thumb).painted
-      } catch (e) {
-        painted = item.regionColors
-      }
-    }
-    drawAnimal(ctx, item.animalId, painted, { x: b.x + 8, y: b.y + 6, w: b.w - 16, h: b.h - 28 })
+    ctx.save()
+    roundRect(ctx, b.x + 6, b.y + 6, b.w - 12, b.h - 30, 16)
+    ctx.clip()
+    drawPaintedPet(ctx, item.animalId, item.thumb, { x: b.x + 8, y: b.y + 6, w: b.w - 16, h: b.h - 32 })
+    ctx.restore()
     ctx.fillStyle = '#4a3428'
     ctx.font = font(16, 600)
     ctx.textAlign = 'center'
     ctx.fillText(ANIMAL_NAMES[item.animalId] || '', b.x + b.w / 2, b.y + b.h - 12)
-    buttons.push(b)
+    const del = { id: 'delete-work', itemId: item.id, x: b.x + b.w - 46, y: b.y + 8, w: 38, h: 34 }
+    fillBtn(ctx, del, '#ffb38a', '删', 14)
+    buttons.push(b, del)
   })
   return buttons
 }
@@ -132,12 +130,14 @@ WorldExhibition.prototype.renderPreview = function (ctx, item) {
   if (!this.preview) this.preview = new PreviewStage()
   const back = { id: 'gallery', x: 16, y: 16, w: 130, h: 48 }
   fillBtn(ctx, back, '#efe4d2', '回作品夹', 18)
+  const del = { id: 'delete-work', itemId: item.id, x: W - 108, y: 16, w: 90, h: 48 }
+  fillBtn(ctx, del, '#ffb38a', '删除', 18)
   title(ctx, ANIMAL_NAMES[item.animalId] || '', W / 2, 92, 32)
-  lead(ctx, '这是你的小舞台，不是主机那片森林。', W / 2, 122)
+  lead(ctx, '这是你涂的花纹。', W / 2, 122)
   const box = { x: 22, y: 142, w: W - 44, h: H - 180 }
   fillCard(ctx, box, '#d7e4c4')
   this.preview.render(ctx, item, { x: box.x + 10, y: box.y + 8, w: box.w - 20, h: box.h - 20 })
-  return [back]
+  return [back, del]
 }
 
 WorldExhibition.prototype.touch = function (btn) {
@@ -150,6 +150,8 @@ WorldExhibition.prototype.touch = function (btn) {
   } else if (btn.id === 'work') {
     const item = getWork(btn.itemId)
     if (item) go({ name: 'preview', item: item })
+  } else if (btn.id === 'delete-work') {
+    askDeleteWork(btn.itemId, go)
   } else if (btn.id === 'theme') {
     sync.setTheme(btn.roomId, btn.theme)
     storage.updateRoomMeta(btn.roomId, { theme: btn.theme })
@@ -168,6 +170,26 @@ WorldExhibition.prototype.touch = function (btn) {
     storage.updateRoomMeta(btn.roomId, { ended: true })
     go({ name: 'home' })
   }
+}
+
+function askDeleteWork(id, go) {
+  const drop = function () {
+    removeWork(id)
+    go({ name: 'gallery' })
+  }
+  if (typeof wx === 'undefined' || !wx.showModal) {
+    drop()
+    return
+  }
+  wx.showModal({
+    title: '删掉这张？',
+    content: '删了就看不到你涂的花纹了。',
+    confirmText: '删除',
+    cancelText: '留着',
+    success: function (res) {
+      if (res.confirm) drop()
+    },
+  })
 }
 
 module.exports = { WorldExhibition }

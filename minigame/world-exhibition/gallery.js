@@ -17,4 +17,14 @@ function getWork(id) {
   return listWorks().filter((g) => g.id === id)[0]
 }
 
-module.exports = { listWorks, getWork }
+function removeWork(id) {
+  const all = listWorks().filter((g) => g && g.id !== id)
+  try {
+    wx.setStorageSync(LOCAL_GALLERY_KEY, JSON.stringify(all))
+  } catch (e) {
+    /* ignore */
+  }
+  return all
+}
+
+module.exports = { listWorks, getWork, removeWork }

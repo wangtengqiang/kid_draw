@@ -30,6 +30,14 @@ LocalMockStore.prototype.listGallery = function () {
   return Promise.resolve(read(LOCAL_GALLERY_KEY, []))
 }
 
+LocalMockStore.prototype.removeGalleryItem = function (id) {
+  write(
+    LOCAL_GALLERY_KEY,
+    read(LOCAL_GALLERY_KEY, []).filter((g) => g && g.id !== id),
+  )
+  return Promise.resolve()
+}
+
 LocalMockStore.prototype.createRoom = function (meta) {
   return Promise.resolve(meta)
 }
