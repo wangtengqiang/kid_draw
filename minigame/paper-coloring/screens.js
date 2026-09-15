@@ -1,7 +1,7 @@
 /**
  * 纸上涂色界面：老师下载线稿；孩子选一只、拍照、送进世界。
  */
-const { fillBtn, lead, leadWrap, title } = require('../draw.js')
+const { fillBtn, fillCard, lead, leadWrap, title } = require('../draw.js')
 const { ANIMAL_IDS, ANIMAL_NAMES } = require('../types.js')
 const { drawPickCard } = require('../art.js')
 const { drawAnimal } = require('../world-exhibition/models.js')
@@ -23,14 +23,16 @@ PaperColoring.prototype.dispose = function () {
 PaperColoring.prototype.print = function (ctx) {
   const W = this.api.W
   const H = this.api.H
-  const buttons = [{ id: 'home', x: 16, y: 16, w: 120, h: 48 }]
-  fillBtn(ctx, buttons[0], '#efe4d2', '返回', 20)
-  title(ctx, '打印线稿', W / 2, 90, 36)
-  lead(ctx, '给老师。打印后让小朋友涂。', W / 2, 124)
+  const back = { id: 'home', x: 16, y: 16, w: 110, h: 48 }
+  fillBtn(ctx, back, '#efe4d2', '回首页', 18)
+  title(ctx, '打印线稿', W / 2, 90, 32)
+  lead(ctx, '给老师。打印后让小朋友涂。', W / 2, 122)
+  const buttons = [back]
   ANIMAL_IDS.forEach((id, i) => {
-    const y = 150 + i * ((H - 180) / 3)
-    const b = { id: 'save-sheet', animalId: id, x: 28, y: y, w: W - 56, h: (H - 200) / 3 - 10 }
-    drawSheet(ctx, id, b)
+    const y = 142 + i * ((H - 170) / 3)
+    const b = { id: 'save-sheet', animalId: id, x: 22, y: y, w: W - 44, h: (H - 190) / 3 - 10 }
+    fillCard(ctx, b)
+    drawSheet(ctx, id, { x: b.x + 10, y: b.y + 6, w: b.w - 20, h: b.h - 16 })
     buttons.push(b)
   })
   return buttons
@@ -39,31 +41,34 @@ PaperColoring.prototype.print = function (ctx) {
 PaperColoring.prototype.needScan = function (ctx) {
   const W = this.api.W
   const H = this.api.H
-  title(ctx, '扫码进入', W / 2, H * 0.26, 40)
-  leadWrap(ctx, '对准老师主机上的二维码。也可以从相册选一张。', W / 2, H * 0.32, W - 48)
-  const scan = { id: 'scan-code', x: 28, y: H * 0.46, w: W - 56, h: 88 }
-  fillBtn(ctx, scan, '#1a120c', '扫一扫 / 选相册', 28)
-  const back = { id: 'home', x: 24, y: 24, w: 120, h: 52 }
-  fillBtn(ctx, back, '#efe4d2', '返回', 22)
+  const back = { id: 'home', x: 16, y: 16, w: 110, h: 48 }
+  fillBtn(ctx, back, '#efe4d2', '回首页', 18)
+  title(ctx, '扫码进入', W / 2, H * 0.28, 36)
+  leadWrap(ctx, '对准老师主机上的二维码。也可以从相册选一张。', W / 2, H * 0.34, W - 56)
+  const scan = { id: 'scan-code', x: 24, y: H * 0.5, w: W - 48, h: 84 }
+  fillBtn(ctx, scan, '#8fd8f2', '扫一扫 / 选相册', 26)
   return [back, scan]
 }
 
 PaperColoring.prototype.pick = function (ctx, roomId) {
   const W = this.api.W
-  const buttons = []
-  title(ctx, '选一只', W / 2, 70, 44)
-  lead(ctx, '纸上也是这三只。', W / 2, 108)
-  const cardH = (this.api.H - 140) / 3 - 12
+  const H = this.api.H
+  const back = { id: 'home', x: 16, y: 16, w: 110, h: 48 }
+  fillBtn(ctx, back, '#efe4d2', '回首页', 18)
+  title(ctx, '选一只', W / 2, 86, 36)
+  lead(ctx, '纸上也是这三只。', W / 2, 118)
+  const buttons = [back]
+  const top = 136
+  const cardH = (H - top - 24) / 3 - 12
   ANIMAL_IDS.forEach((id, i) => {
-    const y = 130 + i * (cardH + 12)
-    const b = { id: 'paper-animal', animalId: id, roomId: roomId, x: 28, y: y, w: W - 56, h: cardH }
-    ctx.fillStyle = '#fffaf1'
-    ctx.fillRect(b.x, b.y, b.w, b.h)
-    drawPickCard(ctx, id, { x: b.x + 8, y: b.y + 8, w: b.w - 16, h: b.h - 44 })
-    ctx.fillStyle = '#1a120c'
-    ctx.font = '800 28px sans-serif'
+    const y = top + i * (cardH + 12)
+    const b = { id: 'paper-animal', animalId: id, roomId: roomId, x: 22, y: y, w: W - 44, h: cardH }
+    fillCard(ctx, b)
+    drawPickCard(ctx, id, { x: b.x + 12, y: b.y + 8, w: b.w - 24, h: b.h - 48 })
+    ctx.fillStyle = '#4a3428'
+    ctx.font = '800 26px sans-serif'
     ctx.textAlign = 'center'
-    ctx.fillText(ANIMAL_NAMES[id], W / 2, b.y + b.h - 14)
+    ctx.fillText(ANIMAL_NAMES[id], W / 2, b.y + b.h - 18)
     buttons.push(b)
   })
   return buttons
@@ -72,39 +77,57 @@ PaperColoring.prototype.pick = function (ctx, roomId) {
 PaperColoring.prototype.camera = function (ctx, roomId, animalId) {
   const W = this.api.W
   const H = this.api.H
-  const back = { id: 'paper-pick', roomId: roomId, x: 16, y: 16, w: 140, h: 48 }
-  fillBtn(ctx, back, '#efe4d2', '重选动物', 20)
-  title(ctx, '拍纸上的画', W / 2, 100, 36)
-  lead(ctx, '对准四角黑块。这是' + (ANIMAL_NAMES[animalId] || '') + '。', W / 2, 136)
+  const back = { id: 'paper-pick', roomId: roomId, x: 16, y: 14, w: 124, h: 46 }
+  const home = { id: 'home', x: 148, y: 14, w: 88, h: 46 }
+  fillBtn(ctx, back, '#8fdd74', '重选', 18)
+  fillBtn(ctx, home, '#efe4d2', '首页', 18)
+  title(ctx, '拍纸上的画', W / 2, 92, 32)
+  lead(ctx, '对准四角黑块。这是' + (ANIMAL_NAMES[animalId] || '') + '。', W / 2, 124)
   if (this.preview) {
-    drawAnimal(ctx, animalId, this.preview.regionColors, { x: 40, y: 150, w: W - 80, h: H * 0.32 })
+    const box = { x: 32, y: 142, w: W - 64, h: H * 0.32 }
+    fillCard(ctx, box, '#d7e4c4')
+    drawAnimal(ctx, animalId, this.preview.regionColors, {
+      x: box.x + 10,
+      y: box.y + 6,
+      w: box.w - 20,
+      h: box.h - 16,
+    })
   }
-  const cam = { id: 'choose-image', roomId: roomId, animalId: animalId, x: 24, y: H - 200, w: W - 48, h: 88 }
-  fillBtn(ctx, cam, '#1a120c', '拍照', 34)
-  const buttons = [back, cam]
+  const cam = { id: 'choose-image', roomId: roomId, animalId: animalId, x: 24, y: H - 188, w: W - 48, h: 76 }
+  fillBtn(ctx, cam, '#8fd8f2', '拍照', 28)
+  const buttons = [back, home, cam]
   if (this.preview) {
-    const send = { id: 'paper-send', roomId: roomId, animalId: animalId, x: 24, y: H - 100, w: W - 48, h: 76 }
-    fillBtn(ctx, send, '#e24b4b', '送进世界', 30)
+    const send = { id: 'paper-send', roomId: roomId, animalId: animalId, x: 24, y: H - 96, w: W - 48, h: 72 }
+    fillBtn(ctx, send, '#ff8fa3', '送进世界', 26)
     buttons.push(send)
   }
-  ctx.fillStyle = '#1a120c'
-  ctx.font = '20px sans-serif'
+  ctx.fillStyle = 'rgba(74,52,40,0.7)'
+  ctx.font = '18px sans-serif'
   ctx.textAlign = 'center'
-  ctx.fillText(this.msg, W / 2, H - 214)
+  ctx.fillText(this.msg, W / 2, H - 204)
   return buttons
 }
 
 PaperColoring.prototype.success = function (ctx, roomId, placed) {
   const W = this.api.W
   const H = this.api.H
-  title(ctx, '送到啦', W / 2, 70, 44)
-  lead(ctx, (ANIMAL_NAMES[placed.animalId] || '') + '走进主机世界了。', W / 2, 108)
-  drawAnimal(ctx, placed.animalId, placed.regionColors, { x: 36, y: 128, w: W - 72, h: H * 0.36 })
-  const world = { id: 'open-world', roomId: roomId, x: 24, y: H - 196, w: W - 48, h: 88 }
-  fillBtn(ctx, world, '#f2c14e', '去看大世界', 34)
-  const again = { id: 'paper-pick', roomId: roomId, x: 28, y: H - 96, w: W - 56, h: 68 }
-  fillBtn(ctx, again, '#2f9e5f', '再拍一张', 28)
-  return [world, again]
+  const home = { id: 'home', x: 16, y: 16, w: 110, h: 48 }
+  fillBtn(ctx, home, '#efe4d2', '回首页', 18)
+  title(ctx, '送到啦', W / 2, 86, 36)
+  lead(ctx, (ANIMAL_NAMES[placed.animalId] || '') + '走进主机世界了。', W / 2, 118)
+  const box = { x: 28, y: 136, w: W - 56, h: H * 0.34 }
+  fillCard(ctx, box, '#d7e4c4')
+  drawAnimal(ctx, placed.animalId, placed.regionColors, {
+    x: box.x + 12,
+    y: box.y + 8,
+    w: box.w - 24,
+    h: box.h - 20,
+  })
+  const world = { id: 'open-world', roomId: roomId, x: 24, y: H - 188, w: W - 48, h: 80 }
+  fillBtn(ctx, world, '#ffe066', '去看大世界', 28)
+  const again = { id: 'paper-pick', roomId: roomId, x: 24, y: H - 96, w: W - 48, h: 68 }
+  fillBtn(ctx, again, '#8fdd74', '再拍一张', 24)
+  return [home, world, again]
 }
 
 PaperColoring.prototype.touch = function (screen, btn) {

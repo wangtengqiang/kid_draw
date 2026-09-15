@@ -50,7 +50,7 @@ function sendColoredAnimal(input) {
         creatorId: creatorId(),
         animalId: input.animalId,
         texture: tex,
-        thumb: tex,
+        thumb: input.thumb,
         regionColors: input.regionColors,
         roomCode: input.roomId,
         createdAt: item.createdAt,

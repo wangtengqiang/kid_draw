@@ -171,12 +171,20 @@ function drawLion(ctx, outlineOnly, c) {
   drawFace(ctx, outlineOnly)
 }
 
+function coatText(thumb) {
+  if (!thumb) return ''
+  if (typeof thumb === 'string') return thumb
+  if (typeof thumb.url === 'string') return thumb.url
+  if (typeof thumb.thumb === 'string') return thumb.thumb
+  return ''
+}
+
 function drawCoat(ctx, thumb, box) {
-  if (!thumb) return
-  if (thumb.charAt(0) !== '{') return
+  const raw = coatText(thumb)
+  if (!raw || raw.charAt(0) !== '{') return
   let data
   try {
-    data = JSON.parse(thumb)
+    data = JSON.parse(raw)
   } catch (e) {
     return
   }
@@ -187,10 +195,39 @@ function drawCoat(ctx, thumb, box) {
   ctx.rect(box.x, box.y, box.w, box.h)
   ctx.clip()
   const s = Math.min(box.w, box.h)
-  strokes.forEach((dot) => {
-    ctx.fillStyle = dot.hex
+  const scale = s / 360
+  strokes.forEach((stroke) => {
+    if (stroke.points && stroke.points.length) {
+      ctx.strokeStyle = stroke.hex
+      ctx.fillStyle = stroke.hex
+      ctx.lineCap = 'round'
+      ctx.lineJoin = 'round'
+      ctx.lineWidth = Math.max(1, (stroke.width || 8) * scale)
+      ctx.beginPath()
+      stroke.points.forEach((pt, i) => {
+        const px = box.x + pt.x * box.w
+        const py = box.y + pt.y * box.h
+        if (i === 0) ctx.moveTo(px, py)
+        else ctx.lineTo(px, py)
+      })
+      if (stroke.points.length === 1) {
+        const pt = stroke.points[0]
+        ctx.beginPath()
+        ctx.arc(box.x + pt.x * box.w, box.y + pt.y * box.h, ctx.lineWidth / 2, 0, Math.PI * 2)
+        ctx.fill()
+      } else ctx.stroke()
+      return
+    }
+    if (stroke.x == null) return
+    ctx.fillStyle = stroke.hex
     ctx.beginPath()
-    ctx.arc(box.x + dot.x * box.w, box.y + dot.y * box.h, Math.max(1. (dot.r || 0.04) * s), 0, Math.PI * 2)
+    ctx.arc(
+      box.x + stroke.x * box.w,
+      box.y + stroke.y * box.h,
+      Math.max(1, (stroke.r || 0.02) * s),
+      0,
+      Math.PI * 2,
+    )
     ctx.fill()
   })
   ctx.restore()
@@ -204,7 +241,8 @@ function drawCoat(ctx, thumb, box) {
 function drawAnimal(ctx, animalId, painted, box, opts) {
   const outlineOnly = opts && opts.outlineOnly
   const coat = opts && opts.coat
-  if (!outlineOnly && drawSnapshot(ctx, animalId, coat ? { body: '#ffffff' } : painted, box)) {
+  const stand = opts && opts.stand
+  if (!outlineOnly && !stand && drawSnapshot(ctx, animalId, coat ? { body: '#ffffff' } : painted, box)) {
     if (coat) drawCoat(ctx, coat, box)
     return
   }
@@ -225,4 +263,4 @@ function drawAnimal(ctx, animalId, painted, box, opts) {
   if (!outlineOnly && coat) drawCoat(ctx, coat, box)
 }
 
-module.exports = { drawAnimal, colorsOf }
+module.exports = { drawAnimal, colorsOf, drawCoat, coatText }

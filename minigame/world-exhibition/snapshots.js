@@ -8,12 +8,16 @@
  */
 const SNAPS = {}
 const SRC = {
-  deer: ['models/snapshots/deer.png', 'minigame/models/snapshots/deer.png'],
-  tiger: ['models/snapshots/tiger.png', 'minigame/models/snapshots/tiger.png'],
-  lion: ['models/snapshots/lion.png', 'minigame/models/snapshots/lion.png'],
-  fish: ['models/snapshots/fish.png', 'minigame/models/snapshots/fish.png'],
-  dolphin: ['models/snapshots/dolphin.png', 'minigame/models/snapshots/dolphin.png'],
-  turtle: ['models/snapshots/turtle.png', 'minigame/models/snapshots/turtle.png'],
+  deer: ['models/snapshots/deer.png', 'minigame/models/snapshots/deer.png', 'public/models/snapshots/deer.png'],
+  tiger: ['models/snapshots/tiger.png', 'minigame/models/snapshots/tiger.png', 'public/models/snapshots/tiger.png'],
+  lion: ['models/snapshots/lion.png', 'minigame/models/snapshots/lion.png', 'public/models/snapshots/lion.png'],
+  fish: ['models/snapshots/fish.png', 'minigame/models/snapshots/fish.png', 'public/models/snapshots/fish.png'],
+  dolphin: [
+    'models/snapshots/dolphin.png',
+    'minigame/models/snapshots/dolphin.png',
+    'public/models/snapshots/dolphin.png',
+  ],
+  turtle: ['models/snapshots/turtle.png', 'minigame/models/snapshots/turtle.png', 'public/models/snapshots/turtle.png'],
 }
 
 function loadImage(src) {

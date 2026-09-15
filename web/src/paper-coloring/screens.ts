@@ -158,6 +158,7 @@ export class PaperColoring {
     }
     this.root.innerHTML = `
       <main class="page kid">
+        <button class="hit kid-hit" data-act="home" type="button">回首页</button>
         <h1>选一只</h1>
         <p class="lead">纸上也是这些动物。不要拍别的画。</p>
         <p class="pick-section">陆地上</p>
@@ -165,6 +166,7 @@ export class PaperColoring {
         <p class="pick-section">海里</p>
         <div class="pick-grid" id="picks-sea"></div>
       </main>`
+    this.root.querySelector('[data-act="home"]')?.addEventListener('click', () => this.go({ name: 'home' }))
     const fill = (grid: Element | null, ids: readonly AnimalId[]) => {
       for (const id of ids) {
         const card = document.createElement('button')

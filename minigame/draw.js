@@ -1,4 +1,27 @@
-/** 小游戏 2D 画按钮。不是某个用例，两端屏幕都可以用。 */
+/** 小游戏 2D 画按钮。视觉跟网页 style.css 同一套糖果色、厚阴影。 */
+
+const INK = '#4a3428'
+const PAPER = '#fff6df'
+const CREAM = '#fffaf0'
+const CARD_SHADOW = '#d7c4a4'
+
+const STYLES = {
+  '#ffe066': { ink: INK, shadow: '#e8b03a' },
+  '#f2c14e': { ink: INK, shadow: '#e8b03a' },
+  '#8fdd74': { ink: '#214a1c', shadow: '#5aaa48' },
+  '#2f9e5f': { ink: '#214a1c', shadow: '#5aaa48' },
+  '#ffb38a': { ink: '#7a3318', shadow: '#e88958' },
+  '#8fd8f2': { ink: '#1b5570', shadow: '#5aadc8' },
+  '#d4c2ff': { ink: '#4a3480', shadow: '#a992e0' },
+  '#efe4d2': { ink: INK, shadow: CARD_SHADOW },
+  '#fffaf1': { ink: INK, shadow: CARD_SHADOW },
+  '#fff': { ink: INK, shadow: CARD_SHADOW },
+  '#fff6e8': { ink: INK, shadow: CARD_SHADOW },
+  '#ff8fa3': { ink: '#fffaf0', shadow: '#e06880' },
+  '#e24b4b': { ink: '#fffaf0', shadow: '#e06880' },
+  '#1a120c': { ink: '#fffaf0', shadow: '#3a2a22' },
+  '#c98989': { ink: INK, shadow: '#a56a6a' },
+}
 
 function roundRect(ctx, x, y, w, h, r) {
   const rr = Math.min(r, w / 2, h / 2)
@@ -11,15 +34,92 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath()
 }
 
-function fillBtn(ctx, b, fill, text, size) {
-  ctx.fillStyle = fill
-  roundRect(ctx, b.x, b.y, b.w, b.h, 22)
+function fillPath(ctx) {
   ctx.fill()
-  ctx.fillStyle = fill === '#1a120c' ? '#fffaf1' : '#1a120c'
-  ctx.font = `800 ${size || 28}px sans-serif`
+}
+
+function strokePath(ctx) {
+  ctx.stroke()
+}
+
+function paintPaper(ctx, W, H) {
+  ctx.fillStyle = PAPER
+  ctx.fillRect(0, 0, W, H)
+  const sun = ctx.createRadialGradient(W * 0.5, -20, 8, W * 0.5, 40, Math.max(W, 280))
+  sun.addColorStop(0, 'rgba(255,233,168,0.95)')
+  sun.addColorStop(1, 'rgba(255,233,168,0)')
+  ctx.fillStyle = sun
+  ctx.fillRect(0, 0, W, H)
+  const sky = ctx.createRadialGradient(W, H, 4, W, H, W * 0.85)
+  sky.addColorStop(0, 'rgba(197,235,255,0.55)')
+  sky.addColorStop(1, 'rgba(197,235,255,0)')
+  ctx.fillStyle = sky
+  ctx.fillRect(0, 0, W, H)
+  const leaf = ctx.createRadialGradient(0, H, 4, 0, H, W * 0.75)
+  leaf.addColorStop(0, 'rgba(216,245,200,0.5)')
+  leaf.addColorStop(1, 'rgba(216,245,200,0)')
+  ctx.fillStyle = leaf
+  ctx.fillRect(0, 0, W, H)
+}
+
+function fillBtn(ctx, b, fillColor, text, fontSize) {
+  const style = STYLES[fillColor] || { ink: INK, shadow: CARD_SHADOW }
+  const lift = Math.max(4, Math.round(Math.min(b.h, 72) * 0.1))
+  const radius = Math.min(b.h / 2, 28)
+  ctx.fillStyle = style.shadow
+  roundRect(ctx, b.x, b.y + lift, b.w, b.h - 2, radius)
+  fillPath(ctx)
+  ctx.fillStyle = fillColor
+  roundRect(ctx, b.x, b.y, b.w, b.h - lift, radius)
+  fillPath(ctx)
+  ctx.fillStyle = style.ink
+  ctx.font = '800 ' + (fontSize || 26) + 'px sans-serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(text == null ? '' : String(text), b.x + b.w / 2, b.y + (b.h - lift) / 2)
+}
+
+function fillCard(ctx, b, fillColor) {
+  const radius = Math.min(28, b.h / 4)
+  ctx.fillStyle = CARD_SHADOW
+  roundRect(ctx, b.x, b.y + 8, b.w, b.h - 4, radius)
+  fillPath(ctx)
+  ctx.fillStyle = fillColor || CREAM
+  roundRect(ctx, b.x, b.y, b.w, b.h - 8, radius)
+  fillPath(ctx)
+}
+
+function textLink(ctx, b, text, size) {
+  ctx.fillStyle = 'rgba(74,52,40,0.5)'
+  ctx.font = `800 ${size || 20}px sans-serif`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillText(text, b.x + b.w / 2, b.y + b.h / 2)
+}
+
+function kicker(ctx, text, x, y) {
+  ctx.fillStyle = 'rgba(74,52,40,0.45)'
+  ctx.font = '700 13px sans-serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'alphabetic'
+  ctx.fillText(text, x, y)
+}
+
+function crayonChip(ctx, b, hex, on) {
+  const radius = Math.min(16, b.w / 2)
+  const y = on ? b.y - 5 : b.y
+  ctx.fillStyle = 'rgba(58,36,24,0.16)'
+  roundRect(ctx, b.x, y + 6, b.w, b.h - 2, radius)
+  fillPath(ctx)
+  ctx.fillStyle = hex
+  roundRect(ctx, b.x, y, b.w, b.h - 6, radius)
+  fillPath(ctx)
+  if (on) {
+    ctx.strokeStyle = INK
+    ctx.lineWidth = 4
+    roundRect(ctx, b.x, y, b.w, b.h - 6, radius)
+    strokePath(ctx)
+  }
 }
 
 function hit(buttons, x, y) {
@@ -31,7 +131,7 @@ function hit(buttons, x, y) {
 }
 
 function title(ctx, text, x, y, size) {
-  ctx.fillStyle = '#1a120c'
+  ctx.fillStyle = INK
   ctx.font = `800 ${size || 40}px sans-serif`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'alphabetic'
@@ -39,15 +139,16 @@ function title(ctx, text, x, y, size) {
 }
 
 function lead(ctx, text, x, y) {
-  ctx.fillStyle = 'rgba(26,18,12,0.75)'
-  ctx.font = '22px sans-serif'
+  ctx.fillStyle = 'rgba(74,52,40,0.72)'
+  ctx.font = '20px sans-serif'
   ctx.textAlign = 'center'
+  ctx.textBaseline = 'alphabetic'
   ctx.fillText(text, x, y)
 }
 
 function leadWrap(ctx, text, x, y, maxW) {
-  ctx.fillStyle = 'rgba(26,18,12,0.75)'
-  ctx.font = '20px sans-serif'
+  ctx.fillStyle = 'rgba(74,52,40,0.72)'
+  ctx.font = '18px sans-serif'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'top'
   const chars = String(text || '').split('')
@@ -61,8 +162,24 @@ function leadWrap(ctx, text, x, y, maxW) {
     } else row = next
   })
   if (row) lines.push(row)
-  lines.forEach((line, i) => ctx.fillText(line, x, y + i * 28))
+  lines.forEach((line, i) => ctx.fillText(line, x, y + i * 26))
   return lines.length
 }
 
-module.exports = { roundRect, fillBtn, hit, title, lead, leadWrap }
+module.exports = {
+  CARD_SHADOW,
+  CREAM,
+  INK,
+  PAPER,
+  crayonChip,
+  fillBtn,
+  fillCard,
+  hit,
+  kicker,
+  lead,
+  leadWrap,
+  paintPaper,
+  roundRect,
+  textLink,
+  title,
+}

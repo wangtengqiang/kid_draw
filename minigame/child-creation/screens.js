@@ -2,20 +2,14 @@
  * 儿童创作用例界面：选一只 → 自由蜡笔涂色 → 送进世界。
  * 送到后可进主机世界。不打开网页 Three.js。
  */
-const { fillBtn, hit, leadWrap, title } = require('../draw.js')
+const { crayonChip, fillBtn, fillCard, hit, lead, leadWrap, roundRect, title } = require('../draw.js')
 const { ANIMAL_IDS, ANIMAL_NAMES, PALETTE } = require('../types.js')
 const { drawPickCard } = require('../art.js')
 const { drawLineGuide } = require('./lineart.js')
 const { drawAnimal } = require('../world-exhibition/models.js')
-const { PaintSurface } = require('./paint.js')
+const { PaintSurface, BRUSH_SIZES, REF } = require('./paint.js')
 const { sendToWorld } = require('./send-to-world.js')
 const sync = require('../sync/index.js')
-
-const BRUSH_SIZES = [
-  { name: '细', size: 12 },
-  { name: '中', size: 28 },
-  { name: '粗', size: 56 },
-]
 
 function ChildCreation(api) {
   this.api = api
@@ -31,47 +25,51 @@ ChildCreation.prototype.dispose = function () {
   this.sending = false
   this.painting = false
   this.stageBox = null
+  this.paint = null
 }
 
 ChildCreation.prototype.needScan = function (ctx, next) {
   const W = this.api.W
   const H = this.api.H
-  title(ctx, '扫码进入', W / 2, H * 0.26, 40)
-  leadWrap(ctx, '对准老师主机上的二维码。也可以从相册选一张。', W / 2, H * 0.32, W - 48)
-  const scan = { id: 'scan-code', next: next || 'pick', x: 28, y: H * 0.46, w: W - 56, h: 88 }
-  fillBtn(ctx, scan, '#1a120c', '扫一扫 / 选相册', 28)
-  const back = { id: 'home', x: 24, y: 24, w: 120, h: 52 }
-  fillBtn(ctx, back, '#efe4d2', '返回', 22)
+  const back = { id: 'home', x: 16, y: 16, w: 110, h: 48 }
+  fillBtn(ctx, back, '#efe4d2', '回首页', 18)
+  title(ctx, '扫码进入', W / 2, H * 0.28, 36)
+  leadWrap(ctx, '对准老师主机上的二维码。也可以从相册选一张。', W / 2, H * 0.34, W - 56)
+  const scan = { id: 'scan-code', next: next || 'pick', x: 24, y: H * 0.5, w: W - 48, h: 84 }
+  fillBtn(ctx, scan, '#8fd8f2', '扫一扫 / 选相册', 26)
   return [back, scan]
 }
 
 ChildCreation.prototype.ended = function (ctx) {
   const W = this.api.W
   const H = this.api.H
-  title(ctx, '展览结束啦', W / 2, H * 0.36, 40)
-  const ok = { id: 'home', x: 40, y: H * 0.48, w: W - 80, h: 72 }
-  fillBtn(ctx, ok, '#2f9e5f', '好', 28)
+  title(ctx, '展览结束啦', W / 2, H * 0.34, 36)
+  lead(ctx, '回首页再进一间新的房间。', W / 2, H * 0.4)
+  const ok = { id: 'home', x: 28, y: H * 0.5, w: W - 56, h: 72 }
+  fillBtn(ctx, ok, '#8fdd74', '回首页', 28)
   return [ok]
 }
 
 ChildCreation.prototype.pick = function (ctx, roomId) {
   const W = this.api.W
-  const buttons = []
-  title(ctx, '选一只', W / 2, 70, 44)
-  lead(ctx, '点一张大卡片就开始涂。', W / 2, 108)
-  const cardH = (this.api.H - 140) / 3 - 12
+  const H = this.api.H
+  const back = { id: 'home', x: 16, y: 16, w: 110, h: 48 }
+  fillBtn(ctx, back, '#efe4d2', '回首页', 18)
+  title(ctx, '选一只', W / 2, 86, 36)
+  lead(ctx, '点一张大卡片就开始涂。', W / 2, 118)
+  const buttons = [back]
+  const top = 136
+  const cardH = (H - top - 24) / 3 - 12
   ANIMAL_IDS.forEach((id, i) => {
-    const y = 130 + i * (cardH + 12)
-    const b = { id: 'animal:' + id, x: 28, y: y, w: W - 56, h: cardH, animalId: id, roomId: roomId }
-    ctx.fillStyle = '#fffaf1'
-    ctx.beginPath()
-    ctx.rect(b.x, b.y, b.w, b.h)
-    ctx.fill()
-    drawPickCard(ctx, id, { x: b.x + 8, y: b.y + 8, w: b.w - 16, h: b.h - 44 })
-    ctx.fillStyle = '#1a120c'
-    ctx.font = '800 28px sans-serif'
+    const y = top + i * (cardH + 12)
+    const b = { id: 'animal:' + id, x: 22, y: y, w: W - 44, h: cardH, animalId: id, roomId: roomId }
+    fillCard(ctx, b)
+    drawPickCard(ctx, id, { x: b.x + 12, y: b.y + 8, w: b.w - 24, h: b.h - 48 })
+    ctx.fillStyle = '#4a3428'
+    ctx.font = '800 26px sans-serif'
     ctx.textAlign = 'center'
-    ctx.fillText(ANIMAL_NAMES[id], W / 2, b.y + b.h - 14)
+    ctx.textBaseline = 'alphabetic'
+    ctx.fillText(ANIMAL_NAMES[id], W / 2, b.y + b.h - 18)
     buttons.push(b)
   })
   return buttons
@@ -84,68 +82,87 @@ ChildCreation.prototype.paintScreen = function (ctx, roomId, animalId) {
   }
   const W = this.api.W
   const H = this.api.H
-  const back = { id: 'pick', x: 16, y: 16, w: 140, h: 48, roomId: roomId }
-  fillBtn(ctx, back, '#efe4d2', '重选动物', 20)
-  const stage = { id: 'stage', x: 16, y: 72, w: W - 32, h: H * 0.42, animalId: animalId }
+  const back = { id: 'pick', x: 16, y: 14, w: 124, h: 46, roomId: roomId }
+  const home = { id: 'home', x: 148, y: 14, w: 88, h: 46 }
+  fillBtn(ctx, back, '#8fdd74', '重选', 18)
+  fillBtn(ctx, home, '#efe4d2', '首页', 18)
+  const stage = { id: 'stage', x: 18, y: 70, w: W - 36, h: H * 0.4, animalId: animalId }
+  fillCard(ctx, { x: stage.x, y: stage.y, w: stage.w, h: stage.h + 8 }, '#fffaf1')
+  ctx.save()
+  roundRect(ctx, stage.x + 4, stage.y + 4, stage.w - 8, stage.h - 10, 22)
+  ctx.clip()
   this.paint.drawOnto(ctx, stage)
   drawLineGuide(ctx, animalId, stage)
-  ctx.strokeStyle = '#1a120c'
-  ctx.lineWidth = 3
-  ctx.strokeRect(stage.x, stage.y, stage.w, stage.h)
+  ctx.restore()
 
   const sizes = []
-  const sy = stage.y + stage.h + 10
+  const sy = stage.y + stage.h + 12
+  const slot = Math.min(64, (W - 128) / BRUSH_SIZES.length)
   BRUSH_SIZES.forEach((item, i) => {
-    const b = { id: 'brush-size', size: item.size, x: 16 + i * 78, y: sy, w: 72, h: 48 }
-    fillBtn(ctx, b, this.paint.brush === item.size ? '#f2c14e' : '#fff', item.name, 22)
+    const selected = this.paint.brush === item.size && this.paint.tool === 'brush'
+    const b = { id: 'brush-size', size: item.size, x: 12 + i * slot, y: sy, w: slot - 6, h: 58 }
+    fillBtn(ctx, b, selected ? '#ffe066' : '#fffaf1', '', 13)
+    const cx = b.x + b.w / 2
+    const cy = b.y + 16
+    const radius = Math.max(2, (item.size * Math.min(stage.w, stage.h)) / REF / 2)
+    ctx.beginPath()
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2)
+    ctx.fillStyle = this.paint.colorHex
+    ctx.fill()
+    ctx.fillStyle = '#4a3428'
+    ctx.font = '700 13px sans-serif'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'alphabetic'
+    ctx.fillText(item.name, cx, b.y + b.h - 12)
     sizes.push(b)
   })
-  const eraser = { id: 'eraser', x: W - 108, y: sy, w: 92, h: 48 }
-  fillBtn(ctx, eraser, this.paint.tool === 'eraser' ? '#c98989' : '#efe4d2', '橡皮', 20)
+  const eraser = { id: 'eraser', x: W - 108, y: sy, w: 96, h: 58 }
+  fillBtn(ctx, eraser, this.paint.tool === 'eraser' ? '#ffb38a' : '#efe4d2', '橡皮', 18)
 
   const crayons = []
-  const cw = Math.min(44, (W - 32) / PALETTE.length - 4)
+  const cw = Math.min(42, (W - 32) / PALETTE.length - 4)
   PALETTE.forEach((c, i) => {
     const b = {
       id: 'crayon',
       hex: c.hex,
       x: 16 + i * (cw + 4),
-      y: sy + 56,
+      y: sy + 66,
       w: cw,
-      h: 52,
+      h: 50,
     }
-    ctx.fillStyle = c.hex
-    ctx.fillRect(b.x, b.y, b.w, b.h)
-    if (this.paint.colorHex === c.hex && this.paint.tool === 'brush') {
-      ctx.strokeStyle = '#1a120c'
-      ctx.lineWidth = 4
-      ctx.strokeRect(b.x, b.y, b.w, b.h)
-    }
+    crayonChip(ctx, b, c.hex, this.paint.colorHex === c.hex && this.paint.tool === 'brush')
     crayons.push(b)
   })
-  const send = { id: 'send', x: 20, y: H - 100, w: W - 40, h: 78, roomId: roomId, animalId: animalId }
-  fillBtn(ctx, send, this.sending ? '#c98989' : '#e24b4b', this.sending ? '正在送…' : '送进世界', 32)
-  ctx.fillStyle = '#1a120c'
-  ctx.font = '18px sans-serif'
+  const send = { id: 'send', x: 20, y: H - 96, w: W - 40, h: 76, roomId: roomId, animalId: animalId }
+  fillBtn(ctx, send, this.sending ? '#c98989' : '#ff8fa3', this.sending ? '正在送…' : '送进世界', 30)
+  ctx.fillStyle = 'rgba(74,52,40,0.7)'
+  ctx.font = '17px sans-serif'
   ctx.textAlign = 'center'
-  ctx.fillText(this.msg || '拿蜡笔在纸上随便涂。线是样子。', W / 2, H - 112)
-  return [back].concat(sizes, [eraser], crayons, [send], [stage])
+  ctx.textBaseline = 'alphabetic'
+  ctx.fillText(this.msg || '拿蜡笔在纸上随便涂。线是样子。', W / 2, H - 108)
+  return [back, home].concat(sizes, [eraser], crayons, [send], [stage])
 }
 
 ChildCreation.prototype.success = function (ctx, roomId, placed) {
   const W = this.api.W
   const H = this.api.H
-  title(ctx, '送到啦', W / 2, 70, 44)
-  lead(ctx, (ANIMAL_NAMES[placed.animalId] || '') + '走进主机世界了。', W / 2, 108)
-  const box = { x: 36, y: 128, w: W - 72, h: H * 0.38 }
-  ctx.fillStyle = '#e8f2d2'
-  ctx.fillRect(box.x, box.y, box.w, box.h)
-  drawAnimal(ctx, placed.animalId, placed.regionColors, box)
-  const world = { id: 'open-world', x: 24, y: H - 196, w: W - 48, h: 88, roomId: roomId }
-  fillBtn(ctx, world, '#f2c14e', '去看大世界', 34)
-  const again = { id: 'pick', x: 28, y: H - 96, w: W - 56, h: 68, roomId: roomId }
-  fillBtn(ctx, again, '#2f9e5f', '再画一只', 28)
-  return [world, again]
+  const home = { id: 'home', x: 16, y: 16, w: 110, h: 48 }
+  fillBtn(ctx, home, '#efe4d2', '回首页', 18)
+  title(ctx, '送到啦', W / 2, 86, 36)
+  lead(ctx, (ANIMAL_NAMES[placed.animalId] || '') + '走进主机世界了。', W / 2, 118)
+  const box = { x: 28, y: 136, w: W - 56, h: H * 0.36 }
+  fillCard(ctx, box, '#d7e4c4')
+  drawAnimal(ctx, placed.animalId, placed.regionColors, {
+    x: box.x + 12,
+    y: box.y + 8,
+    w: box.w - 24,
+    h: box.h - 20,
+  })
+  const world = { id: 'open-world', x: 24, y: H - 188, w: W - 48, h: 80, roomId: roomId }
+  fillBtn(ctx, world, '#ffe066', '去看大世界', 28)
+  const again = { id: 'pick', x: 24, y: H - 96, w: W - 48, h: 68, roomId: roomId }
+  fillBtn(ctx, again, '#8fdd74', '再画一只', 24)
+  return [home, world, again]
 }
 
 ChildCreation.prototype.touch = function (screen, btn, x, y) {

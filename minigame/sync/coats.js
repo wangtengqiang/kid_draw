@@ -25,10 +25,11 @@ function writeAll(all) {
 }
 
 function rememberCoat(id, dataUrl) {
-  if (!id || !dataUrl) return
+  const text = typeof dataUrl === 'string' ? dataUrl : dataUrl && dataUrl.url
+  if (!id || !text) return
   try {
     const all = readAll()
-    all[id] = dataUrl
+    all[id] = text
     writeAll(all)
   } catch (e) {
     /* quota */
@@ -37,6 +38,14 @@ function rememberCoat(id, dataUrl) {
 
 function coatOf(id) {
   return readAll()[id] || ''
+}
+
+function coatText(thumb) {
+  if (!thumb) return ''
+  if (typeof thumb === 'string') return thumb
+  if (typeof thumb.url === 'string') return thumb.url
+  if (typeof thumb.thumb === 'string') return thumb.thumb
+  return ''
 }
 
 function hydrateThumbs(animals) {
@@ -48,13 +57,15 @@ function hydrateThumbs(animals) {
     gallery = []
   }
   return (animals || []).map((a) => {
-    if (a.thumb) return a
-    const fromCoat = coatOf(a.id)
+    const own = coatText(a.thumb)
+    if (own) return Object.assign({}, a, { thumb: own })
+    const fromCoat = coatText(coatOf(a.id))
     if (fromCoat) return Object.assign({}, a, { thumb: fromCoat })
     const hit = gallery.find((g) => g && g.id === a.id)
-    if (hit && hit.thumb) return Object.assign({}, a, { thumb: hit.thumb })
+    const fromGal = hit ? coatText(hit.thumb) : ''
+    if (fromGal) return Object.assign({}, a, { thumb: fromGal })
     return a
   })
 }
 
-module.exports = { LOCAL_COATS_KEY, rememberCoat, coatOf, hydrateThumbs }
+module.exports = { LOCAL_COATS_KEY, rememberCoat, coatOf, hydrateThumbs, coatText }

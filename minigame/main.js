@@ -4,9 +4,10 @@
  * 纸上涂色 → paper-coloring/
  * 世界观展 → world-exhibition/
  */
-const { fillBtn, hit, leadWrap, roundRect, title } = require('./draw.js')
+const { fillBtn, fillCard, hit, kicker, leadWrap, paintPaper, textLink, title } = require('./draw.js')
 const { drawPickCard, preloadArt } = require('./art.js')
 const { preloadSnapshots } = require('./world-exhibition/snapshots.js')
+const { preloadCutouts } = require('./world-exhibition/cutouts.js')
 const { ChildCreation } = require('./child-creation/index.js')
 const { PaperColoring } = require('./paper-coloring/index.js')
 const { WorldExhibition } = require('./world-exhibition/index.js')
@@ -36,6 +37,7 @@ const exhibition = new WorldExhibition(api)
 const paper = new PaperColoring(api)
 let screen = { name: 'home' }
 let buttons = []
+let lastRenderErr = ''
 
 function go(next) {
   exhibition.dispose()
@@ -47,6 +49,7 @@ function go(next) {
 function start() {
   preloadArt()
   preloadSnapshots()
+  preloadCutouts()
   const join = sync.joinQuery()
   if (sync.isHostQuery()) {
     const q = wx.getLaunchOptionsSync().query || {}
@@ -63,59 +66,59 @@ function start() {
 }
 
 function renderHome() {
-  ctx.fillStyle = '#fff6e8'
-  ctx.fillRect(0, 0, W, H)
-  const mark = { x: W / 2 - 56, y: 28, w: 112, h: 88 }
-  ctx.fillStyle = '#fffaf1'
-  roundRect(ctx, mark.x, mark.y, mark.w, mark.h, 24)
-  ctx.fill()
-  drawPickCard(ctx, 'lion', mark)
-  title(ctx, '彩绘动物进森林', W / 2, 148, 30)
-  leadWrap(ctx, '一台主机打开世界。小朋友只涂色、把画送进去。', W / 2, 160, W - 56)
-  const top = 228
-  const gap = 10
-  const hBtn = Math.min(68, Math.max(52, (H - top - 36) / 6 - gap))
-  const host = { id: 'open-world', x: 28, y: top, w: W - 56, h: hBtn }
-  const draw = { id: 'start-draw', x: 28, y: top + (hBtn + gap), w: W - 56, h: hBtn }
-  const cam = { id: 'paper', x: 28, y: top + (hBtn + gap) * 2, w: W - 56, h: hBtn }
-  const scan = { id: 'scan', x: 28, y: top + (hBtn + gap) * 3, w: W - 56, h: hBtn }
-  const gal = { id: 'my-art', x: 28, y: top + (hBtn + gap) * 4, w: W - 56, h: Math.max(44, hBtn - 8) }
-  const print = {
-    id: 'print',
-    x: 28,
-    y: top + (hBtn + gap) * 4 + gal.h + gap,
-    w: W - 56,
-    h: Math.max(40, hBtn - 12),
-  }
-  fillBtn(ctx, host, '#f2c14e', '打开世界', 28)
-  fillBtn(ctx, draw, '#2f9e5f', '开始画画', 28)
-  fillBtn(ctx, cam, '#1a120c', '拍纸上的画', 28)
-  fillBtn(ctx, scan, '#efe4d2', '扫码进入', 26)
-  fillBtn(ctx, gal, '#efe4d2', '我的画', 22)
-  fillBtn(ctx, print, '#fff6e8', '老师打印线稿', 18)
+  const mark = { x: W / 2 - 52, y: 20, w: 104, h: 86 }
+  fillCard(ctx, mark)
+  drawPickCard(ctx, 'lion', { x: mark.x + 8, y: mark.y + 4, w: mark.w - 16, h: mark.h - 18 })
+  title(ctx, '彩绘动物进森林', W / 2, 132, 28)
+  leadWrap(ctx, '老师打开世界，小朋友涂色送进去。', W / 2, 142, W - 72)
+  const top = 204
+  const gap = 8
+  const hBtn = Math.min(62, Math.max(52, (H - top - 88) / 4 - gap))
+  const host = { id: 'open-world', x: 24, y: top, w: W - 48, h: hBtn }
+  const draw = { id: 'start-draw', x: 24, y: top + 22 + (hBtn + gap), w: W - 48, h: hBtn }
+  const cam = { id: 'paper', x: 24, y: draw.y + hBtn + gap, w: W - 48, h: hBtn }
+  const scan = { id: 'scan', x: 24, y: cam.y + hBtn + gap, w: W - 48, h: hBtn }
+  const gal = { id: 'my-art', x: 24, y: scan.y + hBtn + 10, w: (W - 56) / 2, h: 44 }
+  const print = { id: 'print', x: gal.x + gal.w + 8, y: gal.y, w: gal.w, h: 44 }
+  kicker(ctx, '老师 · 主机', W / 2, host.y - 8)
+  fillBtn(ctx, host, '#ffe066', '打开世界', 26)
+  kicker(ctx, '小朋友', W / 2, draw.y - 8)
+  fillBtn(ctx, draw, '#8fdd74', '开始画画', 26)
+  fillBtn(ctx, cam, '#ffb38a', '拍纸上的画', 26)
+  fillBtn(ctx, scan, '#8fd8f2', '扫码进入', 24)
+  textLink(ctx, gal, '我的画', 18)
+  textLink(ctx, print, '打印线稿', 18)
   return [host, draw, cam, scan, gal, print]
 }
 
 function render() {
-  ctx.fillStyle = '#fff6e8'
-  ctx.fillRect(0, 0, W, H)
   const s = screen
-  if (s.name === 'home') buttons = renderHome()
-  else if (s.name === 'host') buttons = exhibition.renderHost(ctx, s.roomId)
-  else if (s.name === 'gallery') buttons = exhibition.renderGallery(ctx)
-  else if (s.name === 'preview') buttons = exhibition.renderPreview(ctx, s.item)
-  else if (s.name === 'need-scan') buttons = child.needScan(ctx, 'pick')
-  else if (s.name === 'scan') buttons = child.needScan(ctx, 'pick')
-  else if (s.name === 'ended') buttons = child.ended(ctx)
-  else if (s.name === 'pick') buttons = child.pick(ctx, s.roomId)
-  else if (s.name === 'paint') buttons = child.paintScreen(ctx, s.roomId, s.animalId)
-  else if (s.name === 'success') buttons = child.success(ctx, s.roomId, s.placed)
-  else if (s.name === 'paper-print') buttons = paper.print(ctx)
-  else if (s.name === 'paper-need-scan') buttons = paper.needScan(ctx)
-  else if (s.name === 'paper-pick') buttons = paper.pick(ctx, s.roomId)
-  else if (s.name === 'paper-camera') buttons = paper.camera(ctx, s.roomId, s.animalId)
-  else if (s.name === 'paper-success') buttons = paper.success(ctx, s.roomId, s.placed)
-  else buttons = []
+  if (s.name !== 'host') paintPaper(ctx, W, H)
+  try {
+    if (s.name === 'home') buttons = renderHome()
+    else if (s.name === 'host') buttons = exhibition.renderHost(ctx, s.roomId)
+    else if (s.name === 'gallery') buttons = exhibition.renderGallery(ctx)
+    else if (s.name === 'preview') buttons = exhibition.renderPreview(ctx, s.item)
+    else if (s.name === 'need-scan') buttons = child.needScan(ctx, 'pick')
+    else if (s.name === 'scan') buttons = child.needScan(ctx, 'pick')
+    else if (s.name === 'ended') buttons = child.ended(ctx)
+    else if (s.name === 'pick') buttons = child.pick(ctx, s.roomId)
+    else if (s.name === 'paint') buttons = child.paintScreen(ctx, s.roomId, s.animalId)
+    else if (s.name === 'success') buttons = child.success(ctx, s.roomId, s.placed)
+    else if (s.name === 'paper-print') buttons = paper.print(ctx)
+    else if (s.name === 'paper-need-scan') buttons = paper.needScan(ctx)
+    else if (s.name === 'paper-pick') buttons = paper.pick(ctx, s.roomId)
+    else if (s.name === 'paper-camera') buttons = paper.camera(ctx, s.roomId, s.animalId)
+    else if (s.name === 'paper-success') buttons = paper.success(ctx, s.roomId, s.placed)
+    else buttons = []
+  } catch (err) {
+    const msg = String((err && err.stack) || err)
+    if (msg !== lastRenderErr) {
+      lastRenderErr = msg
+      console.error(err)
+    }
+    buttons = []
+  }
   requestAnimationFrame(render)
 }
 

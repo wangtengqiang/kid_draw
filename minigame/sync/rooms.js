@@ -4,6 +4,7 @@
  * 贴图写入看 child-creation/；列表与预览看 world-exhibition/。
  */
 const { rememberCoat } = require('./coats.js')
+const { LOCAL_CREATOR_KEY, LOCAL_ROOMS_KEY } = require('./keys.js')
 const { ROOM_CAP } = require('../types.js')
 
 function store() {

@@ -7,14 +7,14 @@ const PICKS = {}
 const LINES = {}
 
 const PICK_SRC = {
-  deer: ['minigame/picks/deer.png', 'picks/deer.png'],
-  tiger: ['minigame/picks/tiger.png', 'picks/tiger.png'],
-  lion: ['minigame/picks/lion.png', 'picks/lion.png'],
+  deer: ['picks/deer.png', 'minigame/picks/deer.png', 'public/picks/deer.png'],
+  tiger: ['picks/tiger.png', 'minigame/picks/tiger.png', 'public/picks/tiger.png'],
+  lion: ['picks/lion.png', 'minigame/picks/lion.png', 'public/picks/lion.png'],
 }
 const LINE_SRC = {
-  deer: ['minigame/lineart/deer.png', 'lineart/deer.png'],
-  tiger: ['minigame/lineart/tiger.png', 'lineart/tiger.png'],
-  lion: ['minigame/lineart/lion.png', 'lineart/lion.png'],
+  deer: ['lineart/deer.png', 'minigame/lineart/deer.png', 'public/lineart/deer.png'],
+  tiger: ['lineart/tiger.png', 'minigame/lineart/tiger.png', 'public/lineart/tiger.png'],
+  lion: ['lineart/lion.png', 'minigame/lineart/lion.png', 'public/lineart/lion.png'],
 }
 
 function loadImage(src) {
