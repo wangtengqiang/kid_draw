@@ -4,7 +4,7 @@
  */
 import { officialLineArtSrc, pickCardSrc, drawLineArtReady } from '../child-creation/lineart'
 import { decodeQrFromFile, parseJoinFromQr } from '../child-creation/scan-qr'
-import { createRoom, getRoom } from '../sync'
+import { createRoom, ensureRoomForSend, getRoom } from '../sync'
 import { storage } from '../storage'
 import type { AnimalId, PlacedAnimal } from '../types'
 import { ANIMAL_IDS, ANIMAL_META, LAND_IDS, MARINE_IDS, ROOM_CAP } from '../types'
@@ -303,19 +303,34 @@ export class PaperColoring {
     const btn = this.root.querySelector<HTMLButtonElement>('[data-act="send"]')
     if (btn) btn.disabled = true
     if (msg) msg.textContent = '正在送…'
-    const result = await sendColoredAnimal({
-      roomId,
-      animalId,
-      thumb: this.previewThumb,
-      regionColors: this.previewColors,
-    })
-    if (!result.ok) {
-      const reasons = { missing: '展览结束啦', paused: '等一等再送', full: '有点挤，等一等' }
-      if (msg) msg.textContent = reasons[result.reason]
+    const rid = ensureRoomForSend(roomId)
+    try {
+      let result = await sendColoredAnimal({
+        roomId: rid,
+        animalId,
+        thumb: this.previewThumb,
+        regionColors: this.previewColors,
+      })
+      if (!result.ok && (result.reason === 'paused' || result.reason === 'missing')) {
+        ensureRoomForSend(rid)
+        result = await sendColoredAnimal({
+          roomId: rid,
+          animalId,
+          thumb: this.previewThumb,
+          regionColors: this.previewColors,
+        })
+      }
+      if (!result.ok) {
+        const reasons = { missing: '展览结束啦', paused: '等一等再送', full: '有点挤，等一等' }
+        if (msg) msg.textContent = reasons[result.reason]
+        return
+      }
+      this.go({ name: 'paper-success', roomId: rid, placed: result.placed, thumb: result.item.thumb })
+    } catch {
+      if (msg) msg.textContent = '没送上，再点一次'
+    } finally {
       if (btn) btn.disabled = false
-      return
     }
-    this.go({ name: 'paper-success', roomId, placed: result.placed, thumb: result.item.thumb })
   }
 }
 

@@ -8,6 +8,7 @@ const { animalLabel, creatorId, submitAnimal } = require('../sync/rooms.js')
 const { exportTexture } = require('./export-texture.js')
 
 function cacheGallery(item) {
+  if (typeof wx === 'undefined' || !wx.setStorageSync) return
   let all = []
   try {
     const raw = wx.getStorageSync(LOCAL_GALLERY_KEY)
@@ -15,10 +16,14 @@ function cacheGallery(item) {
   } catch (e) {
     all = []
   }
-  wx.setStorageSync(
-    LOCAL_GALLERY_KEY,
-    JSON.stringify([item].concat(all.filter((g) => g.id !== item.id)).slice(0, 60)),
-  )
+  try {
+    wx.setStorageSync(
+      LOCAL_GALLERY_KEY,
+      JSON.stringify([item].concat(all.filter((g) => g.id !== item.id)).slice(0, 60)),
+    )
+  } catch (e) {
+    /* quota — animal is already in the room */
+  }
 }
 
 function sendColoredAnimal(input) {
@@ -30,35 +35,53 @@ function sendColoredAnimal(input) {
     roomId: input.roomId,
     createdAt: Date.now(),
   }
-  const result = submitAnimal(input.roomId, {
-    animalId: input.animalId,
-    creatorId: creatorId(),
-    label: animalLabel(input.animalId),
-    thumb: input.thumb,
-    regionColors: input.regionColors,
-  })
+  var result
+  try {
+    result = submitAnimal(input.roomId, {
+      animalId: input.animalId,
+      creatorId: creatorId(),
+      label: animalLabel(input.animalId),
+      thumb: input.thumb,
+      regionColors: input.regionColors,
+    })
+  } catch (e) {
+    return Promise.resolve({ ok: false, reason: 'missing', item: item })
+  }
   if (!result.ok) {
-    cacheGallery(item)
+    try {
+      cacheGallery(item)
+    } catch (e) {
+      /* keep going */
+    }
     return Promise.resolve({ ok: false, reason: result.reason, item: item })
   }
   item.id = result.placed.id
-  cacheGallery(item)
-  return storage.putTexture(input.thumb, `${input.animalId}-${item.id}`).then(function (tex) {
-    return storage
-      .saveGalleryItem({
-        id: item.id,
-        creatorId: creatorId(),
-        animalId: input.animalId,
-        texture: tex,
-        thumb: input.thumb,
-        regionColors: input.regionColors,
-        roomCode: input.roomId,
-        createdAt: item.createdAt,
-      })
-      .then(function () {
-        return { ok: true, placed: result.placed, item: item }
-      })
-  })
+  try {
+    cacheGallery(item)
+  } catch (e) {
+    /* animal already in the room */
+  }
+  return storage
+    .putTexture(input.thumb, `${input.animalId}-${item.id}`)
+    .then(function (tex) {
+      return storage
+        .saveGalleryItem({
+          id: item.id,
+          creatorId: creatorId(),
+          animalId: input.animalId,
+          texture: tex,
+          thumb: input.thumb,
+          regionColors: input.regionColors,
+          roomCode: input.roomId,
+          createdAt: item.createdAt,
+        })
+        .then(function () {
+          return { ok: true, placed: result.placed, item: item }
+        })
+    })
+    .catch(function () {
+      return { ok: true, placed: result.placed, item: item }
+    })
 }
 
 function sendToWorld(input) {

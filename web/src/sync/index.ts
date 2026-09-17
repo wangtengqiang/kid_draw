@@ -7,6 +7,7 @@ export {
   creatorJoinUrl,
   endRoom,
   ensurePreviewRoom,
+  ensureRoomForSend,
   getRoom,
   isHostQuery,
   joinQuery,

@@ -5,8 +5,10 @@ import {
   commitRooms,
   createRoom,
   ensurePreviewRoom,
+  ensureRoomForSend,
   getRoom,
   newRoomCode,
+  patchRoom,
   PREVIEW_ROOM_ID,
   submitAnimal,
   touchHost,
@@ -69,6 +71,59 @@ describe('preview draw room', () => {
     expect(getRoom(PREVIEW_ROOM_ID)?.ended).toBe(false)
     expect(submitAnimal(PREVIEW_ROOM_ID, {
       animalId: 'deer',
+      creatorId: 'c',
+      label: 'x',
+      thumb: 't',
+      regionColors: {},
+    }).ok).toBe(true)
+  })
+
+  it('creates a missing room so 送进世界 is not stuck', () => {
+    const result = submitAnimal('4321', {
+      animalId: 'tiger',
+      creatorId: 'c',
+      label: 'x',
+      thumb: 't',
+      regionColors: {},
+    })
+    expect(result.ok).toBe(true)
+    expect(getRoom('4321')?.animals).toHaveLength(1)
+  })
+
+  it('unpauses the preview room instead of 等一等再送', () => {
+    createRoom(PREVIEW_ROOM_ID)
+    patchRoom(PREVIEW_ROOM_ID, { paused: true })
+    expect(getRoom(PREVIEW_ROOM_ID)?.paused).toBe(true)
+    expect(submitAnimal(PREVIEW_ROOM_ID, {
+      animalId: 'lion',
+      creatorId: 'c',
+      label: 'x',
+      thumb: 't',
+      regionColors: {},
+    }).ok).toBe(true)
+    expect(getRoom(PREVIEW_ROOM_ID)?.paused).toBe(false)
+  })
+
+  it('still blocks a live paused classroom', () => {
+    createRoom('5555')
+    patchRoom('5555', { paused: true, hostAliveAt: Date.now() })
+    const blocked = submitAnimal('5555', {
+      animalId: 'deer',
+      creatorId: 'c',
+      label: 'x',
+      thumb: 't',
+      regionColors: {},
+    })
+    expect(blocked.ok).toBe(false)
+    if (!blocked.ok) expect(blocked.reason).toBe('paused')
+  })
+
+  it('clears a leftover pause on a stale host', () => {
+    createRoom('6666')
+    patchRoom('6666', { paused: true, hostAliveAt: Date.now() - 120_000 })
+    expect(ensureRoomForSend('6666')).toBe('6666')
+    expect(submitAnimal('6666', {
+      animalId: 'tiger',
       creatorId: 'c',
       label: 'x',
       thumb: 't',

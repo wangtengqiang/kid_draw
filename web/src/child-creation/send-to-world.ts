@@ -63,27 +63,31 @@ export async function sendColoredAnimal(input: {
   cacheGallery(item)
   rememberCoat(result.placed.id, input.thumb)
 
-  const tex = await storage.putTexture(input.thumb, `${input.animalId}-${item.id}`)
-  await storage.saveGalleryItem({
-    id: item.id,
-    creatorId: creatorId(),
-    animalId: input.animalId,
-    texture: tex,
-    thumb: tex,
-    regionColors: input.regionColors,
-    roomCode: input.roomId,
-    createdAt: item.createdAt,
-  })
-  await storage.addRoomAnimal({
-    id: result.placed.id,
-    roomCode: input.roomId,
-    creatorId: creatorId(),
-    animalId: input.animalId,
-    label: result.placed.label,
-    texture: tex,
-    regionColors: input.regionColors,
-    createdAt: result.placed.createdAt,
-  })
+  try {
+    const tex = await storage.putTexture(input.thumb, `${input.animalId}-${item.id}`)
+    await storage.saveGalleryItem({
+      id: item.id,
+      creatorId: creatorId(),
+      animalId: input.animalId,
+      texture: tex,
+      thumb: tex,
+      regionColors: input.regionColors,
+      roomCode: input.roomId,
+      createdAt: item.createdAt,
+    })
+    await storage.addRoomAnimal({
+      id: result.placed.id,
+      roomCode: input.roomId,
+      creatorId: creatorId(),
+      animalId: input.animalId,
+      label: result.placed.label,
+      texture: tex,
+      regionColors: input.regionColors,
+      createdAt: result.placed.createdAt,
+    })
+  } catch {
+    /* 本机名单已经收下，贴图缓存失败也算送到 */
+  }
 
   return { ok: true, placed: result.placed, item }
 }

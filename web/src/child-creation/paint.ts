@@ -253,6 +253,14 @@ export class PaintSurface {
     return this.color.toDataURL('image/png')
   }
 
+  /** 只换蜡笔为这只动物的标准色。不重画纸、不盖成品卡、不擦笔迹。 */
+  selectStandardColor(): string {
+    const hex = ANIMAL_META[this.animal].defaults.body || this.colorHex
+    this.colorHex = hex
+    this.tool = 'brush'
+    return hex
+  }
+
   /** 皮毛原图：只含蜡笔层，不叠官方线稿，不缩小成单色。 */
   coatDataURL(maxW = 512): string {
     const src = this.color

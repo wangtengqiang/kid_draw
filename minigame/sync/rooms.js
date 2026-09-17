@@ -161,6 +161,7 @@ function clearAnimals(id) {
 }
 
 function submitAnimal(roomId, animal) {
+  ensureRoomForSend(roomId)
   const rooms = loadRooms()
   const room = rooms[roomId]
   if (!room || room.ended) return { ok: false, reason: 'missing' }
@@ -181,9 +182,28 @@ function submitAnimal(roomId, animal) {
 var PREVIEW_ROOM_ID = '1001'
 
 function ensurePreviewRoom() {
-  if (getRoom(PREVIEW_ROOM_ID)) touchHost(PREVIEW_ROOM_ID)
-  else createRoom(PREVIEW_ROOM_ID)
+  if (getRoom(PREVIEW_ROOM_ID)) {
+    touchHost(PREVIEW_ROOM_ID)
+    patchRoom(PREVIEW_ROOM_ID, { paused: false, ended: false })
+  } else createRoom(PREVIEW_ROOM_ID)
   return PREVIEW_ROOM_ID
+}
+
+/** 涂完就能送。缺房就开一间；预览房或过期暂停不要把按钮卡在「等一等再送」。 */
+function ensureRoomForSend(roomId) {
+  const id = String(roomId || PREVIEW_ROOM_ID)
+  const rooms = loadRooms()
+  const raw = rooms[id]
+  if (!raw) {
+    createRoom(id)
+    return id
+  }
+  if (raw.ended) return id
+  if (raw.paused) {
+    const stale = Date.now() - (raw.hostAliveAt || 0) > 90 * 1000
+    if (id === PREVIEW_ROOM_ID || stale) patchRoom(id, { paused: false })
+  }
+  return id
 }
 
 function joinQuery() {
@@ -226,6 +246,7 @@ module.exports = {
   creatorId,
   endRoom,
   ensurePreviewRoom,
+  ensureRoomForSend,
   getRoom,
   isHostQuery,
   joinQuery,

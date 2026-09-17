@@ -40,6 +40,16 @@ describe('art-cutout snapshot paths', () => {
     }
   })
 
+  it('ships land cutouts at the WeChat repo-root pack path', () => {
+    for (const id of LAND) {
+      assertPng(resolve(PUBLIC, `models/cutouts/${id}.png`))
+      assertPng(resolve(REPO, `models/cutouts/${id}.png`))
+      assertPng(resolve(REPO, `minigame/models/cutouts/${id}.png`))
+    }
+    assertPng(resolve(REPO, 'models/trees/oak.png'))
+    assertPng(resolve(REPO, 'models/trees/pine.png'))
+  })
+
   it('does not leave a missing PNG string in the minigame pack', () => {
     const roots = [resolve(REPO, 'minigame'), resolve(REPO, 'game.js')]
     const files: string[] = []
@@ -53,9 +63,10 @@ describe('art-cutout snapshot paths', () => {
     walk(roots[0])
     files.push(roots[1])
     const missing: string[] = []
+    const re = /['"]((?:minigame\/)?(?:models\/(?:snapshots|cutouts|trees)|picks|lineart)\/[a-z]+\.png)['"]/g
     for (const file of files) {
       const src = readFileSync(file, 'utf8')
-      for (const match of src.matchAll(/['"]((?:minigame\/)?(?:models\/snapshots|picks|lineart)\/[a-z]+\.png)['"]/g)) {
+      for (const match of src.matchAll(re)) {
         const rel = match[1]
         if (!existsSync(resolve(REPO, rel))) missing.push(`${rel} (from ${file.slice(REPO.length + 1)})`)
       }

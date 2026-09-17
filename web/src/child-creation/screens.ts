@@ -2,7 +2,7 @@
  * 儿童创作用例界面：选一只 → 自由蜡笔涂色 → 送进世界。
  * 网页预览可直接涂；扫码进老师的房。送到后可去看大世界。
  */
-import { createRoom, ensurePreviewRoom, getRoom } from '../sync'
+import { createRoom, ensurePreviewRoom, ensureRoomForSend, getRoom } from '../sync'
 import { storage } from '../storage'
 import type { AnimalId, PlacedAnimal } from '../types'
 import { ANIMAL_META, LAND_IDS, MARINE_IDS, PALETTE, ROOM_CAP } from '../types'
@@ -183,6 +183,7 @@ export class ChildCreation {
         </div>
         <div class="brush-row" id="brush-sizes"></div>
         <div class="crayons" id="crayons"></div>
+        <button class="natural-hit" data-act="natural" type="button">标准色</button>
         <button class="send-hit" data-act="send" type="button">送进世界</button>
         <p class="paint-msg" id="paint-msg">拿蜡笔在纸上随便涂。不用点满色块。</p>
         <div class="animal-picker" id="animal-picker" hidden>
@@ -242,9 +243,18 @@ export class ChildCreation {
         this.paint.tool = 'brush'
         crayons?.querySelectorAll('.crayon').forEach((el) => el.classList.remove('on'))
         b.classList.add('on')
+        this.root.querySelector('[data-act="natural"]')?.classList.remove('on')
         this.root.querySelector('[data-act="eraser"]')?.classList.remove('on')
       })
       crayons?.append(b)
+    })
+    this.root.querySelector('[data-act="natural"]')?.addEventListener('click', () => {
+      if (!this.paint) return
+      this.paint.selectStandardColor()
+      crayons?.querySelectorAll('.crayon').forEach((el) => el.classList.remove('on'))
+      this.root.querySelector('[data-act="natural"]')?.classList.add('on')
+      this.root.querySelector('[data-act="eraser"]')?.classList.remove('on')
+      this.setMsg('paint-msg', '换成原来的颜色了。线还在，接着涂。')
     })
     this.root.querySelector('[data-act="pick"]')?.addEventListener('click', () => this.go({ name: 'pick', roomId }))
     this.root.querySelector('[data-act="draft"]')?.addEventListener('click', () => this.persistDraft(roomId, animalId))
@@ -517,14 +527,24 @@ export class ChildCreation {
     const btn = this.root.querySelector<HTMLButtonElement>('[data-act="send"]')
     if (btn) btn.disabled = true
     this.setMsg('paint-msg', '正在送…')
-    const result = await sendToWorld({ roomId, animalId, paint: this.paint })
-    if (!result.ok) {
-      const reasons = { missing: '展览结束啦', paused: '等一等再送', full: '有点挤，等一等' }
-      this.setMsg('paint-msg', reasons[result.reason], 'err')
+    const rid = ensureRoomForSend(roomId)
+    try {
+      let result = await sendToWorld({ roomId: rid, animalId, paint: this.paint })
+      if (!result.ok && (result.reason === 'paused' || result.reason === 'missing')) {
+        ensureRoomForSend(rid)
+        result = await sendToWorld({ roomId: rid, animalId, paint: this.paint })
+      }
+      if (!result.ok) {
+        const reasons = { missing: '展览结束啦', paused: '等一等再送', full: '有点挤，等一等' }
+        this.setMsg('paint-msg', reasons[result.reason], 'err')
+        return
+      }
+      this.go({ name: 'success', roomId: rid, placed: result.placed, thumb: result.item.thumb })
+    } catch {
+      this.setMsg('paint-msg', '没送上，再点一次。', 'err')
+    } finally {
       if (btn) btn.disabled = false
-      return
     }
-    this.go({ name: 'success', roomId, placed: result.placed, thumb: result.item.thumb })
   }
 
   private setScanMsg(text: string, kind: 'ok' | 'err' | '' = ''): void {

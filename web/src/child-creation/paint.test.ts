@@ -24,4 +24,16 @@ describe('PaintSurface brush', () => {
     expect(typeof paint.thumb).toBe('function')
     expect(paint.coatDataURL).not.toBe(paint.thumb)
   })
+
+  it('标准色 only switches the crayon, never the paper', () => {
+    const paint = new PaintSurface('tiger', () => undefined)
+    const before = paint.color.toDataURL()
+    const lines = paint.lines.toDataURL()
+    const hex = paint.selectStandardColor()
+    expect(hex).toBe('#e89a2d')
+    expect(paint.colorHex).toBe('#e89a2d')
+    expect(paint.tool).toBe('brush')
+    expect(paint.color.toDataURL()).toBe(before)
+    expect(paint.lines.toDataURL()).toBe(lines)
+  })
 })

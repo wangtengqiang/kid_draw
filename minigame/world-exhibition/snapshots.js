@@ -20,34 +20,12 @@ const SRC = {
   turtle: ['models/snapshots/turtle.png', 'minigame/models/snapshots/turtle.png', 'public/models/snapshots/turtle.png'],
 }
 
-function loadImage(src) {
-  return new Promise((resolve) => {
-    const img = typeof wx !== 'undefined' && wx.createImage ? wx.createImage() : new Image()
-    img.onload = function () {
-      resolve(img)
-    }
-    img.onerror = function () {
-      resolve(null)
-    }
-    img.src = src
-  })
-}
-
-function loadFirst(srcs) {
-  return srcs.reduce(
-    (p, src) =>
-      p.then((img) => {
-        if (img && img.width) return img
-        return loadImage(src)
-      }),
-    Promise.resolve(null),
-  )
-}
+const { loadFirstPng } = require('../load-png.js')
 
 function preloadSnapshots() {
   return Promise.all(
     Object.keys(SRC).map((id) =>
-      loadFirst(SRC[id]).then((img) => {
+      loadFirstPng(SRC[id]).then((img) => {
         if (img) SNAPS[id] = img
       }),
     ),

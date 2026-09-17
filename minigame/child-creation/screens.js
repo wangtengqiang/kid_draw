@@ -91,14 +91,8 @@ ChildCreation.prototype.paintScreen = function (ctx, roomId, animalId) {
   ctx.save()
   roundRect(ctx, stage.x + 4, stage.y + 4, stage.w - 8, stage.h - 10, 22)
   ctx.clip()
-  if (this.paint.natural) {
-    ctx.fillStyle = '#fffdf7'
-    ctx.fillRect(stage.x, stage.y, stage.w, stage.h)
-    drawPickCard(ctx, animalId, stage)
-  } else {
-    this.paint.drawOnto(ctx, stage)
-    drawLineGuide(ctx, animalId, stage)
-  }
+  this.paint.drawOnto(ctx, stage)
+  drawLineGuide(ctx, animalId, stage)
   ctx.restore()
 
   const sizes = []
@@ -136,7 +130,7 @@ ChildCreation.prototype.paintScreen = function (ctx, roomId, animalId) {
       w: cw,
       h: 50,
     }
-    crayonChip(ctx, b, c.hex, this.paint.colorHex === c.hex && this.paint.tool === 'brush' && !this.paint.natural)
+    crayonChip(ctx, b, c.hex, this.paint.colorHex === c.hex && this.paint.tool === 'brush')
     crayons.push(b)
   })
   const natural = {
@@ -146,14 +140,16 @@ ChildCreation.prototype.paintScreen = function (ctx, roomId, animalId) {
     w: W - 40,
     h: 52,
   }
-  fillBtn(ctx, natural, this.paint.natural ? '#ffe066' : (DEFAULTS[animalId] && DEFAULTS[animalId].body) || '#f0b14a', '标准色', 20)
+  const stdHex = (DEFAULTS[animalId] && DEFAULTS[animalId].body) || '#f0b14a'
+  const stdOn = this.paint.tool === 'brush' && this.paint.colorHex === stdHex
+  fillBtn(ctx, natural, stdOn ? '#ffe066' : stdHex, '标准色', 20)
   const send = { id: 'send', x: 20, y: H - 96, w: W - 40, h: 76, roomId: roomId, animalId: animalId }
   fillBtn(ctx, send, this.sending ? '#c98989' : '#ff8fa3', this.sending ? '正在送…' : '送进世界', 30)
   ctx.fillStyle = 'rgba(74,52,40,0.62)'
   ctx.font = font(16, 400)
   ctx.textAlign = 'center'
   ctx.textBaseline = 'alphabetic'
-  ctx.fillText(this.msg || '涂自己的，或点标准色用原来的样子。', W / 2, H - 108)
+  ctx.fillText(this.msg || '蜡笔涂。点标准色换回原来的颜色。线还在。', W / 2, send.y - 14)
   return [back, home].concat(sizes, [eraser], crayons, [natural, send], [stage])
 }
 
@@ -252,16 +248,30 @@ ChildCreation.prototype.send = function (roomId, animalId) {
   this.sending = true
   this.msg = '正在送…'
   const started = animalId || this.paint.animalId
-  sendToWorld({ roomId: roomId, animalId: started, paint: this.paint }).then(function (result) {
-    self.sending = false
-    if (!result.ok) {
-      const reasons = { missing: '展览结束啦', paused: '等一等再送', full: '有点挤，等一等' }
-      self.msg = reasons[result.reason] || '等一等再送'
-      return
-    }
-    self.sentPaint = self.paint
-    self.api.go({ name: 'success', roomId: roomId, placed: result.placed, thumb: result.item.thumb })
-  })
+  const rid = sync.ensureRoomForSend(roomId)
+  sendToWorld({ roomId: rid, animalId: started, paint: this.paint })
+    .then(function (result) {
+      if (!result.ok && (result.reason === 'paused' || result.reason === 'missing')) {
+        sync.ensureRoomForSend(rid)
+        return sendToWorld({ roomId: rid, animalId: started, paint: self.paint })
+      }
+      return result
+    })
+    .then(function (result) {
+      if (!result || !result.ok) {
+        const reasons = { missing: '展览结束啦', paused: '等一等再送', full: '有点挤，等一等' }
+        self.msg = (result && reasons[result.reason]) || '没送上，再点一次'
+        return
+      }
+      self.sentPaint = self.paint
+      self.api.go({ name: 'success', roomId: rid, placed: result.placed, thumb: result.item.thumb })
+    })
+    .catch(function () {
+      self.msg = '没送上，再点一次'
+    })
+    .then(function () {
+      self.sending = false
+    })
 }
 
 ChildCreation.prototype.hit = hit

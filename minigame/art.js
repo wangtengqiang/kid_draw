@@ -17,34 +17,12 @@ const LINE_SRC = {
   lion: ['lineart/lion.png', 'minigame/lineart/lion.png', 'public/lineart/lion.png'],
 }
 
-function loadImage(src) {
-  return new Promise((resolve) => {
-    const img = typeof wx !== 'undefined' && wx.createImage ? wx.createImage() : new Image()
-    img.onload = function () {
-      resolve(img)
-    }
-    img.onerror = function () {
-      resolve(null)
-    }
-    img.src = src
-  })
-}
-
-function loadFirst(srcs) {
-  return srcs.reduce(
-    (p, src) =>
-      p.then((img) => {
-        if (img && img.width) return img
-        return loadImage(src)
-      }),
-    Promise.resolve(null),
-  )
-}
+const { loadFirstPng } = require('./load-png.js')
 
 function fillCache(srcMap, cache) {
   return Promise.all(
     Object.keys(srcMap).map((id) =>
-      loadFirst(srcMap[id]).then((img) => {
+      loadFirstPng(srcMap[id]).then((img) => {
         if (img && img.width) cache[id] = img
       }),
     ),

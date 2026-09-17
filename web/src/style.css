@@ -102,7 +102,7 @@ h1 {
 .scan-hit { background: var(--sky); color: var(--sky-ink); box-shadow: 0 7px 0 var(--sky-shadow); }
 .draft-hit { background: var(--lilac); color: var(--lilac-ink); box-shadow: 0 7px 0 var(--lilac-shadow); }
 .scan-file-hit { background: var(--cream); color: var(--ink); box-shadow: 0 7px 0 #e8d4b0; }
-.host-hit:active, .kid-hit:active, .paper-hit:active, .send-hit:active, .scan-hit:active, .draft-hit:active {
+.host-hit:active, .kid-hit:active, .paper-hit:active, .send-hit:active, .scan-hit:active, .draft-hit:active, .natural-hit:active {
   transform: translateY(3px);
   box-shadow: 0 3px 0 rgba(74, 52, 40, 0.16);
 }
@@ -317,6 +317,20 @@ h1 {
   box-shadow: 0 6px 0 rgba(0,0,0,0.12);
 }
 .crayon.on { border-color: var(--ink); transform: translateY(-6px); }
+
+.natural-hit {
+  min-height: 56px;
+  width: 100%;
+  border: 0;
+  border-radius: 999px;
+  background: var(--sun);
+  color: var(--ink);
+  font-size: 22px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 6px 0 var(--sun-shadow);
+}
+.natural-hit.on { outline: 4px solid var(--ink); }
 
 .send-hit {
   min-height: 84px;

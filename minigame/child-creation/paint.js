@@ -2,7 +2,7 @@
  * 儿童创作：只负责涂。不进主机森林、不写云。
  * 笔宽按画纸短边换算，细 / 中 / 粗差一截，不是同一颗点。
  */
-const { PALETTE } = require('../types.js')
+const { DEFAULTS, PALETTE } = require('../types.js')
 const { colorsOf, regionsOf } = require('./lineart.js')
 
 const PAPER = '#fffdf7'
@@ -86,16 +86,16 @@ PaintSurface.prototype.drawOnto = function (ctx, box) {
   })
 }
 
+/** 只换蜡笔为这只动物的标准色。不清笔迹，不换画纸，不盖成品卡。 */
 PaintSurface.prototype.applyNatural = function () {
-  this.natural = true
-  this.strokes = []
-  this.current = null
+  const d = DEFAULTS[this.animalId] || {}
+  this.colorHex = d.body || d.head || this.colorHex
   this.tool = 'brush'
+  this.natural = false
 }
 
 PaintSurface.prototype.sampleRegions = function () {
   const out = colorsOf(this.animalId, {})
-  if (this.natural) return out
   const ink = []
   this.strokes.forEach((stroke) => {
     if (stroke.hex === PAPER) return

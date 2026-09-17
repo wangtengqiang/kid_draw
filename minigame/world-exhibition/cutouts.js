@@ -1,4 +1,9 @@
+/**
+ * 微信从仓库根导入：字面量 models/cutouts/*.png 必须在根目录存在。
+ * 上一份缺失 snapshots/lion.png 会 ENOENT；cutouts 同样不能只放 minigame/ 或 web/public。
+ */
 const { drawCoat, isNatural, drawAnimal } = require('./models.js')
+const { loadFirstPng } = require('../load-png.js')
 const CUTOUTS = {}
 const WHITE = {}
 const TREES = {}
@@ -24,29 +29,6 @@ const TREE_SRC = {
   pine: ['models/trees/pine.png', 'minigame/models/trees/pine.png'],
 }
 
-function loadImage(src) {
-  return new Promise((resolve) => {
-    const img = typeof wx !== 'undefined' && wx.createImage ? wx.createImage() : new Image()
-    img.onload = function () {
-      resolve(img)
-    }
-    img.onerror = function () {
-      resolve(null)
-    }
-    img.src = src
-  })
-}
-
-function loadFirst(srcs) {
-  return srcs.reduce(
-    (p, src) =>
-      p.then((img) => {
-        if (img && img.width) return img
-        return loadImage(src)
-      }),
-    Promise.resolve(null),
-  )
-}
 
 function makeCanvas(w, h) {
   if (typeof wx !== 'undefined' && wx.createOffscreenCanvas) {
@@ -111,7 +93,7 @@ function preloadCutouts() {
   return Promise.all(
     Object.keys(SRC)
       .map((id) =>
-        loadFirst(SRC[id]).then((img) => {
+        loadFirstPng(SRC[id]).then((img) => {
           if (!img) return
           CUTOUTS[id] = img
           WHITE[id] = whitenCutout(img)
@@ -119,7 +101,7 @@ function preloadCutouts() {
       )
       .concat(
         Object.keys(TREE_SRC).map((id) =>
-          loadFirst(TREE_SRC[id]).then((img) => {
+          loadFirstPng(TREE_SRC[id]).then((img) => {
             if (img && img.width) TREES[id] = img
           }),
         ),

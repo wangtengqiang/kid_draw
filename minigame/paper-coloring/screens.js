@@ -143,18 +143,24 @@ PaperColoring.prototype.touch = function (screen, btn) {
   else if (btn.id === 'choose-image') this.choose(btn.roomId, btn.animalId)
   else if (btn.id === 'paper-send' && this.preview) {
     this.msg = '正在送…'
+    const rid = require('../sync/index.js').ensureRoomForSend(btn.roomId)
     sendColoredAnimal({
-      roomId: btn.roomId,
+      roomId: rid,
       animalId: btn.animalId,
       thumb: this.preview.thumb,
       regionColors: this.preview.regionColors,
-    }).then(function (result) {
-      if (!result.ok) {
-        self.msg = result.reason === 'full' ? '有点挤，等一等' : '展览结束啦'
-        return
-      }
-      go({ name: 'paper-success', roomId: btn.roomId, placed: result.placed, thumb: result.item.thumb })
     })
+      .then(function (result) {
+        if (!result.ok) {
+          const reasons = { missing: '展览结束啦', paused: '等一等再送', full: '有点挤，等一等' }
+          self.msg = reasons[result.reason] || '没送上，再点一次'
+          return
+        }
+        go({ name: 'paper-success', roomId: rid, placed: result.placed, thumb: result.item.thumb })
+      })
+      .catch(function () {
+        self.msg = '没送上，再点一次'
+      })
   }
 }
 
