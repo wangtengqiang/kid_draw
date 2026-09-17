@@ -9,6 +9,7 @@ import { ANIMAL_IDS } from '../types'
 import { loadAnimalTemplates } from './gltf-kit'
 import { createAnimalModel, tickWalk } from './models'
 import { billboardY, ART_CUTOUT_PACK } from './art-cutout'
+import { CARTOON_RIG_PACK } from './cartoon-rig'
 
 const CLEAR = '#e8f2d2'
 const cache = new Map<string, string>()
@@ -81,7 +82,7 @@ export async function snapshotPet(
     const model = createAnimalModel(animal, colors)
     scene.add(model)
     if (model.userData.pack === ART_CUTOUT_PACK) billboardY(model, camera)
-    tickWalk(model, 0.35, false)
+    tickWalk(model, model.userData.pack === CARTOON_RIG_PACK ? 0.28 : 0.35, model.userData.pack === CARTOON_RIG_PACK)
     gpu.render(scene, camera)
     const url = target.toDataURL('image/png')
     cache.set(key, url)

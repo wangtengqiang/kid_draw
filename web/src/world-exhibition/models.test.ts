@@ -3,8 +3,9 @@ import { resolve } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import * as THREE from 'three'
 import { loadAnimalTemplates, playAnimalClip, setAnimalModelProvider } from './gltf-kit'
-import { createAnimalModel } from './models'
-import { ART_CUTOUT_PACK, CUTOUT_SRC } from './art-cutout'
+import { createAnimalModel, tickAction } from './models'
+import { CUTOUT_SRC } from './art-cutout'
+import { CARTOON_RIG_PACK, LAND_BONE_NAMES } from './cartoon-rig'
 import type { AnimalId } from '../types'
 
 const PUBLIC = resolve(process.cwd(), 'public')
@@ -30,7 +31,7 @@ function glbJson(file: string): {
   }
 }
 
-describe('art cutouts as default land lion/deer/tiger', () => {
+describe('rigged cartoon lion/deer/tiger', () => {
   afterEach(() => {
     setAnimalModelProvider(null)
   })
@@ -40,25 +41,31 @@ describe('art cutouts as default land lion/deer/tiger', () => {
     await loadAnimalTemplates()
   }
 
-  it('loads PNG cutouts, not Kenney cubes, fox/wolf, or sphere cubs', async () => {
+  it('loads one skinned cartoon mesh, not Kenney cubes, fox/wolf, or sphere cubs', async () => {
     await loadShipped()
     for (const kind of ['lion', 'deer', 'tiger'] as AnimalId[]) {
       const group = createAnimalModel(kind, { body: '#ffffff' })
-      expect(group.userData.pack).toBe(ART_CUTOUT_PACK)
-      expect(group.userData.source).toBe('art-cutout')
+      expect(group.userData.pack).toBe(CARTOON_RIG_PACK)
+      expect(group.userData.source).toBe('cartoon-rig')
       expect(group.getObjectByName(`animal-${kind}`)).toBeTruthy()
       expect(group.getObjectByName('eyeL')).toBeTruthy()
-      expect(group.getObjectByName('muzzle')).toBeTruthy()
+      expect(group.getObjectByName('nose')).toBeTruthy()
       expect(group.getObjectByName('leg-front-left')).toBeTruthy()
-      const body = group.getObjectByName('body') as THREE.Mesh
-      expect(body.geometry).toBeInstanceOf(THREE.PlaneGeometry)
+      const body = group.getObjectByName('body') as THREE.SkinnedMesh
+      expect(body).toBeInstanceOf(THREE.SkinnedMesh)
+      expect(body.geometry).toBeInstanceOf(THREE.BufferGeometry)
+      expect(body.geometry).not.toBeInstanceOf(THREE.PlaneGeometry)
       expect(body.geometry).not.toBeInstanceOf(THREE.BoxGeometry)
       expect(body.geometry).not.toBeInstanceOf(THREE.CapsuleGeometry)
       expect(body.geometry).not.toBeInstanceOf(THREE.SphereGeometry)
-      expect(body.userData.cutout).toBe(true)
+      expect(body.userData.rigged).toBe(true)
+      const boneNames = body.skeleton.bones.map((b) => b.name)
+      for (const name of LAND_BONE_NAMES) expect(boneNames).toContain(name)
+      expect(group.userData.clips).toEqual(
+        expect.arrayContaining(['walk', 'sit', 'drink', 'sleep', 'idle']),
+      )
       const mat = body.material as THREE.MeshLambertMaterial
       expect(mat.map).toBeTruthy()
-      expect(mat.transparent).toBe(false)
       expect(CUTOUT_SRC[kind]).toMatch(/\/models\/cutouts\/.+\.png/)
       expect(existsSync(resolve(PUBLIC, `models/cutouts/${kind}.png`))).toBe(true)
       const png = readFileSync(resolve(PUBLIC, `models/cutouts/${kind}.png`))
@@ -83,11 +90,17 @@ describe('art cutouts as default land lion/deer/tiger', () => {
     expect(body.geometry).not.toBeInstanceOf(THREE.SphereGeometry)
   })
 
-  it('plays the walk clip on the lion', async () => {
+  it('plays walk, sit, drink and sleep on the same lion skeleton', async () => {
     await loadShipped()
     const lion = createAnimalModel('lion', { body: '#ffffff' })
     expect(playAnimalClip(lion, 'walk', 0.016)).toBe(true)
     expect((lion.userData.activeClip as THREE.AnimationAction).getClip().name).toBe('walk')
+    tickAction(lion, 'sit', 0.8)
+    expect((lion.userData.activeClip as THREE.AnimationAction).getClip().name).toBe('sit')
+    tickAction(lion, 'drink', 1.6)
+    expect((lion.userData.activeClip as THREE.AnimationAction).getClip().name).toBe('drink')
+    tickAction(lion, 'rest', 2.4)
+    expect((lion.userData.activeClip as THREE.AnimationAction).getClip().name).toBe('sleep')
   })
 
   it('kid coloring tints the coat and keeps eyes authored', async () => {
@@ -101,7 +114,7 @@ describe('art cutouts as default land lion/deer/tiger', () => {
     expect((iris.material as THREE.MeshLambertMaterial).color.getHexString()).not.toBe('e24b4b')
   })
 
-  it('keeps the art-cutout sprite when kid paint cannot be composited', async () => {
+  it('keeps the cartoon coat when kid paint cannot be composited', async () => {
     await loadShipped()
     const data = new Uint8Array([204, 34, 68, 255, 17, 68, 170, 255, 204, 34, 68, 255, 17, 68, 170, 255])
     const paper = new THREE.DataTexture(data, 2, 2)
@@ -109,13 +122,12 @@ describe('art cutouts as default land lion/deer/tiger', () => {
     const lion = createAnimalModel('lion', { body: '#e24b4b' }, paper)
     const body = lion.getObjectByName('body') as THREE.Mesh
     const mat = body.material as THREE.MeshLambertMaterial
-    expect(body.userData.cutout).toBe(true)
+    expect(body.userData.rigged).toBe(true)
     expect(mat.map).toBeTruthy()
     expect(mat.map).not.toBe(paper)
     const uv = body.geometry.getAttribute('uv')
     expect(uv).toBeTruthy()
     expect(uv.count).toBeGreaterThan(8)
-    expect(mat.alphaTest).toBeGreaterThan(0)
   })
 
   it('Gobkit whale/seal remain marine stand-ins', async () => {

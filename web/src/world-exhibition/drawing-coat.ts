@@ -150,6 +150,11 @@ function stampTexture(root: THREE.Object3D, tex: THREE.Texture): void {
         lambert.side = THREE.DoubleSide
         lambert.depthWrite = true
       }
+      if (obj.userData.rigged || (obj as THREE.SkinnedMesh).isSkinnedMesh) {
+        lambert.alphaTest = 0
+        lambert.side = THREE.FrontSide
+        lambert.depthWrite = true
+      }
       lambert.needsUpdate = true
     }
   })
@@ -256,26 +261,38 @@ function multiplyCutoutCoat(root: THREE.Group, source: CoatSource): boolean {
   const tex = configure(new THREE.CanvasTexture(canvas))
   root.userData.drawing = tex
   root.userData.coat = tex
-  const mat = body.material as THREE.MeshLambertMaterial
-  mat.map = tex
-  mat.color.set('#ffffff')
-  mat.alphaTest = 0.28
-  mat.side = THREE.DoubleSide
-  mat.needsUpdate = true
+  const cutout = root.userData.pack === 'art-cutout'
+  root.traverse((obj) => {
+    if (!(obj instanceof THREE.Mesh) || keepFace(obj)) return
+    const rigged = obj.userData.rigged || (obj as THREE.SkinnedMesh).isSkinnedMesh || obj.name === 'body'
+    if (!cutout && !rigged) return
+    const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
+    for (const mat of mats) {
+      if (!('map' in mat)) continue
+      const lambert = mat as THREE.MeshLambertMaterial
+      lambert.map = tex
+      lambert.color.set('#ffffff')
+      lambert.needsUpdate = true
+      if (cutout) {
+        lambert.alphaTest = 0.28
+        lambert.side = THREE.DoubleSide
+      }
+    }
+  })
   return true
 }
 
-function applyCutoutCoat(root: THREE.Group, source: CoatSource): void {
+function applyArtCoat(root: THREE.Group, source: CoatSource): void {
   if (multiplyCutoutCoat(root, source)) return
   whenPaintReady(source, (img) => {
     multiplyCutoutCoat(root, img)
   })
 }
 
-/** 把画板 / 拍照原图像素贴上身子。剪纸只叠乘，绝不把角色图换成涂色纸。 */
+/** 把画板 / 拍照原图像素贴上身子。卡通网格只叠乘，绝不把角色图换成涂色纸。 */
 export function applyDrawingCoat(root: THREE.Group, source: CoatSource): void {
-  if (root.userData.pack === 'art-cutout') {
-    applyCutoutCoat(root, source)
+  if (root.userData.pack === 'art-cutout' || root.userData.pack === 'cartoon-rig') {
+    applyArtCoat(root, source)
     return
   }
   if (!root.userData.drawingUVs) {

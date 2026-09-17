@@ -165,6 +165,80 @@ def save(im: Image.Image, name: str):
     print(f"wrote {path} {im.size}")
 
 
+POSE_BOXES = {
+    "sit": {"lion": (20, 20, 430, 700), "deer": (430, 20, 850, 700), "tiger": (850, 20, 1260, 700)},
+    "drink": {"lion": (10, 40, 450, 700), "deer": (510, 40, 810, 700), "tiger": (910, 40, 1270, 700)},
+    "sleep": {"lion": (10, 80, 430, 680), "deer": (545, 90, 775, 660), "tiger": (890, 80, 1270, 680)},
+}
+
+
+def flood_clear(im: Image.Image, is_prop) -> Image.Image:
+    """Erase a connected prop that touches the crop border (water, stones, neighbor scraps)."""
+    px = im.load()
+    w, h = im.size
+    vis = [[False] * w for _ in range(h)]
+    stack = []
+    for x in range(w):
+        stack.append((x, 0))
+        stack.append((x, h - 1))
+    for y in range(h):
+        stack.append((0, y))
+        stack.append((w - 1, y))
+    while stack:
+        x, y = stack.pop()
+        if x < 0 or y < 0 or x >= w or y >= h or vis[y][x]:
+            continue
+        vis[y][x] = True
+        r, g, b, a = px[x, y]
+        if a < 8:
+            stack.extend(((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)))
+            continue
+        if not is_prop(r, g, b, x, y, w, h):
+            continue
+        px[x, y] = (r, g, b, 0)
+        stack.extend(((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)))
+    return im
+
+
+def strip_pose_props(im: Image.Image, kind: str) -> Image.Image:
+    def drink_prop(r, g, b, x, y, w, h):
+        mx, mn = max(r, g, b), min(r, g, b)
+        if y < h * 0.48:
+            return False
+        water = b >= g - 18 and b > r + 2 and (b + g) / 2 > 80
+        wet = mn > 140 and b >= r - 4 and mx - mn < 85
+        return water or wet
+
+    def sit_prop(r, g, b, x, y, w, h):
+        mx, mn = max(r, g, b), min(r, g, b)
+        sat = mx - mn
+        if y < h * 0.82:
+            return False
+        tan_tile = 30 <= sat <= 110 and 70 < r < 235 and g < r + 8 and b < g - 2
+        gray_tile = sat < 48 and 70 < mn < 215
+        return tan_tile or gray_tile
+
+    def sleep_prop(r, g, b, x, y, w, h):
+        mx, mn = max(r, g, b), min(r, g, b)
+        return mx - mn < 42 and mn > 170 and y > h * 0.8
+
+    fn = {"drink": drink_prop, "sit": sit_prop, "sleep": sleep_prop}[kind]
+    return flood_clear(im, fn)
+
+
+def extract_pose_sheet(kind: str) -> None:
+    path = MEDIA / f"gen-poses-{kind}.png"
+    if not path.exists():
+        raise SystemExit(f"missing {path}")
+    sheet = Image.open(path)
+    for name, box in POSE_BOXES[kind].items():
+        col = sheet.crop(box)
+        cut = knockout(col)
+        cut = strip_pose_props(cut, kind)
+        cut = strip_ground_disc(cut)
+        save(crop_opaque(cut), f"{name}-{kind}")
+
+
 def main():
     sheet = knockout(Image.open(MEDIA / "gen-land-animals-sheet.png"))
     animals = connected_parts(sheet, 3)
@@ -172,6 +246,8 @@ def main():
     names = ["lion", "deer", "tiger"]
     for name, im in zip(names, animals):
         save(strip_ground_disc(im), name)
+    for kind in ("sit", "drink", "sleep"):
+        extract_pose_sheet(kind)
 
 
 if __name__ == "__main__":

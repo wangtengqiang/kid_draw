@@ -61,7 +61,7 @@ export class HostScreen {
           <p class="occ" id="occ">${room.animals.length}/${ROOM_CAP} 只小动物</p>
           <p class="status" id="status">${hostStatus(room.paused, room.animals.length)}</p>
           <div class="theme-row" id="themes"></div>
-          <p class="lead">小动物会自己走、喝水、休息；海里的会自己游。</p>
+          <p class="lead">小动物会自己走、喝水、坐下、睡觉；海里的会自己游。</p>
           <div class="host-more">
             <button type="button" data-act="pause">${room.paused ? '继续收画' : '暂停收画'}</button>
             <button type="button" data-act="clear">清场</button>

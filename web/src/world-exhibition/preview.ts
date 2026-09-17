@@ -7,6 +7,7 @@ import { applyDrawingCoat, refreshDrawingCoat, type CoatSource } from './drawing
 import { createAnimalModel, tickWalk, tintAnimal } from './models'
 import { OrbitZoom, PREVIEW_ORBIT } from './orbit-zoom'
 import { ART_CUTOUT_PACK, billboardY } from './art-cutout'
+import { CARTOON_RIG_PACK } from './cartoon-rig'
 
 export class PreviewStage {
   readonly canvas: HTMLCanvasElement
@@ -87,13 +88,22 @@ export class PreviewStage {
     this.raf = requestAnimationFrame(this.loop)
     const t = this.clock.getElapsedTime()
     if (this.model) {
-      if (this.model.userData.pack === ART_CUTOUT_PACK) {
+      if (this.model.userData.pack === CARTOON_RIG_PACK) {
+        if (!this.orbit.interacting) {
+          this.rot += 0.006
+          this.model.rotation.y = this.rot
+        }
+        tickWalk(this.model, t, true)
+      } else if (this.model.userData.pack === ART_CUTOUT_PACK) {
         billboardY(this.model, this.camera)
+        tickWalk(this.model, t, false)
       } else if (!this.orbit.interacting) {
         this.rot += 0.006
         this.model.rotation.y = this.rot
+        tickWalk(this.model, t, false)
+      } else {
+        tickWalk(this.model, t, false)
       }
-      tickWalk(this.model, t, false)
       if (this.model.userData.drawing) refreshDrawingCoat(this.model)
     }
     this.renderer.render(this.scene, this.camera)

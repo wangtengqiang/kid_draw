@@ -1,7 +1,7 @@
 /**
- * Museum/LED stack: art-cutout land lion/deer/tiger + Kenney fish + Gobkit marine.
- * Land pets are the generated character PNGs as 2.5D alpha planes, not sphere cubs.
- * GLTFLoader + AnimationMixer for marine. Kid crayon multiplies onto the coat.
+ * Museum/LED stack: rigged cartoon land lion/deer/tiger + Kenney fish + Gobkit marine.
+ * Land pets are one skinned cartoon mesh (gen-lion-turnaround / gen-poses), not
+ * flipbook stickers, sphere cubs, or Kenney cubes. Kid crayon multiplies onto the coat.
  */
 import * as THREE from 'three'
 import { AnimationUtils } from 'three'
@@ -9,7 +9,8 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js'
 import type { AnimalId } from '../types'
 import { ANIMAL_IDS, isMarine } from '../types'
-import { ART_CUTOUT_PACK, buildArtCutout, loadCutoutTexture } from './art-cutout'
+import { ART_CUTOUT_PACK } from './art-cutout'
+import { CARTOON_RIG_PACK, buildCartoonRig, loadCoatTexture } from './cartoon-rig'
 
 type AnimalTemplate = {
   scene: THREE.Group
@@ -73,7 +74,11 @@ const CLIP_ALIASES: Record<string, string[]> = {
   walk: ['walk', 'Walk'],
   idle: ['idle', 'Idle', 'static'],
   static: ['static', 'idle', 'Idle'],
-  eat: ['eat', 'Eating', 'Idle'],
+  eat: ['eat', 'Eating', 'drink', 'Idle'],
+  sit: ['sit', 'Sit', 'idle'],
+  drink: ['drink', 'Drink', 'eat'],
+  rest: ['sleep', 'rest', 'idle'],
+  sleep: ['sleep', 'rest', 'idle'],
 }
 
 export function setAnimalModelProvider(
@@ -117,14 +122,14 @@ export async function loadAnimalTemplates(): Promise<void> {
     await Promise.all(
       ANIMAL_IDS.map(async (id) => {
         if (!isMarine(id)) {
-          const map = await loadCutoutTexture(id)
-          const scene = buildArtCutout(id, map)
+          const map = await loadCoatTexture(id)
+          const scene = buildCartoonRig(id, map)
           templates.set(id, {
             scene,
-            animations: (scene.userData.cutoutClips as THREE.AnimationClip[]) || [],
-            skinned: false,
+            animations: (scene.userData.rigClips as THREE.AnimationClip[]) || [],
+            skinned: true,
             zForward: false,
-            pack: ART_CUTOUT_PACK,
+            pack: CARTOON_RIG_PACK,
           })
           return
         }
@@ -204,6 +209,20 @@ function opaqueLambert(src: THREE.Material, map: THREE.Texture | null, color: TH
 }
 
 function paintMesh(obj: THREE.Mesh, bodyTint: string): void {
+  if (obj.userData.rigged || (obj as THREE.SkinnedMesh).isSkinnedMesh) {
+    const src = (Array.isArray(obj.material) ? obj.material[0] : obj.material) as THREE.MeshLambertMaterial
+    const copy = src.clone()
+    copy.map = src.map
+    copy.transparent = false
+    copy.depthWrite = true
+    if (bodyTint && bodyTint !== '#ffffff' && bodyTint !== '#fffdf7') copy.color = new THREE.Color(bodyTint)
+    else copy.color = new THREE.Color('#ffffff')
+    obj.material = copy
+    obj.userData.region = 'body'
+    obj.castShadow = false
+    obj.receiveShadow = false
+    return
+  }
   if (obj.userData.cutout) {
     const src = (Array.isArray(obj.material) ? obj.material[0] : obj.material) as THREE.MeshLambertMaterial
     const copy = src.clone()
@@ -250,7 +269,7 @@ function paintMesh(obj: THREE.Mesh, bodyTint: string): void {
 
 function packOf(animal: AnimalId, tpl?: AnimalTemplate): string {
   if (tpl?.pack) return tpl.pack
-  if (animal === 'lion' || animal === 'deer' || animal === 'tiger') return ART_CUTOUT_PACK
+  if (animal === 'lion' || animal === 'deer' || animal === 'tiger') return CARTOON_RIG_PACK
   if (animal === 'fish') return 'kenney-cube-pets'
   return 'gobkit'
 }
@@ -262,6 +281,7 @@ export function instanceAnimal(animal: AnimalId, painted: Record<string, string>
   const inner = cloned as THREE.Group
   const spriteMap = tpl.scene.userData.spriteMap as THREE.Texture | undefined
   if (spriteMap) inner.userData.spriteMap = spriteMap
+  inner.userData.pack = packOf(animal, tpl)
   const bodyTint = painted.body || painted.shell || '#ffffff'
   inner.traverse((obj) => {
     if (obj instanceof THREE.Mesh) paintMesh(obj, bodyTint)
@@ -292,7 +312,8 @@ export function instanceAnimal(animal: AnimalId, painted: Record<string, string>
   }
 
   root.userData.kind = animal
-  root.userData.source = tpl.pack === ART_CUTOUT_PACK ? 'art-cutout' : 'gltf'
+  root.userData.source =
+    tpl.pack === CARTOON_RIG_PACK ? 'cartoon-rig' : tpl.pack === ART_CUTOUT_PACK ? 'art-cutout' : 'gltf'
   root.userData.pack = packOf(animal, tpl)
   root.userData.spriteMap = inner.userData.spriteMap
   root.userData.marine = isMarine(animal)
@@ -327,10 +348,15 @@ export function playAnimalClip(group: THREE.Group, clipName: string, dt: number)
   const next = findClipAction(actions, clipName)
   if (!next) return false
   if (group.userData.activeClip !== next) {
-    for (const a of Object.values(actions)) {
-      if (a !== next) a.stop()
-    }
+    const prev = group.userData.activeClip as THREE.AnimationAction | undefined
+    next.enabled = true
     next.reset().play()
+    if (prev && prev !== next) next.crossFadeFrom(prev, 0.28, false)
+    else {
+      for (const a of Object.values(actions)) {
+        if (a !== next) a.stop()
+      }
+    }
     group.userData.activeClip = next
   }
   mixer.update(Math.max(0, Math.min(0.05, dt)))

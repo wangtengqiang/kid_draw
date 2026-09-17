@@ -42,17 +42,17 @@ describe('drawing coat is the raw bitmap', () => {
     expect(colors.size).toBe(2)
   })
 
-  it('does not replace an art-cutout sprite with the raw paintboard', () => {
+  it('does not replace a cartoon-rig coat with the raw paintboard', () => {
     const root = new THREE.Group()
-    root.userData.pack = 'art-cutout'
+    root.userData.pack = 'cartoon-rig'
     const sprite = stripeTexture()
     root.userData.spriteMap = sprite
     const mesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(1, 1, 4, 4),
+      new THREE.BufferGeometry(),
       new THREE.MeshLambertMaterial({ map: sprite, color: '#ffffff' }),
     )
     mesh.name = 'body'
-    mesh.userData.cutout = true
+    mesh.userData.rigged = true
     root.add(mesh)
     applyDrawingCoat(root, stripeTexture())
     const mat = mesh.material as THREE.MeshLambertMaterial

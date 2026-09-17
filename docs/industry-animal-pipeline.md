@@ -121,7 +121,7 @@
 
 ## 当前默认
 
-- 狮 / 鹿 / 虎 ← 本仓库 2.5D 剪纸（`extract-art-cutouts.py` + `art-cutout.ts`），角色就是 `gen-land-animals-sheet.png` 抠出来的图，walk 是剪纸点头跳。
+- 狮 / 鹿 / 虎 ← 本仓库卡通网格 + 真骨骼（`cartoon-rig.ts`），皮毛是 `gen-land-animals-sheet.png` 抠出来的图；walk / sit / drink / sleep 是同一只身体在变形，不是四张剪纸。
 - 鱼 ← Kenney Cube Pets（CC0）。
 - 海豚 / 海龟 ← Gobkit Whale / Seal（CC0）。
 - 运行时：`GLTFLoader` + `AnimationMixer`。孩子涂色是画板原图像素，贴在皮毛 UV 上。

@@ -1,18 +1,18 @@
 # 3D models — licenses
 
-Default **lion / deer / tiger** are 2.5D alpha cutouts of this project's
-generated character art (`gen-land-animals-sheet.png`). They walk on the
-path as camera-facing planes. Kid crayon **multiplies** onto the coat;
-eyes/nose stay from the art. Not Kenney cubes, fox/wolf, sphere cubs,
-sunflower-petal heads, or 千图网.
+Default **lion / deer / tiger** are one cartoon mesh with a real skeleton
+(`cartoon-rig.ts`). The coat is this project's generated character art
+(`gen-land-animals-sheet.png` / `gen-lion-turnaround.png`). Walk, sit, drink,
+and sleep deform the same body. Kid crayon **multiplies** onto the coat;
+eyes/nose stay authored. Not flipbook stickers, Kenney cubes, fox/wolf,
+sphere cubs, sunflower-petal heads, or 千图网.
 
-## Art cutouts — lion, deer, tiger (this repo)
+## Cartoon rig — lion, deer, tiger (this repo)
 
-- Built by `web/scripts/extract-art-cutouts.py` (knock out the cream
-  background, crop each animal).
+- Coat PNGs from `web/scripts/extract-art-cutouts.py`
 - Files: `cutouts/{lion,deer,tiger}.png`
-- Runtime pack: `art-cutout` (`web/src/world-exhibition/art-cutout.ts`)
-- Clips: `walk` / `idle` / `eat` / `static` (hop / breathe on the plane)
+- Runtime pack: `cartoon-rig` (`web/src/world-exhibition/cartoon-rig.ts`)
+- Clips: `walk` / `sit` / `drink` / `sleep` / `idle` (skinned bones)
 - Front snapshots: `snapshots/{lion,deer,tiger}.png`
 
 ## Kenney Cube Pets 2.0 — fish only (CC0 1.0)

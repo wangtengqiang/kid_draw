@@ -159,13 +159,15 @@ export function tickAction(group: THREE.Group, action: WorldAction, t: number): 
 
   const clipFor = (): string => {
     if (marine) return action === 'swim' || action === 'walk' ? 'walk' : 'idle'
-    if (action === 'walk') return t === 0 ? 'static' : 'walk'
-    if (action === 'drink') return 'eat'
+    if (action === 'walk') return t === 0 ? 'idle' : 'walk'
+    if (action === 'drink') return 'drink'
+    if (action === 'sit') return 'sit'
+    if (action === 'rest') return 'sleep'
     return 'idle'
   }
   const usedClip = Boolean(clips && playAnimalClip(group, clipFor(), dt))
 
-  if (group.userData.pack === 'art-cutout') return
+  if (group.userData.pack === 'art-cutout' || group.userData.pack === 'cartoon-rig') return
 
   if (marine) {
     const swim = action === 'swim' || action === 'walk'

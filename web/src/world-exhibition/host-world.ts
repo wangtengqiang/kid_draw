@@ -16,7 +16,8 @@ import {
   paintGrassGround,
   paintWater,
 } from './forest-art'
-import { ART_CUTOUT_PACK, billboardY } from './art-cutout'
+import { billboardY } from './art-cutout'
+import { facesHostCamera } from './cartoon-rig'
 
 interface Actor {
   id: string
@@ -347,11 +348,13 @@ export class HostWorld {
         __kidDrawFramePath?: () => void
         __kidDrawPoseLineup?: () => boolean
         __kidDrawPoseClose?: (kind: AnimalId) => boolean
+        __kidDrawPoseAction?: (action: WorldAction, kind?: AnimalId) => boolean
       }
       w.__kidDrawFrameHost = () => this.frameFirstAnimal()
       w.__kidDrawFramePath = () => this.framePathVista()
       w.__kidDrawPoseLineup = () => this.poseLineup()
       w.__kidDrawPoseClose = (kind) => this.poseClose(kind)
+      w.__kidDrawPoseAction = (action, kind) => this.poseAction(action, kind)
     }
     const grass = new THREE.CanvasTexture(paintGrassGround())
     grass.wrapS = grass.wrapT = THREE.RepeatWrapping
@@ -480,12 +483,58 @@ export class HostWorld {
       actor.group.position.set(slot[0], 0.02, slot[1])
       actor.group.rotation.y = 0
       tickAction(actor.group, 'walk', 0.35)
-      if (actor.group.userData.pack === ART_CUTOUT_PACK) billboardY(actor.group, this.camera)
+      if (facesHostCamera(actor.group)) billboardY(actor.group, this.camera)
     })
     this.orbit.target.set(0.05, 0.62, -0.4)
     this.camera.position.set(0.18, 2.85, 12.4)
     this.syncOrbitFromCamera()
     return order.length > 0
+  }
+
+  poseAction(action: WorldAction, kind?: AnimalId): boolean {
+    const land = [...this.actors.values()].filter((a) => !a.marine)
+    const chosen = kind ? land.filter((a) => a.animalId === kind) : land
+    if (!chosen.length) return false
+    const slots: [number, number][] = [
+      [-1.35, 3.35],
+      [0.12, 0.55],
+      [1.05, -2.15],
+    ]
+    chosen.forEach((actor, i) => {
+      actor.frozen = true
+      if (action === 'drink') {
+        actor.group.position.set(SHORE_DRINK.x, 0.02, SHORE_DRINK.z + actor.lane * 0.7)
+      } else if (action === 'rest') {
+        const p = pointOnPath(0.28, -3.2 + i * 1.4)
+        actor.group.position.set(p.x, 0.02, p.z)
+      } else if (action === 'sit') {
+        const p = pointOnPath(0.42, 2.8 - i * 1.6)
+        actor.group.position.set(p.x, 0, p.z)
+      } else {
+        const slot = slots[Math.min(i, slots.length - 1)]!
+        actor.group.position.set(slot[0], 0.02, slot[1])
+      }
+      actor.group.rotation.y = 0
+      actor.group.userData._animT = undefined
+      const sample = action === 'walk' ? 0.28 : 0.8
+      tickAction(actor.group, action, sample)
+      const mixer = actor.group.userData.mixer as THREE.AnimationMixer | undefined
+      const active = actor.group.userData.activeClip as THREE.AnimationAction | undefined
+      if (mixer && active) {
+        active.time = sample
+        mixer.update(0)
+      }
+      if (facesHostCamera(actor.group)) billboardY(actor.group, this.camera)
+    })
+    if (action === 'drink') {
+      this.orbit.target.set(SHORE_DRINK.x - 0.2, 0.55, SHORE_DRINK.z)
+      this.camera.position.set(SHORE_DRINK.x - 0.4, 2.4 * FOREST_CAMERA_PULL * 0.55, SHORE_DRINK.z + 6.2)
+    } else {
+      this.orbit.target.set(0.05, 0.55, -0.2)
+      this.camera.position.set(0.18, 2.7, 11.6)
+    }
+    this.syncOrbitFromCamera()
+    return true
   }
 
   poseClose(kind: AnimalId): boolean {
@@ -567,7 +616,7 @@ export class HostWorld {
 
   private placeActor(actor: Actor, t: number, dt: number): void {
     if (actor.frozen) {
-      if (actor.group.userData.pack === ART_CUTOUT_PACK) billboardY(actor.group, this.camera)
+      if (facesHostCamera(actor.group)) billboardY(actor.group, this.camera)
       return
     }
     const step = Math.min(dt, 0.05)
@@ -587,20 +636,20 @@ export class HostWorld {
     }
 
     const action = autoLandAction(t, actor.phase)
-    const cutout = actor.group.userData.pack === ART_CUTOUT_PACK
+    const facing = facesHostCamera(actor.group)
     if (action === 'drink') {
       actor.group.position.set(SHORE_DRINK.x, 0.02, SHORE_DRINK.z + actor.lane * 0.7)
       actor.group.rotation.y = Math.PI / 2
       tickAction(actor.group, 'drink', t)
-      if (cutout) billboardY(actor.group, this.camera)
+      if (facing) billboardY(actor.group, this.camera)
       return
     }
     if (action === 'rest') {
       const p = pointOnPath(0.28, -3.2)
-      actor.group.position.set(p.x, cutout ? 0.02 : 0.42, p.z)
+      actor.group.position.set(p.x, 0.02, p.z)
       actor.group.rotation.y = p.heading
       tickAction(actor.group, 'rest', t)
-      if (cutout) billboardY(actor.group, this.camera)
+      if (facing) billboardY(actor.group, this.camera)
       return
     }
     if (action === 'sit') {
@@ -608,7 +657,7 @@ export class HostWorld {
       actor.group.position.set(p.x, 0, p.z)
       actor.group.rotation.y = p.heading + Math.PI
       tickAction(actor.group, 'sit', t)
-      if (cutout) billboardY(actor.group, this.camera)
+      if (facing) billboardY(actor.group, this.camera)
       return
     }
 
@@ -618,7 +667,7 @@ export class HostWorld {
     actor.group.position.set(p.x, 0.02, p.z)
     actor.group.rotation.y = p.heading
     tickAction(actor.group, 'walk', t + actor.angle)
-    if (cutout) billboardY(actor.group, this.camera)
+    if (facing) billboardY(actor.group, this.camera)
   }
 
   private addLight(l: THREE.Light): void {

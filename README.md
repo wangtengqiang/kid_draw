@@ -52,15 +52,15 @@ npm run dev
 
 **主机世界**
 
-点 **打开世界**。森林对着 `gen-forest-empty` 搭：石头小路伸进林子，两侧是粗树干 + 圆树冠，近处有红蘑菇和蕨，右边一条小溪。不是米色平草坪，也不是把效果图糊成天空盒。捏合 / 滚轮可以拉近看动物、拉远看深处。侧栏可换 **森林 / 雪原 / 海底**。陆地动物会在石径上自己走、喝水、休息、坐下；海洋动物在东边海湾里游，不会走上小路。
+点 **打开世界**。森林对着 `gen-forest-empty` 搭：石头小路伸进林子，两侧是粗树干 + 圆树冠，近处有红蘑菇和蕨，右边一条小溪。不是米色平草坪，也不是把效果图糊成天空盒。捏合 / 滚轮可以拉近看动物、拉远看深处。侧栏可换 **森林 / 雪原 / 海底**。陆地动物会在石径上自己走、喝水、坐下、睡觉；海洋动物在东边海湾里游，不会走上小路。
 
-**3D 动物**（仅网页）陆地狮 / 鹿 / 虎是生成角色图的 **2.5D 透明剪纸**（对照 `gen-land-animals-sheet.png` / `gen-lion-ingame-target.png`），在小路上面向相机走动。不是 Kenney 方块、不是圆球堆的四足、不是向日葵头幼崽、不是狐狸冒充狮子。海里仍是 Kenney 小鱼 + Gobkit 鲸/海豹：
+**3D 动物**（仅网页）陆地狮 / 鹿 / 虎是 **一张卡通网格 + 真骨骼**（轮廓对着 `gen-lion-turnaround.png` / `gen-poses-*`），皮毛是生成角色图。会在小路上自己走、坐下、喝水、睡觉，是同一只身体在变形，不是四张剪纸来回贴。不是 Kenney 方块、不是圆球堆的四足、不是向日葵头幼崽、不是狐狸冒充狮子。海里仍是 Kenney 小鱼 + Gobkit 鲸/海豹：
 
-- 狮 / 鹿 / 虎 — 本仓库 `web/scripts/extract-art-cutouts.py` 抠出的 PNG 剪纸（`walk` / `idle` / `eat` / `static`）
+- 狮 / 鹿 / 虎 — 本仓库 `web/src/world-exhibition/cartoon-rig.ts` 运行时绑骨（`walk` / `sit` / `drink` / `sleep`），皮毛贴图来自 `extract-art-cutouts.py` 抠出的 PNG
 - 鱼 — [Kenney Cube Pets 2.0](https://kenney.nl/assets/cube-pets)（[CC0](https://creativecommons.org/publicdomain/zero/1.0/)）
 - 海豚 / 海龟 — [Gobkit](https://gobkit.com/api/free) Whale / Seal（CC0）。
 
-孩子在画板上画的条纹会**叠乘**到剪纸皮毛上，眼睛鼻子还是原画。识别只用来判断是哪只动物。取舍见 [`docs/industry-animal-pipeline.md`](docs/industry-animal-pipeline.md)。不要把千图网 PNG 当模型或贴图。
+孩子在画板上画的条纹会**叠乘**到卡通皮毛上，眼睛鼻子还是原画。识别只用来判断是哪只动物。取舍见 [`docs/industry-animal-pipeline.md`](docs/industry-animal-pipeline.md)。不要把千图网 PNG 当模型或贴图。
 
 目标效果图（只作对照，不当贴图）：`web/public/preview-shots/effect-lion-forest.png`、`effect-lion-close.png`。2D 涂色本在 `web/public/lineart/`。
 
