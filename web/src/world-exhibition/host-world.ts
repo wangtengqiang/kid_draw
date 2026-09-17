@@ -106,6 +106,8 @@ export const OCEAN = { x: 18.4, z: -1.2, rx: 2.15, rz: 3.4 }
 export const SHORE_DRINK = { x: 2.72, z: 1.35 }
 export const GROUND_RADIUS = 46
 export const TREE_INSTANCE_CAP = 96
+/** 默认镜头拉远一倍：动物、树、蘑菇、石径在画面里都大约一半大。 */
+export const FOREST_CAMERA_PULL = 2
 
 /** 水面外轮廓（x, z）：大湾接向远处的海，不是小方池。 */
 export const WATER_RING: [number, number][] = [
@@ -335,10 +337,10 @@ export class HostWorld {
     this.renderer.setClearColor('#8ec8f0', 1)
     this.renderer.setPixelRatio(1)
     this.renderer.shadowMap.enabled = false
-    this.camera = new THREE.PerspectiveCamera(42, 1, 0.3, 140)
-    this.camera.position.set(0.2, 2.05, 9.55)
-    this.camera.lookAt(0.08, 0.62, -2.8)
-    this.orbit = new OrbitZoom(canvas, this.camera, new THREE.Vector3(0.08, 0.58, -1.1), HOST_ORBIT)
+    this.camera = new THREE.PerspectiveCamera(42, 1, 0.3, 200)
+    this.camera.position.set(0.32, 3.52, 18.2)
+    this.camera.lookAt(0.08, 0.55, -4.2)
+    this.orbit = new OrbitZoom(canvas, this.camera, new THREE.Vector3(0.08, 0.55, -3.2), HOST_ORBIT)
     if (typeof window !== 'undefined') {
       const w = window as Window & {
         __kidDrawFrameHost?: () => boolean
@@ -453,14 +455,12 @@ export class HostWorld {
     } else if (head) head.getWorldPosition(target)
     else actor.group.getWorldPosition(target)
     this.orbit.target.copy(target)
-    this.camera.position.set(target.x + 0.15, target.y + 1.05, target.z + 4.6)
-    const ox = this.camera.position.x - this.orbit.target.x
-    const oy = this.camera.position.y - this.orbit.target.y
-    const oz = this.camera.position.z - this.orbit.target.z
-    this.orbit.radius = Math.hypot(ox, oy, oz)
-    this.orbit.phi = Math.acos(Math.min(1, Math.max(-1, oy / Math.max(this.orbit.radius, 1e-6))))
-    this.orbit.theta = Math.atan2(ox, oz)
-    this.orbit.apply()
+    this.camera.position.set(
+      target.x + 0.15 * FOREST_CAMERA_PULL,
+      target.y + 1.05 * FOREST_CAMERA_PULL,
+      target.z + 4.6 * FOREST_CAMERA_PULL,
+    )
+    this.syncOrbitFromCamera()
     return true
   }
 
@@ -470,9 +470,9 @@ export class HostWorld {
     const byKind = (id: AnimalId) => land.filter((a) => a.animalId === id)
     const order = [...byKind('lion'), ...byKind('deer'), ...byKind('tiger'), ...land.filter((a) => !['lion', 'deer', 'tiger'].includes(a.animalId))]
     const slots: [number, number][] = [
-      [-1.18, 2.42],
-      [0.04, 1.88],
-      [1.22, 2.28],
+      [-1.35, 3.35],
+      [0.12, 0.55],
+      [1.05, -2.15],
     ]
     order.forEach((actor, i) => {
       const slot = slots[Math.min(i, slots.length - 1)]!
@@ -482,8 +482,8 @@ export class HostWorld {
       tickAction(actor.group, 'walk', 0.35)
       if (actor.group.userData.pack === ART_CUTOUT_PACK) billboardY(actor.group, this.camera)
     })
-    this.orbit.target.set(0.04, 0.72, 2.05)
-    this.camera.position.set(0.08, 1.48, 6.35)
+    this.orbit.target.set(0.05, 0.62, -0.4)
+    this.camera.position.set(0.18, 2.85, 12.4)
     this.syncOrbitFromCamera()
     return order.length > 0
   }
@@ -496,7 +496,11 @@ export class HostWorld {
     actor.group.getWorldPosition(target)
     target.y += 0.72
     this.orbit.target.copy(target)
-    this.camera.position.set(target.x + 0.35, target.y + 0.45, target.z + 3.15)
+    this.camera.position.set(
+      target.x + 0.35 * FOREST_CAMERA_PULL,
+      target.y + 0.45 * FOREST_CAMERA_PULL,
+      target.z + 3.15 * FOREST_CAMERA_PULL,
+    )
     this.syncOrbitFromCamera()
     return true
   }
@@ -513,15 +517,9 @@ export class HostWorld {
 
   /** 空林子：顺着石径往里看，蘑菇在近处。 */
   framePathVista(): void {
-    this.orbit.target.set(0.08, 0.55, -1.4)
-    this.camera.position.set(0.22, 2.12, 9.6)
-    const ox = this.camera.position.x - this.orbit.target.x
-    const oy = this.camera.position.y - this.orbit.target.y
-    const oz = this.camera.position.z - this.orbit.target.z
-    this.orbit.radius = Math.hypot(ox, oy, oz)
-    this.orbit.phi = Math.acos(Math.min(1, Math.max(-1, oy / Math.max(this.orbit.radius, 1e-6))))
-    this.orbit.theta = Math.atan2(ox, oz)
-    this.orbit.apply()
+    this.orbit.target.set(0.08, 0.5, -3.6)
+    this.camera.position.set(0.36, 3.7, 18.8)
+    this.syncOrbitFromCamera()
   }
 
   showEmote(animalId: string, emote: EmoteId): void {
@@ -630,7 +628,7 @@ export class HostWorld {
 
   private buildForest(): void {
     this.scene.background = new THREE.Color('#8ec8f0')
-    this.scene.fog = new THREE.Fog('#c5e0a8', 28, 92)
+    this.scene.fog = new THREE.Fog('#c5e0a8', 42, 120)
     ;(this.ground.material as THREE.MeshLambertMaterial).color.set('#6aaa4a')
     this.addLight(new THREE.HemisphereLight('#fff3c8', '#3d6a32', 1.22))
     const sun = new THREE.DirectionalLight('#ffe6a8', 1.05)

@@ -14,8 +14,8 @@ export type OrbitLimits = {
 
 /** 主机森林：可以拉远看深处，也可以捏近看小动物。 */
 export const HOST_ORBIT: OrbitLimits = {
-  minRadius: 2.6,
-  maxRadius: 34,
+  minRadius: 4.2,
+  maxRadius: 52,
   minPhi: (14 * Math.PI) / 180,
   maxPhi: (72 * Math.PI) / 180,
 }

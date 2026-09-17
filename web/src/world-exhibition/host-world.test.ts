@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   CREEK_POINTS,
+  FOREST_CAMERA_PULL,
   GROUND_RADIUS,
   LAND_BEATS,
   LAND_CYCLE,
@@ -80,6 +81,10 @@ describe('illustrated forest path', () => {
     for (const [x, z] of CREEK_POINTS) {
       expect(distToPath(x, z)).toBeGreaterThan(1.4)
     }
+  })
+
+  it('pulls the default camera back so animals and trees both read half size', () => {
+    expect(FOREST_CAMERA_PULL).toBe(2)
   })
 
   it('plants mushrooms beside the path entrance', () => {
