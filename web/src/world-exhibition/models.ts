@@ -11,7 +11,7 @@ import { instanceAnimal, playAnimalClip } from './gltf-kit'
 export { loadAnimalTemplates, setAnimalModelProvider, animalTemplatesReady } from './gltf-kit'
 
 function keepFace(obj: THREE.Object3D): boolean {
-  if (obj.userData.keepFace) return true
+  if (obj.userData.keepFace || obj.userData.portrait) return true
   const n = `${obj.name} ${obj.userData.region || ''}`.toLowerCase()
   return n.includes('eye') || n.includes('iris') || n.includes('pupil') || n.includes('shine') || n.includes('nose')
 }

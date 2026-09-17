@@ -65,7 +65,12 @@ describe('rigged cartoon lion/deer/tiger', () => {
         expect.arrayContaining(['walk', 'sit', 'drink', 'sleep', 'idle']),
       )
       const mat = body.material as THREE.MeshLambertMaterial
-      expect(mat.map).toBeTruthy()
+      expect(mat.vertexColors).toBe(true)
+      expect(mat.map).toBeFalsy()
+      const portrait = group.getObjectByName('portrait') as THREE.Mesh
+      expect(portrait).toBeTruthy()
+      expect(portrait.geometry).toBeInstanceOf(THREE.PlaneGeometry)
+      expect((portrait.material as THREE.MeshLambertMaterial).map).toBeTruthy()
       expect(CUTOUT_SRC[kind]).toMatch(/\/models\/cutouts\/.+\.png/)
       expect(existsSync(resolve(PUBLIC, `models/cutouts/${kind}.png`))).toBe(true)
       const png = readFileSync(resolve(PUBLIC, `models/cutouts/${kind}.png`))
@@ -123,11 +128,15 @@ describe('rigged cartoon lion/deer/tiger', () => {
     const body = lion.getObjectByName('body') as THREE.Mesh
     const mat = body.material as THREE.MeshLambertMaterial
     expect(body.userData.rigged).toBe(true)
-    expect(mat.map).toBeTruthy()
+    expect(mat.map).toBeFalsy()
     expect(mat.map).not.toBe(paper)
-    const uv = body.geometry.getAttribute('uv')
+    const portrait = lion.getObjectByName('portrait') as THREE.Mesh
+    const coat = (portrait.material as THREE.MeshLambertMaterial).map
+    expect(coat).toBeTruthy()
+    expect(coat).not.toBe(paper)
+    const uv = portrait.geometry.getAttribute('uv')
     expect(uv).toBeTruthy()
-    expect(uv.count).toBeGreaterThan(8)
+    expect(uv.count).toBeGreaterThan(3)
   })
 
   it('Gobkit whale/seal remain marine stand-ins', async () => {

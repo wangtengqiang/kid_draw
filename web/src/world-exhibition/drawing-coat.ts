@@ -205,11 +205,12 @@ function whenPaintReady(source: CoatSource, use: (img: HTMLCanvasElement | HTMLI
 
 function multiplyCutoutCoat(root: THREE.Group, source: CoatSource): boolean {
   const body = root.getObjectByName('body') as THREE.Mesh | undefined
-  if (!body || !(body.material instanceof THREE.MeshLambertMaterial)) return false
+  const portrait = root.getObjectByName('portrait') as THREE.Mesh | undefined
+  const bodyMap = body?.material instanceof THREE.MeshLambertMaterial ? body.material.map : null
+  const portraitMap =
+    portrait?.material instanceof THREE.MeshLambertMaterial ? portrait.material.map : null
   const sprite =
-    (root.userData.spriteMap as THREE.Texture | undefined) ||
-    body.material.map ||
-    undefined
+    (root.userData.spriteMap as THREE.Texture | undefined) || portraitMap || bodyMap || undefined
   if (!sprite?.image) return false
   const art = sprite.image as { width?: number; height?: number; naturalWidth?: number; naturalHeight?: number } | undefined
   const w = art?.width || art?.naturalWidth || 0
@@ -262,10 +263,13 @@ function multiplyCutoutCoat(root: THREE.Group, source: CoatSource): boolean {
   root.userData.drawing = tex
   root.userData.coat = tex
   const cutout = root.userData.pack === 'art-cutout'
+  const cartoon = root.userData.pack === 'cartoon-rig'
   root.traverse((obj) => {
     if (!(obj instanceof THREE.Mesh) || keepFace(obj)) return
+    const isPortrait = obj.userData.portrait || obj.name === 'portrait'
     const rigged = obj.userData.rigged || (obj as THREE.SkinnedMesh).isSkinnedMesh || obj.name === 'body'
-    if (!cutout && !rigged) return
+    if (cartoon && !isPortrait) return
+    if (!cutout && !cartoon && !rigged) return
     const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
     for (const mat of mats) {
       if (!('map' in mat)) continue
@@ -273,7 +277,7 @@ function multiplyCutoutCoat(root: THREE.Group, source: CoatSource): boolean {
       lambert.map = tex
       lambert.color.set('#ffffff')
       lambert.needsUpdate = true
-      if (cutout) {
+      if (cutout || isPortrait) {
         lambert.alphaTest = 0.28
         lambert.side = THREE.DoubleSide
       }

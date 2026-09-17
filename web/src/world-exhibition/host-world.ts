@@ -527,8 +527,8 @@ export class HostWorld {
       if (facesHostCamera(actor.group)) billboardY(actor.group, this.camera)
     })
     if (action === 'drink') {
-      this.orbit.target.set(SHORE_DRINK.x - 0.2, 0.55, SHORE_DRINK.z)
-      this.camera.position.set(SHORE_DRINK.x - 0.4, 2.4 * FOREST_CAMERA_PULL * 0.55, SHORE_DRINK.z + 6.2)
+      this.orbit.target.set(SHORE_DRINK.x, 0.55, SHORE_DRINK.z)
+      this.camera.position.set(SHORE_DRINK.x + 0.18, 2.7, SHORE_DRINK.z + 11.6)
     } else {
       this.orbit.target.set(0.05, 0.55, -0.2)
       this.camera.position.set(0.18, 2.7, 11.6)
@@ -546,9 +546,9 @@ export class HostWorld {
     target.y += 0.72
     this.orbit.target.copy(target)
     this.camera.position.set(
-      target.x + 0.35 * FOREST_CAMERA_PULL,
-      target.y + 0.45 * FOREST_CAMERA_PULL,
-      target.z + 3.15 * FOREST_CAMERA_PULL,
+      target.x + 0.15 * FOREST_CAMERA_PULL,
+      target.y + 1.05 * FOREST_CAMERA_PULL,
+      target.z + 4.6 * FOREST_CAMERA_PULL,
     )
     this.syncOrbitFromCamera()
     return true

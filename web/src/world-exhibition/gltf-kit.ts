@@ -223,7 +223,7 @@ function paintMesh(obj: THREE.Mesh, bodyTint: string): void {
     obj.receiveShadow = false
     return
   }
-  if (obj.userData.cutout) {
+  if (obj.userData.cutout || obj.userData.portrait) {
     const src = (Array.isArray(obj.material) ? obj.material[0] : obj.material) as THREE.MeshLambertMaterial
     const copy = src.clone()
     copy.map = src.map
@@ -231,10 +231,11 @@ function paintMesh(obj: THREE.Mesh, bodyTint: string): void {
     copy.side = THREE.DoubleSide
     copy.transparent = false
     copy.depthWrite = true
-    if (bodyTint && bodyTint !== '#ffffff' && bodyTint !== '#fffdf7') copy.color = new THREE.Color(bodyTint)
+    if (obj.userData.portrait) copy.color = new THREE.Color('#ffffff')
+    else if (bodyTint && bodyTint !== '#ffffff' && bodyTint !== '#fffdf7') copy.color = new THREE.Color(bodyTint)
     else copy.color = new THREE.Color('#ffffff')
     obj.material = copy
-    obj.userData.region = 'body'
+    obj.userData.region = obj.userData.portrait ? 'portrait' : 'body'
     obj.castShadow = false
     obj.receiveShadow = false
     return
