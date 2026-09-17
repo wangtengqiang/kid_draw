@@ -125,7 +125,8 @@
 - 鱼 ← Kenney Cube Pets（CC0）。
 - 海豚 / 海龟 ← Gobkit Whale / Seal（CC0）。
 - 运行时：`GLTFLoader` + `AnimationMixer`。孩子涂色是画板原图像素，贴在皮毛 UV 上。
-- 网页：选动物 / 画廊 / 送到啦 / 涂色旁预览 / 主机森林，都是同一份 glTF。
+- 网页主机森林：可走石径 + 圆冠树 + 蘑菇 + 小溪（对照 `gen-forest-empty.png` / `gen-forest-with-animals.png`），不是米色平草坪，也不是天空盒假景。
+- 网页：选动物 / 画廊 / 送到啦 / 涂色旁预览 / 主机森林，陆地剪纸 + 海里 glTF。
 - 微信小游戏：微信开发者工具从**仓库根**导入。选一只用 `picks/*.png`（另有 `minigame/picks/`），涂色 / 打印线稿用 `lineart/*.png`（官方涂色本，不是椭圆雪人）。成功页、画廊、2D 主机用 `models/snapshots/*.png`（狮/鹿/虎/鱼/海豚/海龟，网页 Three.js 烘出来的正面；`minigame/models/snapshots/` 是同一份）。网页 Vite 读 `web/public/` 下对应路径。完整 3D 森林仍在网页。不移植整包 Three.js，也不改写成 Cocos。
 
 许可证：`web/public/models/NOTICE.md`。无千图网、无 CloudBase 密钥。效果图 `preview-shots/effect-lion-*.png` 是目标对照，不当游戏贴图。

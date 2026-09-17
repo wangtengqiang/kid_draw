@@ -1,17 +1,22 @@
 import { describe, expect, it } from 'vitest'
 import {
+  CREEK_POINTS,
   GROUND_RADIUS,
   LAND_BEATS,
   LAND_CYCLE,
+  MUSHROOM_SPOTS,
   OCEAN,
+  PATH_POINTS,
   SHORE_DRINK,
   TREE_INSTANCE_CAP,
   WATER_RING,
   actorPhase,
   autoActorAction,
   autoLandAction,
+  distToPath,
   offsetRing,
   pointInRing,
+  pointOnPath,
   smoothCoast,
 } from './host-world'
 
@@ -53,6 +58,41 @@ describe('organic coast', () => {
     expect(GROUND_RADIUS).toBeGreaterThan(40)
     expect(Math.max(...WATER_RING.map((p) => p[0]))).toBeGreaterThan(30)
     expect(TREE_INSTANCE_CAP).toBeLessThanOrEqual(96)
+  })
+})
+
+describe('illustrated forest path', () => {
+  it('runs a long stone path into the woods, not a beige circle', () => {
+    expect(PATH_POINTS.length).toBeGreaterThan(5)
+    const xs = PATH_POINTS.map((p) => p[0])
+    const zs = PATH_POINTS.map((p) => p[1])
+    const zSpan = Math.max(...zs) - Math.min(...zs)
+    const xSpan = Math.max(...xs) - Math.min(...xs)
+    expect(zSpan).toBeGreaterThan(12)
+    expect(zSpan).toBeGreaterThan(xSpan * 4)
+    const start = pointOnPath(0)
+    const mid = pointOnPath(0.5)
+    expect(Math.hypot(start.x - mid.x, start.z - mid.z)).toBeGreaterThan(4)
+  })
+
+  it('keeps the creek beside the path, not on the stones', () => {
+    expect(CREEK_POINTS.length).toBeGreaterThan(3)
+    for (const [x, z] of CREEK_POINTS) {
+      expect(distToPath(x, z)).toBeGreaterThan(1.4)
+    }
+  })
+
+  it('plants mushrooms beside the path entrance', () => {
+    expect(MUSHROOM_SPOTS.length).toBeGreaterThanOrEqual(4)
+    const near = MUSHROOM_SPOTS.filter((s) => s.z > 4)
+    expect(near.length).toBeGreaterThanOrEqual(2)
+    expect(near.some((s) => s.x < 0)).toBe(true)
+    expect(near.some((s) => s.x > 0)).toBe(true)
+  })
+
+  it('puts the drink stand on the creek bank, outside the ocean', () => {
+    expect(pointInRing(SHORE_DRINK.x, SHORE_DRINK.z, smoothCoast())).toBe(false)
+    expect(distToPath(SHORE_DRINK.x, SHORE_DRINK.z)).toBeGreaterThan(1)
   })
 })
 
