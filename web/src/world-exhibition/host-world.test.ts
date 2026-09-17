@@ -28,7 +28,6 @@ import {
   pointOnPath,
   smoothCoast,
 } from './host-world'
-import { pickLandView } from './cartoon-rig'
 
 describe('organic coast', () => {
   it('is a wavy polygon, not a rectangle', () => {
@@ -138,18 +137,18 @@ describe('illustrated forest path', () => {
     expect(Math.abs(sit - drink)).toBeGreaterThan(0.8)
     expect(Math.abs(walkL - walk)).toBeGreaterThan(0.2)
     expect(Math.abs(Math.sin(drink))).toBeGreaterThan(0.45)
-    expect(Math.abs(Math.sin(drink))).toBeLessThan(0.9)
-    expect(Math.abs(Math.sin(walk))).toBeGreaterThan(0.3)
-    expect(Math.abs(Math.sin(walk))).toBeLessThan(0.9)
+    expect(Math.abs(Math.cos(walk))).toBeGreaterThan(0.55)
     expect(CREEK_CLEAR).toBeGreaterThan(1.7)
   })
 
-  it('picks front, three-quarter and side art instead of yawing a card', () => {
-    expect(pickLandView('walk', 0).view).toBe('front')
-    expect(pickLandView('walk', 0.85).view).toBe('threeQuarter')
-    expect(pickLandView('walk', 1.55).view).toBe('side')
-    expect(pickLandView('drink', 0.82).view).toBe('drink')
-    expect(pickLandView('sit', -0.78).view).not.toBe(pickLandView('walk', 0.85).view)
+  it('yaws the model with path heading instead of swapping front/3-quarter/side cards', () => {
+    const along = pointOnPath(0.2, 0)
+    const walk = landYaw('walk', along.heading, 0)
+    expect(walk).toBeCloseTo(along.heading, 5)
+    const drink = drinkStand(0).heading
+    expect(drink).not.toBeCloseTo(walk, 1)
+    const sit = landYaw('sit', along.heading, 0)
+    expect(Math.abs(sit - walk)).toBeGreaterThan(1)
   })
 
   it('keeps land pets at a constant world scale so distance shrinks height', () => {

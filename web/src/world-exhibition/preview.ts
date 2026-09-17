@@ -8,6 +8,7 @@ import { createAnimalModel, tickWalk, tintAnimal } from './models'
 import { OrbitZoom, PREVIEW_ORBIT } from './orbit-zoom'
 import { ART_CUTOUT_PACK, billboardY } from './art-cutout'
 import { CARTOON_RIG_PACK } from './cartoon-rig'
+import { LAND_GLTF_PACK } from './gltf-kit'
 
 export class PreviewStage {
   readonly canvas: HTMLCanvasElement
@@ -88,7 +89,7 @@ export class PreviewStage {
     this.raf = requestAnimationFrame(this.loop)
     const t = this.clock.getElapsedTime()
     if (this.model) {
-      if (this.model.userData.pack === CARTOON_RIG_PACK) {
+      if (this.model.userData.pack === CARTOON_RIG_PACK || this.model.userData.pack === LAND_GLTF_PACK) {
         if (!this.orbit.interacting) {
           this.rot += 0.006
           this.model.rotation.y = this.rot

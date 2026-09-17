@@ -752,18 +752,29 @@ export function facesHostCamera(obj: THREE.Object3D | undefined | null): boolean
   return obj?.userData.pack === 'art-cutout'
 }
 
-/** 坐下/睡觉也不把爪子埋进石径：量剪纸底边，抬剪纸。 */
+/** 坐下/睡觉也不把爪子埋进石径：量网格底边，抬整只动物。 */
 export function keepPawsOnPath(root: THREE.Object3D): void {
-  if (root.userData.pack !== CARTOON_RIG_PACK) return
-  const portrait = root.getObjectByName('portrait') as THREE.Mesh | undefined
-  if (!portrait || !portrait.visible) return
-  if (typeof portrait.userData.baseY !== 'number') portrait.userData.baseY = portrait.position.y
-  portrait.position.y = portrait.userData.baseY as number
+  if (root.userData.pack === CARTOON_RIG_PACK) {
+    const portrait = root.getObjectByName('portrait') as THREE.Mesh | undefined
+    if (!portrait || !portrait.visible) return
+    if (typeof portrait.userData.baseY !== 'number') portrait.userData.baseY = portrait.position.y
+    portrait.position.y = portrait.userData.baseY as number
+    root.updateMatrixWorld(true)
+    const box = new THREE.Box3().setFromObject(portrait)
+    if (!Number.isFinite(box.min.y)) return
+    const floor = root.position.y
+    const pad = 0.03
+    if (box.min.y < floor + pad) portrait.position.y += floor + pad - box.min.y
+    root.updateMatrixWorld(true)
+    return
+  }
+  if (root.userData.pack !== 'land-gltf') return
+  if (typeof root.userData.pawBaseY !== 'number') root.userData.pawBaseY = root.position.y
+  root.position.y = root.userData.pawBaseY as number
   root.updateMatrixWorld(true)
-  const box = new THREE.Box3().setFromObject(portrait)
+  const box = new THREE.Box3().setFromObject(root)
   if (!Number.isFinite(box.min.y)) return
-  const floor = root.position.y
-  const pad = 0.03
-  if (box.min.y < floor + pad) portrait.position.y += floor + pad - box.min.y
+  const pad = 0.02
+  if (box.min.y < pad) root.position.y += pad - box.min.y
   root.updateMatrixWorld(true)
 }

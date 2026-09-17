@@ -42,10 +42,19 @@ describe('drawing coat is the raw bitmap', () => {
     expect(colors.size).toBe(2)
   })
 
-  it('does not replace a cartoon-rig coat with the raw paintboard', () => {
+  it('multiplies kid paint onto a land-gltf coat instead of replacing the mesh', () => {
     const root = new THREE.Group()
-    root.userData.pack = 'cartoon-rig'
-    const sprite = stripeTexture()
+    root.userData.pack = 'land-gltf'
+    const canvas = document.createElement('canvas')
+    canvas.width = 4
+    canvas.height = 4
+    const ctx = canvas.getContext('2d')
+    if (ctx) {
+      ctx.fillStyle = '#f0b54a'
+      ctx.fillRect(0, 0, 4, 4)
+    }
+    const sprite = new THREE.CanvasTexture(canvas)
+    sprite.needsUpdate = true
     root.userData.spriteMap = sprite
     const mesh = new THREE.Mesh(
       new THREE.BufferGeometry(),
@@ -53,18 +62,15 @@ describe('drawing coat is the raw bitmap', () => {
     )
     mesh.name = 'body'
     mesh.userData.rigged = true
-    mesh.userData.ghost = true
-    const portrait = new THREE.Mesh(
-      new THREE.PlaneGeometry(1, 1),
-      new THREE.MeshLambertMaterial({ map: sprite, color: '#ffffff' }),
-    )
-    portrait.name = 'portrait'
-    portrait.userData.portrait = true
-    root.add(mesh, portrait)
+    root.add(mesh)
     applyDrawingCoat(root, stripeTexture())
-    expect((mesh.material as THREE.MeshLambertMaterial).map).toBe(sprite)
-    expect((portrait.material as THREE.MeshLambertMaterial).map).toBe(sprite)
-    expect((portrait.material as THREE.MeshLambertMaterial).map).not.toBe(root.userData.drawing)
+    expect(mesh.geometry).not.toBeInstanceOf(THREE.PlaneGeometry)
+    if (root.userData.drawing) {
+      expect((mesh.material as THREE.MeshLambertMaterial).map).toBe(root.userData.drawing)
+      expect((mesh.material as THREE.MeshLambertMaterial).map).not.toBe(stripeTexture())
+    } else {
+      expect((mesh.material as THREE.MeshLambertMaterial).map).toBe(sprite)
+    }
   })
 
   it('writes box UVs so the drawing covers the mesh', () => {

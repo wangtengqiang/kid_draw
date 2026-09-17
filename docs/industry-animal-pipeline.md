@@ -55,7 +55,7 @@
 
 ## 候选取舍（这一轮又查了一遍）
 
-家长参考是站立、鬃毛蓬松、大眼睛的卡通狮。免费包里没有同时满足「像那张狮、真物种、可走路」的 glTF，圆球 CSG 四足也不像参考图。陆地狮/鹿/虎改为 **生成角色 PNG 的 2.5D 剪纸**（`extract-art-cutouts.py`），在森林里面向相机走动。Kenney Cube Pets 只留给鱼。
+家长参考是站立、鬃毛蓬松、大眼睛的卡通狮。免费包里没有同时满足「像那张狮、真物种、可走路」的 glTF，圆球 CSG 四足也不像参考图。陆地狮/鹿/虎改为 **本仓库 glTF 四足**（`author-land-gltf.mjs`）：体积网格 + 脖子骨 + Walk/Sit/Drink/Sleep/Turn，孩子涂色叠乘到皮毛 UV。Kenney Cube Pets 只留给鱼。2.5D 剪纸 yaw **不再是陆地默认**（手机侧视会拧成卡片）。
 
 | 候选 | URL | 结论 |
 | --- | --- | --- |
@@ -72,9 +72,10 @@
 | Mixamo | https://www.mixamo.com/ | **拒绝。** 人形库，要 Adobe 登录。 |
 | OGA Micket tiger、低模鹿 | https://opengameart.org/content/tiger · https://opengameart.org/content/deer-low-poly-rigged | **拒绝。** CC0 但是 0 A.D. 写实低模，不是幼崽卡通，还是 .blend/.zip。 |
 | Unity/CGTrader 卡通虎 | 付费资源店 | **拒绝。** 付费 API / 商店。 |
-| 粘土 / 胶囊 / icosphere 鬃毛 / 向日葵幼崽 / 圆球四足 | 本仓库旧 `author-animals.mjs` 与 `author-cartoon-cubs.mjs` | **拒绝。** 陆地改为生成角色图的 2.5D 剪纸，必须能一眼认出是参考图里的狮/鹿/虎。 |
+| 粘土 / 胶囊 / icosphere 鬃毛 / 向日葵幼崽 / 圆球四足 | 本仓库旧 `author-animals.mjs` 与 `author-cartoon-cubs.mjs` | **拒绝。** 陆地改为本仓库 loft 四足 glTF，必须能一眼认出是狮/鹿/虎，而且是网格不是卡片。 |
+| 2.5D 剪纸 yaw（`pickLandView` / `applyLandView`） | 本仓库上一轮 `cartoon-rig.ts` 肖像平面 | **拒绝作为陆地默认。** 手机侧视（`user-phone-warp-still`）仍是拧扁的卡片。保留文件只作对照。 |
 
-免登录 zip 里**没有**「又圆又像参考图、又是真老虎」的 glTF。虎和狮、鹿一样用本仓库站立四足，不用狼、也不用 Kenney 方块虎。
+免登录 zip 里**没有**「又圆又像参考图、又是真老虎」的现成 glTF。虎和狮、鹿一样用本仓库 glTF 四足，不用狼、也不用 Kenney 方块虎。这一轮没能进 Blender 手绑一整套卡通，所以网格是 loft 超椭圆四足（有体积、有 UV、有脖子、有动作剪辑），不是写实 Quaternius、也不是剪纸。缺的是：工作室级 blend shape、打进 glb 的四面转面贴图、手 K 的踩地。森林已经 `GLTFLoader` 读网格。
 
 ## 别人怎么用 GL 画动物
 
@@ -82,8 +83,8 @@
 
 | 总览 | 本项目 |
 | --- | --- |
-| 建模 modeling | 本仓库站立卡通四足 glTF（狮/鹿/虎）+ Kenney 鱼 + Gobkit 鲸/海豹，不在运行时捏椭圆 |
-| 贴图 textures | 陆地：孩子画板原图像素当皮毛 UV；鱼：Kenney `colormap.png` 脸图集 |
+| 建模 modeling | 本仓库陆地 glTF 四足（狮/鹿/虎）+ Kenney 鱼 + Gobkit 鲸/海豹，不在运行时捏椭圆，也不 yaw 一张 PNG |
+| 贴图 textures | 陆地：孩子画板原图像素**叠乘**到皮毛 albedo UV；鱼：Kenney `colormap.png` 脸图集 |
 | 灯光 lighting | Ambient + Hemisphere + Directional |
 | 投影 projection | `PerspectiveCamera` |
 | 光栅化 rasterization | `WebGLRenderer`（WebGL） |
@@ -95,15 +96,15 @@
 
 | 做法 | 是什么 | 什么时候用 | 本项目 |
 | --- | --- | --- | --- |
-| **精灵 / 广告牌** | 一张 PNG 永远对着相机 | 2D 微信小游戏、远景粒子 | 小游戏成功页用 **glTF 烘出来的 PNG**，陆地是站立四足正面，不是手绘椭圆 |
-| **蒙皮网格** | 骨骼带动顶点，`AnimationMixer` / Unity Mecanim 播 Walk | 会走路的 3D 角色 | 网页主机森林：`GLTFLoader` + `AnimationMixer` |
-| **Kenney Cube Pets** | 低模立方卡通 + 一张脸图集 + 文件里的 walk/idle | 独立游戏、网页 demo | **只采用鱼。** 狮/鹿/虎改成本仓库站立四足 |
+| **精灵 / 广告牌** | 一张 PNG 永远对着相机 | 2D 微信小游戏、远景粒子 | 小游戏成功页用 **glTF 烘出来的 PNG**；陆地主机森林是体积网格，不是剪纸 |
+| **蒙皮网格** | 骨骼带动顶点，`AnimationMixer` / Unity Mecanim 播 Walk | 会走路的 3D 角色 | 网页主机森林：`GLTFLoader` + `AnimationMixer`，朝向 = 模型绕 Y |
+| **Kenney Cube Pets** | 低模立方卡通 + 一张脸图集 + 文件里的 walk/idle | 独立游戏、网页 demo | **只采用鱼。** 狮/鹿/虎改成本仓库 land glTF |
 
 **Three.js（网页留下这一条）**
 
 1. [`GLTFLoader`](https://threejs.org/docs/#examples/en/loaders/GLTFLoader) 读 `.glb`（网格、UV、贴图、剪辑一次进来）。手册：[Loading 3D models](https://threejs.org/docs/#manual/en/introduction/Loading-3D-models)。
 2. [`AnimationMixer`](https://threejs.org/docs/#api/en/animation/AnimationMixer) 播 `walk` / `idle`。说明：[Animation system](https://threejs.org/manual/en/animation-system.html)。蒙皮要 `SkeletonUtils.clone`，不能只 `scene.clone()`。
-3. 卡通光：[toon 示例](https://threejs.org/examples/#webgl_materials_toon)（`MeshToonMaterial` 分层光）。描边常用 [inverted hull / OutlineEffect](https://threejs.org/examples/#webgl_clipping_stencil)。陆地四足是分件 Lambert（大眼睛、颈鬃是网格，不是图集）；鱼才用 Kenney 脸图集。不打阴影（主机注释里写了省 GPU）。
+3. 卡通光：[toon 示例](https://threejs.org/examples/#webgl_materials_toon)（`MeshToonMaterial` 分层光）。描边常用 [inverted hull / OutlineEffect](https://threejs.org/examples/#webgl_clipping_stencil)。陆地四足是一份蒙皮 Lambert + 皮毛 UV；鱼才用 Kenney 脸图集。不打阴影（主机注释里写了省 GPU）。
 
 **Unity / Unreal 童书式上色**
 
@@ -117,24 +118,24 @@
 
 **孩子涂色怎么进网格**
 
-博物馆 / LED 案例（上文）都是：纸是 2D 模板，3D 是做好的角色。我们屏上仍是自由蜡笔；识别用开场模板。陆地剪纸把画板原图像素**叠乘**在角色图上；鱼仍乘 Kenney 脸图集。
+博物馆 / LED 案例（上文）都是：纸是 2D 模板，3D 是做好的角色。我们屏上仍是自由蜡笔；识别用开场模板。陆地 glTF 把画板原图像素**叠乘**在皮毛 albedo 上，不换网格；鱼仍乘 Kenney 脸图集。
 
 ## 当前默认
 
-- 狮 / 鹿 / 虎 ← 生成角色图 2.5D：走路换正面 / 3/4 / 侧面（狮从 `gen-lion-turnaround.png` 切片），坐下 / 喝水 / 睡觉换动作图。剪纸立着对着镜头，**不把一张正面 PNG 在 3D 里 yaw 扁**。
+- 狮 / 鹿 / 虎 ← **land glTF**（`web/public/models/{lion,deer,tiger}.glb`）：体积卡通网格 + 四足骨骼（含脖子）+ walk/idle/sit/drink/sleep/turn。朝向 = 模型绕 Y，头可以靠脖子骨看镜头。孩子蜡笔叠乘到皮毛 UV。不是剪纸 yaw，不是 Kenney 方块，不是狐狸冒充狮子。
 
 ## 头和身子怎么换方向
 
 手机截图里狮被拧成卡片（歪歪扁扁），是因为把**一张正面 PNG 绕竖直轴转**。业界不这么做。
 
-1. **真 3D** — 转的是网格（竖直轴 yaw），或播一段转身。头可以单独 look-at 脖子骨，身子跟走路朝向。本项目还没有陆地 `.glb` 绑定，**不要用转卡片冒充**。参考：[Three.js Animation system](https://threejs.org/manual/en/animation-system.html)、[Unity Mecanim](https://docs.unity3d.com/Manual/AnimationSection.html)。
-2. **2.5D（现在交付）** — 画好正面 / 3/4 / 侧面（可左右镜像）。朝向 = 换哪张图。精灵始终立着，可 Y-billboard 正对镜头，所以透视只缩小远近身高，不把身子压扁。Don't Starve、Paper Mario、多数微信 Spine 宠物都是这一路。狮用 `gen-lion-turnaround.png`；鹿 / 虎用站立 3/4 + `gen-poses-*` 动作图。代码：`pickLandView` / `applyLandView`，根节点 `rotation.y = 0`。
+1. **真 3D（现在交付）** — 转的是网格（竖直轴 yaw），或播 `turn` 剪辑。头可以单独 look-at 脖子骨，身子跟走路朝向。代码：`group.rotation.y = heading` + `aimLandHead`（脖子）。参考：[Three.js Animation system](https://threejs.org/manual/en/animation-system.html)、[Unity Mecanim](https://docs.unity3d.com/Manual/AnimationSection.html)。
+2. **2.5D（上一轮，已退出陆地默认）** — 画好正面 / 3/4 / 侧面。朝向 = 换哪张图。手机侧视仍会把剪纸看成卡片，王腾强截图就是这个。`pickLandView` / `applyLandView` 留在 `cartoon-rig.ts` 只作对照。
 3. **分层纸娃娃** — 身子朝向 + 头叠加，头转角要夹住，不能在正面身子上拧 180°。本回合不做。
 - 鱼 ← Kenney Cube Pets（CC0）。
 - 海豚 / 海龟 ← Gobkit Whale / Seal（CC0）。
-- 运行时：`GLTFLoader` + `AnimationMixer`。孩子涂色是画板原图像素，贴在皮毛 UV 上。
+- 运行时：`GLTFLoader` + `AnimationMixer`。孩子涂色是画板原图像素，叠乘在皮毛 UV 上。
 - 网页主机森林：可走石径 + 圆冠树 + 蘑菇 + 小溪（对照 `gen-forest-empty.png` / `gen-forest-with-animals.png`），不是米色平草坪，也不是天空盒假景。
-- 网页：选动物 / 画廊 / 送到啦 / 涂色旁预览 / 主机森林，陆地剪纸 + 海里 glTF。
+- 网页：选动物 / 画廊 / 送到啦 / 涂色旁预览 / 主机森林，陆地 glTF + 海里 glTF。
 - 微信小游戏：微信开发者工具从**仓库根**导入。选一只用 `picks/*.png`（另有 `minigame/picks/`），涂色 / 打印线稿用 `lineart/*.png`（官方涂色本，不是椭圆雪人）。成功页、画廊、2D 主机用 `models/snapshots/*.png`（狮/鹿/虎/鱼/海豚/海龟，网页 Three.js 烘出来的正面；`minigame/models/snapshots/` 是同一份）。网页 Vite 读 `web/public/` 下对应路径。完整 3D 森林仍在网页。不移植整包 Three.js，也不改写成 Cocos。
 
 许可证：`web/public/models/NOTICE.md`。无千图网、无 CloudBase 密钥。效果图 `preview-shots/effect-lion-*.png` 是目标对照，不当游戏贴图。

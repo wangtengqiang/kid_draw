@@ -10,6 +10,7 @@
     "test": "vitest run",
     "author-animals": "node scripts/author-animals.mjs",
     "author-cubs": "node scripts/author-cartoon-cubs.mjs",
+    "author-land-gltf": "node scripts/author-land-gltf.mjs",
     "extract-cutouts": "python3 scripts/extract-art-cutouts.py"
   },
   "dependencies": {

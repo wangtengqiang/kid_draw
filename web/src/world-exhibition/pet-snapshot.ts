@@ -1,7 +1,7 @@
 /**
- * 同一套 2.5D 剪纸 / Gobkit glTF 的四分之三快照。
+ * 同一套 glTF 四足 / Gobkit glTF 的四分之三快照。
  * 选动物卡片、画廊缩略图、小游戏 2D 都用这里，避免再画椭圆。
- * 陆地是生成角色 PNG 剪纸；海里仍走 GLTFLoader。不打阴影。
+ * 陆地是体积网格；海里仍走 GLTFLoader。不打阴影。
  */
 import * as THREE from 'three'
 import type { AnimalId } from '../types'
@@ -10,6 +10,7 @@ import { loadAnimalTemplates } from './gltf-kit'
 import { createAnimalModel, tickWalk } from './models'
 import { billboardY, ART_CUTOUT_PACK } from './art-cutout'
 import { CARTOON_RIG_PACK } from './cartoon-rig'
+import { LAND_GLTF_PACK } from './gltf-kit'
 
 const CLEAR = '#e8f2d2'
 const cache = new Map<string, string>()
@@ -82,7 +83,11 @@ export async function snapshotPet(
     const model = createAnimalModel(animal, colors)
     scene.add(model)
     if (model.userData.pack === ART_CUTOUT_PACK) billboardY(model, camera)
-    tickWalk(model, model.userData.pack === CARTOON_RIG_PACK ? 0.28 : 0.35, model.userData.pack === CARTOON_RIG_PACK)
+    tickWalk(
+      model,
+      model.userData.pack === CARTOON_RIG_PACK || model.userData.pack === LAND_GLTF_PACK ? 0.28 : 0.35,
+      model.userData.pack === CARTOON_RIG_PACK || model.userData.pack === LAND_GLTF_PACK,
+    )
     gpu.render(scene, camera)
     const url = target.toDataURL('image/png')
     cache.set(key, url)

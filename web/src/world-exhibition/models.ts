@@ -1,6 +1,6 @@
 /**
- * 观展动物：陆地是生成角色图的 2.5D 剪纸；海里仍是下载的 glTF。
- * 孩子的蜡笔叠乘到剪纸皮毛上，不捏胶囊身体。
+ * 观展动物：陆地是 glTF 四足网格；海里仍是下载的 glTF。
+ * 孩子的蜡笔叠乘到皮毛 albedo 上，不替换网格，也不捏胶囊身体。
  */
 import * as THREE from 'three'
 import type { AnimalId, WorldAction } from '../types'
@@ -168,8 +168,8 @@ export function tickAction(group: THREE.Group, action: WorldAction, t: number): 
   }
   const usedClip = Boolean(clips && playAnimalClip(group, clipFor(), dt))
 
-  if (group.userData.pack === 'art-cutout' || group.userData.pack === 'cartoon-rig') {
-    if (group.userData.pack === 'cartoon-rig') keepPawsOnPath(group)
+  if (group.userData.pack === 'art-cutout' || group.userData.pack === 'cartoon-rig' || group.userData.pack === 'land-gltf') {
+    if (group.userData.pack !== 'art-cutout') keepPawsOnPath(group)
     return
   }
 
