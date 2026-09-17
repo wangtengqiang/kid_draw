@@ -11,7 +11,7 @@ import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js'
 import type { AnimalId } from '../types'
 import { ANIMAL_IDS, isMarine } from '../types'
 import { ART_CUTOUT_PACK } from './art-cutout'
-import { CARTOON_RIG_PACK, loadCoatTexture } from './cartoon-rig'
+import { CARTOON_RIG_PACK } from './cartoon-rig'
 
 export const LAND_GLTF_PACK = 'land-gltf'
 
@@ -133,24 +133,22 @@ export async function loadAnimalTemplates(): Promise<void> {
           if ((obj as THREE.SkinnedMesh).isSkinnedMesh) skinned = true
         })
         if (!isMarine(id)) {
-          const map = await loadCoatTexture(id).catch(() => null)
-          if (map) {
-            scene.userData.spriteMap = map
-            scene.traverse((obj) => {
-              if (!(obj instanceof THREE.Mesh)) return
-              if (obj.userData.keepFace) return
-              const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
-              for (const mat of mats) {
-                if (!('map' in mat)) continue
-                const lambert = mat as THREE.MeshLambertMaterial
-                lambert.map = map
-                lambert.color.set('#ffffff')
-                lambert.vertexColors = false
-                lambert.needsUpdate = true
-              }
-            })
-          }
           scene.userData.pack = LAND_GLTF_PACK
+          scene.traverse((obj) => {
+            if (!(obj instanceof THREE.Mesh)) return
+            if (obj.userData.keepFace) return
+            const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
+            for (const mat of mats) {
+              if (!('map' in mat)) continue
+              const lambert = mat as THREE.MeshLambertMaterial
+              lambert.map = null
+              lambert.vertexColors = true
+              lambert.side = THREE.DoubleSide
+              lambert.transparent = false
+              lambert.depthWrite = true
+              lambert.needsUpdate = true
+            }
+          })
         }
         templates.set(id, {
           scene,
@@ -243,6 +241,7 @@ function paintMesh(obj: THREE.Mesh, bodyTint: string): void {
     copy.map = src.map
     copy.transparent = false
     copy.depthWrite = true
+    copy.side = THREE.DoubleSide
     if (bodyTint && bodyTint !== '#ffffff' && bodyTint !== '#fffdf7') copy.color = new THREE.Color(bodyTint)
     else copy.color = new THREE.Color('#ffffff')
     obj.material = copy
@@ -252,6 +251,7 @@ function paintMesh(obj: THREE.Mesh, bodyTint: string): void {
     if (obj.userData.ghost) obj.visible = false
     else obj.visible = true
     copy.vertexColors = Boolean(src.vertexColors) && !copy.map
+    if (!copy.map) copy.vertexColors = true
     return
   }
   if (obj.userData.cutout || obj.userData.portrait) {

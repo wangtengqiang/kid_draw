@@ -434,41 +434,50 @@ function skin(geo, bones, bind) {
   })
   const indexOf = (name) => bones.findIndex((b) => b.name === name)
   const tmp = new THREE.Vector3()
+  const legCols = [
+    ['leg-front-left', 'leg-front-left-low', bind.fl],
+    ['leg-front-right', 'leg-front-right-low', bind.fr],
+    ['leg-back-left', 'leg-back-left-low', bind.bl],
+    ['leg-back-right', 'leg-back-right-low', bind.br],
+  ]
   for (let i = 0; i < pos.count; i++) {
     tmp.fromBufferAttribute(pos, i)
     let primary = 'spine'
-    if (tmp.y < 0.18) {
-      const legs = ['leg-front-left-low', 'leg-front-right-low', 'leg-back-left-low', 'leg-back-right-low']
-      primary = legs.reduce((best, name) => {
-        const bi = indexOf(name)
-        const hi = indexOf(best)
-        if (bi < 0) return best
-        if (hi < 0) return name
-        return tmp.distanceTo(world[bi]) < tmp.distanceTo(world[hi]) ? name : best
-      }, 'leg-front-left-low')
-    } else if (tmp.z < bind.hips.z - 0.16) {
+    let secondary = 'chest'
+    const legHit = legCols.find(([, , p]) => Math.hypot(tmp.x - p.x, tmp.z - p.z) < 0.11 && tmp.y < p.y - 0.01)
+    if (legHit) {
+      primary = tmp.y < pMid(legHit[2], bind) ? legHit[1] : legHit[0]
+      secondary = tmp.y < pMid(legHit[2], bind) ? legHit[0] : 'chest'
+    } else if (tmp.z < bind.hips.z - 0.16 && Math.abs(tmp.x) < 0.12) {
       primary = 'tail'
+      secondary = 'hips'
+    } else if (tmp.y > bind.head.y - 0.16 && tmp.z > bind.head.z - 0.18) {
+      primary = 'head'
+      secondary = 'neck'
+    } else if (tmp.z > bind.chest.z + 0.04 && tmp.y > bind.chest.y - 0.04) {
+      primary = tmp.y > bind.neck.y - 0.06 ? 'neck' : 'chest'
+      secondary = 'spine'
     } else if (tmp.z < bind.spine.z) {
-      primary = tmp.y < bind.hips.y + 0.06 ? 'hips' : 'spine'
-    } else if (tmp.z > bind.chest.z + 0.06) {
-      primary = tmp.y > bind.neck.y - 0.08 ? (tmp.y > bind.head.y - 0.08 ? 'head' : 'neck') : 'chest'
+      primary = tmp.y < bind.hips.y + 0.04 ? 'hips' : 'spine'
+      secondary = 'spine'
     } else {
       primary = 'chest'
+      secondary = 'spine'
     }
-    if (tmp.y < bind.fl.y - 0.04 && tmp.z > 0.08) primary = tmp.x < 0 ? 'leg-front-left' : 'leg-front-right'
-    if (tmp.y < bind.bl.y - 0.04 && tmp.z < -0.12) primary = tmp.x < 0 ? 'leg-back-left' : 'leg-back-right'
-    if (tmp.y > bind.head.y - 0.12 && tmp.z > bind.head.z - 0.16) primary = 'head'
     const a = Math.max(0, indexOf(primary))
-    const second =
-      primary.startsWith('leg-') && !primary.endsWith('-low') ? indexOf(`${primary}-low`) : indexOf('spine')
-    const b = second >= 0 && second !== a ? second : a
+    const bIdx = indexOf(secondary)
+    const b = bIdx >= 0 && bIdx !== a ? bIdx : a
     skinIndex[i * 4] = a
     skinIndex[i * 4 + 1] = b
-    skinWeight[i * 4] = 0.92
-    skinWeight[i * 4 + 1] = 0.08
+    skinWeight[i * 4] = b === a ? 1 : 0.78
+    skinWeight[i * 4 + 1] = b === a ? 0 : 0.22
   }
   geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(skinIndex, 4))
   geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(skinWeight, 4))
+}
+
+function pMid(p, bind) {
+  return p.y - bind.legLen * 0.45
 }
 
 function clipsFor(bind) {
@@ -503,64 +512,64 @@ function clipsFor(bind) {
   const sitT = [0, 0.35, 1.6]
   const sitHold = (name, q) => qtrack(name, sitT, [q, q, q])
   const sit = new THREE.AnimationClip('sit', 1.6, [
-    sitHold('hips', quat(X, 0.42)),
-    sitHold('spine', quat(X, -0.22)),
-    sitHold('chest', quat(X, -0.08)),
-    sitHold('neck', quat(X, 0.22)),
+    sitHold('hips', quat(X, 0.22)),
+    sitHold('spine', quat(X, -0.12)),
+    sitHold('chest', quat(X, -0.04)),
+    sitHold('neck', quat(X, 0.18)),
     sitHold('head', REST),
-    sitHold('leg-back-left', quat(X, 1.22)),
-    sitHold('leg-back-right', quat(X, 1.22)),
-    sitHold('leg-back-left-low', quat(X, -1.05)),
-    sitHold('leg-back-right-low', quat(X, -1.05)),
-    sitHold('leg-front-left', quat(X, 0.12)),
-    sitHold('leg-front-right', quat(X, 0.12)),
-    sitHold('tail', quat(X, 0.25)),
+    sitHold('leg-back-left', quat(X, 0.85)),
+    sitHold('leg-back-right', quat(X, 0.85)),
+    sitHold('leg-back-left-low', quat(X, -0.62)),
+    sitHold('leg-back-right-low', quat(X, -0.62)),
+    sitHold('leg-front-left', quat(X, 0.08)),
+    sitHold('leg-front-right', quat(X, 0.08)),
+    sitHold('tail', quat(X, 0.18)),
     new THREE.VectorKeyframeTrack('hips.position', sitT, [
-      ...hipPos(hy * 0.62),
-      ...hipPos(hy * 0.62),
-      ...hipPos(hy * 0.62),
+      ...hipPos(hy * 0.72),
+      ...hipPos(hy * 0.72),
+      ...hipPos(hy * 0.72),
     ]),
   ])
 
   const drinkT = [0, 0.3, 1.5]
   const drinkHold = (name, q) => qtrack(name, drinkT, [q, q, q])
   const drink = new THREE.AnimationClip('drink', 1.5, [
-    drinkHold('hips', quat(X, 0.28)),
-    drinkHold('spine', quat(X, 0.22)),
-    drinkHold('chest', quat(X, 0.12)),
-    drinkHold('neck', quat(X, 0.72)),
-    drinkHold('head', quat(X, 0.28)),
-    drinkHold('leg-front-left', quat(X, 0.32)),
-    drinkHold('leg-front-right', quat(X, 0.32)),
-    drinkHold('tail', quat(X, 0.12)),
+    drinkHold('hips', quat(X, 0.16)),
+    drinkHold('spine', quat(X, 0.14)),
+    drinkHold('chest', quat(X, 0.08)),
+    drinkHold('neck', quat(X, 0.55)),
+    drinkHold('head', quat(X, 0.22)),
+    drinkHold('leg-front-left', quat(X, 0.18)),
+    drinkHold('leg-front-right', quat(X, 0.18)),
+    drinkHold('tail', quat(X, 0.08)),
     new THREE.VectorKeyframeTrack('hips.position', drinkT, [
-      ...hipPos(hy * 0.86),
-      ...hipPos(hy * 0.86),
-      ...hipPos(hy * 0.86),
+      ...hipPos(hy * 0.9),
+      ...hipPos(hy * 0.9),
+      ...hipPos(hy * 0.9),
     ]),
   ])
 
   const sleepT = [0, 0.4, 2]
   const sleepHold = (name, q) => qtrack(name, sleepT, [q, q, q])
   const sleep = new THREE.AnimationClip('sleep', 2, [
-    sleepHold('hips', quat(X, 0.55)),
-    sleepHold('spine', quat(X, 0.18)),
-    sleepHold('chest', quat(X, 0.1)),
-    sleepHold('neck', quat(X, -0.18)),
-    sleepHold('head', quat(X, 0.22)),
-    sleepHold('leg-front-left', quat(X, 1.15)),
-    sleepHold('leg-front-right', quat(X, 1.15)),
-    sleepHold('leg-back-left', quat(X, 1.22)),
-    sleepHold('leg-back-right', quat(X, 1.22)),
-    sleepHold('leg-front-left-low', quat(X, -1.02)),
-    sleepHold('leg-front-right-low', quat(X, -1.02)),
-    sleepHold('leg-back-left-low', quat(X, -1.08)),
-    sleepHold('leg-back-right-low', quat(X, -1.08)),
-    sleepHold('tail', quat(X, 0.55)),
+    sleepHold('hips', quat(X, 0.32)),
+    sleepHold('spine', quat(X, 0.1)),
+    sleepHold('chest', quat(X, 0.06)),
+    sleepHold('neck', quat(X, -0.12)),
+    sleepHold('head', quat(X, 0.16)),
+    sleepHold('leg-front-left', quat(X, 0.72)),
+    sleepHold('leg-front-right', quat(X, 0.72)),
+    sleepHold('leg-back-left', quat(X, 0.78)),
+    sleepHold('leg-back-right', quat(X, 0.78)),
+    sleepHold('leg-front-left-low', quat(X, -0.55)),
+    sleepHold('leg-front-right-low', quat(X, -0.55)),
+    sleepHold('leg-back-left-low', quat(X, -0.6)),
+    sleepHold('leg-back-right-low', quat(X, -0.6)),
+    sleepHold('tail', quat(X, 0.28)),
     new THREE.VectorKeyframeTrack('hips.position', sleepT, [
-      ...hipPos(hy * 0.42, hz + 0.08),
-      ...hipPos(hy * 0.42, hz + 0.08),
-      ...hipPos(hy * 0.42, hz + 0.08),
+      ...hipPos(hy * 0.55),
+      ...hipPos(hy * 0.55),
+      ...hipPos(hy * 0.55),
     ]),
   ])
 

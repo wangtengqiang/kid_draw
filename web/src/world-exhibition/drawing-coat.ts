@@ -278,7 +278,7 @@ function multiplyCutoutCoat(root: THREE.Group, source: CoatSource): boolean {
       const lambert = mat as THREE.MeshLambertMaterial
       lambert.map = tex
       lambert.color.set('#ffffff')
-      lambert.vertexColors = false
+      lambert.vertexColors = land
       lambert.needsUpdate = true
       if (cutout || isPortrait) {
         lambert.alphaTest = 0.28
