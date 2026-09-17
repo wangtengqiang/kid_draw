@@ -1,6 +1,6 @@
 /**
  * 陆地狮 / 鹿 / 虎：真骨骼 + 不涂抹的角色脸。
- * 站立剪纸只贴在头骨上当肖像（鬃毛轮廓还在）；身子/腿是分件蒙皮，不把整张 PNG
+ * 站立剪纸贴在髋骨上当全身肖像（鬃毛轮廓还在）；身子/腿是分件蒙皮，不把 PNG
  * 糊在揉皱的体积上。不是圆球 CSG、不是向日葵幼崽、不是 Kenney 方块。
  */
 import * as THREE from 'three'
@@ -44,7 +44,7 @@ type Bind = {
   coat: string
   mane: string
   belly: string
-  portrait: { w: number; h: number; y: number; z: number; u0: number; v0: number; u1: number; v1: number }
+  portrait: { w: number; h: number; y: number; z: number }
 }
 
 function v(x: number, y: number, z: number): THREE.Vector3 {
@@ -67,7 +67,7 @@ const BIND: Record<LandId, Bind> = {
     coat: '#f0b54a',
     mane: '#d47828',
     belly: '#ffe6b0',
-    portrait: { w: 0.78, h: 0.84, y: 0.05, z: 0.3, u0: 0.0, v0: 0.38, u1: 0.6, v1: 1 },
+    portrait: { w: 1.14, h: 1.22, y: 0.19, z: 0.58 },
   },
   deer: {
     hips: v(0, 0.52, -0.16),
@@ -84,7 +84,7 @@ const BIND: Record<LandId, Bind> = {
     coat: '#d9a066',
     mane: '#c48a4a',
     belly: '#f6e4c8',
-    portrait: { w: 0.4, h: 0.42, y: 0.02, z: 0.2, u0: 0.08, v0: 0.44, u1: 0.6, v1: 0.86 },
+    portrait: { w: 0.78, h: 1.32, y: 0.18, z: 0.56 },
   },
   tiger: {
     hips: v(0, 0.4, -0.2),
@@ -101,7 +101,7 @@ const BIND: Record<LandId, Bind> = {
     coat: '#f08a3a',
     mane: '#e07a30',
     belly: '#ffe0b0',
-    portrait: { w: 0.52, h: 0.5, y: 0.03, z: 0.24, u0: 0.0, v0: 0.46, u1: 0.54, v1: 1 },
+    portrait: { w: 1.08, h: 1.1, y: 0.16, z: 0.6 },
   },
 }
 
@@ -178,14 +178,20 @@ function paintHull(geo: THREE.BufferGeometry, bind: Bind, id: LandId): void {
   const tmp = new THREE.Vector3()
   for (let i = 0; i < pos.count; i++) {
     tmp.fromBufferAttribute(pos, i)
-    const c = tmp.y < bind.hips.y - 0.02 ? belly.clone().lerp(coat, 0.35) : coat.clone()
-    if (id === 'lion' && tmp.z > bind.chest.z - 0.04 && tmp.y > bind.chest.y - 0.08) {
+    const isLeg = Math.abs(tmp.x) > 0.1 && tmp.y < bind.fl.y - 0.02
+    const c = coat.clone()
+    if (isLeg) {
+      if (tmp.y < 0.12) c.lerp(new THREE.Color('#b56b2c'), 0.4)
+    } else if (tmp.y < bind.hips.y - 0.05 && tmp.z > bind.hips.z && tmp.z < bind.chest.z + 0.04) {
+      c.copy(belly)
+    }
+    if (id === 'lion' && !isLeg && tmp.z > bind.chest.z - 0.04 && tmp.y > bind.chest.y - 0.08) {
       c.copy(mane).lerp(coat, 0.18)
     }
-    if (id === 'tiger' && Math.abs(Math.sin(tmp.z * 9 + tmp.y * 3)) > 0.62 && tmp.y > 0.22) {
+    if (id === 'tiger' && !isLeg && Math.abs(Math.sin(tmp.z * 9 + tmp.y * 3)) > 0.62 && tmp.y > 0.22) {
       c.copy(stripe)
     }
-    if (id === 'deer' && tmp.y > bind.spine.y && ((i * 13) % 17) < 2) {
+    if (id === 'deer' && !isLeg && tmp.y > bind.spine.y && ((i * 13) % 17) < 2) {
       c.set('#fff6e0')
     }
     colors[i * 3] = c.r
@@ -211,7 +217,7 @@ function hullFor(id: LandId, bind: Bind): THREE.BufferGeometry {
     ),
   )
 
-  const legR = id === 'deer' ? 0.055 : 0.08
+  const legR = id === 'deer' ? 0.045 : 0.062
   for (const p of [bind.fl, bind.fr, bind.bl, bind.br]) {
     geos.push(
       loft(
@@ -241,14 +247,6 @@ function hullFor(id: LandId, bind: Bind): THREE.BufferGeometry {
       8,
     ),
   )
-
-  if (id === 'lion') {
-    const ruff = new THREE.TorusGeometry(0.22, 0.12, 10, 18)
-    ruff.rotateX(Math.PI / 2)
-    ruff.scale(1.08, 1.2, 0.92)
-    ruff.translate(bind.neck.x, bind.neck.y - 0.02, bind.neck.z - 0.04)
-    geos.push(ruff)
-  }
 
   if (id === 'deer') {
     geos.push(
@@ -339,6 +337,7 @@ function addFace(head: THREE.Bone, id: LandId): void {
       tine.rotation.z = sx * -0.4
       beam.add(tine)
       g.add(beam)
+      g.visible = false
       return g
     }
     head.add(antler('antler-left', -1), antler('antler-right', 1))
@@ -348,20 +347,16 @@ function addFace(head: THREE.Bone, id: LandId): void {
 function makePortrait(id: LandId, bind: Bind, map: THREE.Texture): THREE.Mesh {
   const p = bind.portrait
   const geo = new THREE.PlaneGeometry(p.w, p.h)
-  geo.setAttribute(
-    'uv',
-    new THREE.Float32BufferAttribute([p.u0, p.v1, p.u1, p.v1, p.u0, p.v0, p.u1, p.v0], 2),
-  )
   const mat = new THREE.MeshLambertMaterial({
     map,
     color: '#ffffff',
-    alphaTest: 0.28,
+    alphaTest: 0.22,
     side: THREE.DoubleSide,
     transparent: false,
     depthWrite: true,
     polygonOffset: true,
-    polygonOffsetFactor: -2,
-    polygonOffsetUnits: -2,
+    polygonOffsetFactor: -4,
+    polygonOffsetUnits: -4,
   })
   mat.name = 'portrait'
   const mesh = new THREE.Mesh(geo, mat)
@@ -460,10 +455,10 @@ function clipsFor(bind: Bind): THREE.AnimationClip[] {
   const sitT = [0, 0.35, 1.6]
   const sitHold = (name: string, q: number[]) => qtrack(name, sitT, [q, q, q])
   const sit = new THREE.AnimationClip('sit', 1.6, [
-    sitHold('hips', quat(X, 0.22)),
-    sitHold('spine', quat(X, -0.36)),
-    sitHold('chest', quat(X, -0.06)),
-    sitHold('neck', quat(X, 0.22)),
+    sitHold('hips', quat(X, 0.42)),
+    sitHold('spine', quat(X, -0.28)),
+    sitHold('chest', quat(X, -0.04)),
+    sitHold('neck', quat(X, 0.18)),
     sitHold('head', REST),
     sitHold('leg-back-left', quat(X, 1.15)),
     sitHold('leg-back-right', quat(X, 1.15)),
@@ -472,28 +467,30 @@ function clipsFor(bind: Bind): THREE.AnimationClip[] {
     sitHold('leg-front-left', quat(X, 0.08)),
     sitHold('leg-front-right', quat(X, 0.08)),
     sitHold('tail', quat(X, 0.25)),
-    new THREE.VectorKeyframeTrack('hips.position', sitT, [...hipPos(hy * 0.62), ...hipPos(hy * 0.62), ...hipPos(hy * 0.62)]),
+    new THREE.VectorKeyframeTrack('hips.position', sitT, [...hipPos(hy * 0.5), ...hipPos(hy * 0.5), ...hipPos(hy * 0.5)]),
   ])
 
   const drinkT = [0, 0.3, 1.5]
   const drinkHold = (name: string, q: number[]) => qtrack(name, drinkT, [q, q, q])
   const drink = new THREE.AnimationClip('drink', 1.5, [
-    drinkHold('neck', quat(X, 0.55)),
-    drinkHold('head', quat(X, 0.28)),
-    drinkHold('leg-front-left', quat(X, 0.22)),
-    drinkHold('leg-front-right', quat(X, 0.22)),
+    drinkHold('hips', quat(X, 0.38)),
+    drinkHold('spine', quat(X, 0.16)),
+    drinkHold('neck', quat(X, 0.22)),
+    drinkHold('head', quat(X, 0.12)),
+    drinkHold('leg-front-left', quat(X, 0.28)),
+    drinkHold('leg-front-right', quat(X, 0.28)),
     drinkHold('tail', quat(X, 0.12)),
-    new THREE.VectorKeyframeTrack('hips.position', drinkT, [...hipPos(hy * 0.92), ...hipPos(hy * 0.92), ...hipPos(hy * 0.92)]),
+    new THREE.VectorKeyframeTrack('hips.position', drinkT, [...hipPos(hy * 0.88), ...hipPos(hy * 0.88), ...hipPos(hy * 0.88)]),
   ])
 
   const sleepT = [0, 0.4, 2]
   const sleepHold = (name: string, q: number[]) => qtrack(name, sleepT, [q, q, q])
   const sleep = new THREE.AnimationClip('sleep', 2, [
-    sleepHold('hips', quat(X, 0.08)),
-    sleepHold('spine', quat(X, 0.1)),
+    sleepHold('hips', quat(X, 0.22)),
+    sleepHold('spine', quat(X, 0.08)),
     sleepHold('chest', quat(X, 0.04)),
-    sleepHold('neck', quat(X, -0.14)),
-    sleepHold('head', quat(X, 0.04)),
+    sleepHold('neck', quat(X, -0.1)),
+    sleepHold('head', quat(X, 0.02)),
     sleepHold('leg-front-left', quat(X, 0.95)),
     sleepHold('leg-front-right', quat(X, 0.95)),
     sleepHold('leg-back-left', quat(X, 1.05)),
@@ -502,7 +499,7 @@ function clipsFor(bind: Bind): THREE.AnimationClip[] {
     sleepHold('leg-front-right-low', quat(X, -0.9)),
     sleepHold('leg-back-left-low', quat(X, -0.98)),
     sleepHold('leg-back-right-low', quat(X, -0.98)),
-    sleepHold('tail', quat(Y, 0.2)),
+    sleepHold('tail', quat(X, 0.85)),
     new THREE.VectorKeyframeTrack('hips.position', sleepT, [...hipPos(hy * 0.46), ...hipPos(hy * 0.46), ...hipPos(hy * 0.46)]),
   ])
 
@@ -549,7 +546,7 @@ export function buildCartoonRig(id: AnimalId, map: THREE.Texture): THREE.Group {
   bone('leg-back-right-low', v(bind.br.x, bind.br.y - bind.legLen * 0.5, bind.br.z), br)
   addFace(head, kind)
   const portrait = makePortrait(kind, bind, map)
-  head.add(portrait)
+  hips.add(portrait)
   if (kind === 'lion') {
     const mane = dummy('mane', bind.mane, 0.02, 0.02, 0.02)
     mane.visible = false

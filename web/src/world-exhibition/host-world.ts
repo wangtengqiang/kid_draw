@@ -467,6 +467,22 @@ export class HostWorld {
     return true
   }
 
+  private snapClip(group: THREE.Group, time: number): void {
+    const mixer = group.userData.mixer as THREE.AnimationMixer | undefined
+    const active = group.userData.activeClip as THREE.AnimationAction | undefined
+    const actions = group.userData.actions as Record<string, THREE.AnimationAction> | undefined
+    if (!mixer || !active) return
+    if (actions) {
+      for (const clip of Object.values(actions)) {
+        if (clip !== active) clip.stop()
+      }
+    }
+    active.enabled = true
+    active.setEffectiveWeight(1)
+    active.time = time
+    mixer.update(0)
+  }
+
   /** 狮 / 鹿 / 虎站在石径上，对着 gen-forest-with-animals。 */
   poseLineup(): boolean {
     const land = [...this.actors.values()].filter((a) => !a.marine)
@@ -482,7 +498,9 @@ export class HostWorld {
       actor.frozen = true
       actor.group.position.set(slot[0], 0.02, slot[1])
       actor.group.rotation.y = 0
+      actor.group.userData._animT = undefined
       tickAction(actor.group, 'walk', 0.35)
+      this.snapClip(actor.group, 0.35)
       if (facesHostCamera(actor.group)) billboardY(actor.group, this.camera)
     })
     this.orbit.target.set(0.05, 0.62, -0.4)
@@ -503,32 +521,22 @@ export class HostWorld {
     chosen.forEach((actor, i) => {
       actor.frozen = true
       if (action === 'drink') {
-        actor.group.position.set(SHORE_DRINK.x, 0.02, SHORE_DRINK.z + actor.lane * 0.7)
-      } else if (action === 'rest') {
-        const p = pointOnPath(0.28, -3.2 + i * 1.4)
-        actor.group.position.set(p.x, 0.02, p.z)
-      } else if (action === 'sit') {
-        const p = pointOnPath(0.42, 2.8 - i * 1.6)
-        actor.group.position.set(p.x, 0, p.z)
+        actor.group.position.set(SHORE_DRINK.x - 1.7 + i * 1.15, 0.02, SHORE_DRINK.z - 0.15 + i * 0.2)
       } else {
         const slot = slots[Math.min(i, slots.length - 1)]!
-        actor.group.position.set(slot[0], 0.02, slot[1])
+        const back = action === 'rest' ? -0.45 : action === 'sit' ? -0.2 : 0
+        actor.group.position.set(slot[0], 0.02, slot[1] + back)
       }
       actor.group.rotation.y = 0
       actor.group.userData._animT = undefined
       const sample = action === 'walk' ? 0.28 : 0.8
       tickAction(actor.group, action, sample)
-      const mixer = actor.group.userData.mixer as THREE.AnimationMixer | undefined
-      const active = actor.group.userData.activeClip as THREE.AnimationAction | undefined
-      if (mixer && active) {
-        active.time = sample
-        mixer.update(0)
-      }
+      this.snapClip(actor.group, sample)
       if (facesHostCamera(actor.group)) billboardY(actor.group, this.camera)
     })
     if (action === 'drink') {
-      this.orbit.target.set(SHORE_DRINK.x, 0.55, SHORE_DRINK.z)
-      this.camera.position.set(SHORE_DRINK.x + 0.18, 2.7, SHORE_DRINK.z + 11.6)
+      this.orbit.target.set(SHORE_DRINK.x - 0.5, 0.55, SHORE_DRINK.z)
+      this.camera.position.set(SHORE_DRINK.x - 0.35, 2.7, SHORE_DRINK.z + 11.6)
     } else {
       this.orbit.target.set(0.05, 0.55, -0.2)
       this.camera.position.set(0.18, 2.7, 11.6)
