@@ -14,7 +14,6 @@ import {
   paintFlagstone,
   paintForestPanorama,
   paintGrassGround,
-  paintMushroomCap,
   paintWater,
 } from './forest-art'
 import { ART_CUTOUT_PACK, billboardY } from './art-cutout'
@@ -96,7 +95,7 @@ export const MUSHROOM_SPOTS: { x: number; z: number; s: number }[] = [
   { x: 2.55, z: 6.15, s: 0.92 },
   { x: 3.05, z: 5.45, s: 0.48 },
   { x: -2.9, z: 1.6, s: 0.62 },
-  { x: 2.8, z: -1.1, s: 0.7 },
+  { x: -3.15, z: -0.8, s: 0.58 },
 ]
 
 /**
@@ -139,8 +138,9 @@ const shared = {
   cobbleGeo: new THREE.SphereGeometry(0.28, 7, 5),
   impostorGeo: new THREE.SphereGeometry(0.75, 7, 5),
   stemGeo: new THREE.CylinderGeometry(0.07, 0.1, 0.42, 6),
-  capGeo: new THREE.SphereGeometry(0.32, 8, 6),
-  fernGeo: new THREE.ConeGeometry(0.28, 0.7, 6),
+  capGeo: new THREE.SphereGeometry(0.34, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2),
+  dotGeo: new THREE.SphereGeometry(0.045, 6, 5),
+  fernGeo: new THREE.SphereGeometry(0.38, 7, 5),
   trunkMat: new THREE.MeshLambertMaterial({ color: '#7a4a24' }),
   barkMat: new THREE.MeshLambertMaterial({ color: '#8a5a32' }),
   canopyMat: new THREE.MeshLambertMaterial({ color: '#3fa844' }),
@@ -158,6 +158,7 @@ const shared = {
   snowMat: new THREE.MeshLambertMaterial({ color: '#eef3ea' }),
   stemMat: new THREE.MeshLambertMaterial({ color: '#f3e2b8' }),
   capMat: new THREE.MeshLambertMaterial({ color: '#e24b3a' }),
+  dotMat: new THREE.MeshLambertMaterial({ color: '#fff8ee' }),
   flowerMats: [
     new THREE.MeshLambertMaterial({ color: '#f08ab0' }),
     new THREE.MeshLambertMaterial({ color: '#f4d96a' }),
@@ -201,9 +202,6 @@ function bindMaps(): void {
   bark.colorSpace = THREE.SRGBColorSpace
   shared.barkMat.map = bark
   shared.trunkMat.map = bark
-  const cap = new THREE.CanvasTexture(paintMushroomCap())
-  cap.colorSpace = THREE.SRGBColorSpace
-  shared.capMat.map = cap
 }
 
 export function pathCurve(): THREE.CatmullRomCurve3 {
@@ -346,10 +344,12 @@ export class HostWorld {
         __kidDrawFrameHost?: () => boolean
         __kidDrawFramePath?: () => void
         __kidDrawPoseLineup?: () => boolean
+        __kidDrawPoseClose?: (kind: AnimalId) => boolean
       }
       w.__kidDrawFrameHost = () => this.frameFirstAnimal()
       w.__kidDrawFramePath = () => this.framePathVista()
       w.__kidDrawPoseLineup = () => this.poseLineup()
+      w.__kidDrawPoseClose = (kind) => this.poseClose(kind)
     }
     const grass = new THREE.CanvasTexture(paintGrassGround())
     grass.wrapS = grass.wrapT = THREE.RepeatWrapping
@@ -482,8 +482,26 @@ export class HostWorld {
       tickAction(actor.group, 'walk', 0.35)
       if (actor.group.userData.pack === ART_CUTOUT_PACK) billboardY(actor.group, this.camera)
     })
-    this.orbit.target.set(0.04, 0.78, 2.05)
-    this.camera.position.set(0.12, 1.62, 6.55)
+    this.orbit.target.set(0.04, 0.72, 2.05)
+    this.camera.position.set(0.08, 1.48, 6.35)
+    this.syncOrbitFromCamera()
+    return order.length > 0
+  }
+
+  poseClose(kind: AnimalId): boolean {
+    this.poseLineup()
+    const actor = [...this.actors.values()].find((a) => a.animalId === kind)
+    if (!actor) return false
+    const target = new THREE.Vector3()
+    actor.group.getWorldPosition(target)
+    target.y += 0.72
+    this.orbit.target.copy(target)
+    this.camera.position.set(target.x + 0.35, target.y + 0.45, target.z + 3.15)
+    this.syncOrbitFromCamera()
+    return true
+  }
+
+  private syncOrbitFromCamera(): void {
     const ox = this.camera.position.x - this.orbit.target.x
     const oy = this.camera.position.y - this.orbit.target.y
     const oz = this.camera.position.z - this.orbit.target.z
@@ -491,7 +509,6 @@ export class HostWorld {
     this.orbit.phi = Math.acos(Math.min(1, Math.max(-1, oy / Math.max(this.orbit.radius, 1e-6))))
     this.orbit.theta = Math.atan2(ox, oz)
     this.orbit.apply()
-    return order.length > 0
   }
 
   /** 空林子：顺着石径往里看，蘑菇在近处。 */
@@ -668,7 +685,7 @@ export class HostWorld {
       const p = dirtPts[i]!
       const patch = new THREE.Mesh(shared.hillGeo, shared.dirtMat)
       patch.position.set(p.x, 0.03, p.z)
-      patch.scale.set(1.55 + (i % 3) * 0.12, 0.07, 1.12)
+      patch.scale.set(1.18 + (i % 3) * 0.08, 0.06, 0.92)
       this.decorations.add(patch)
     }
     const stones = curve.getSpacedPoints(38)
@@ -752,18 +769,18 @@ export class HostWorld {
       [2.6, 2.4, 0.75],
     ]
     for (const [x, z, s] of ferns) {
-      const fern = new THREE.Mesh(shared.fernGeo, shared.canopyMat2)
-      fern.position.set(x, 0.32 * s, z)
-      fern.scale.set(s, s, s)
-      this.decorations.add(fern)
+      const bush = new THREE.Mesh(shared.fernGeo, shared.canopyMat2)
+      bush.position.set(x, 0.22 * s, z)
+      bush.scale.set(1.15 * s, 0.45 * s, 0.95 * s)
+      this.decorations.add(bush)
     }
-    for (let i = 0; i < 28; i++) {
+    for (let i = 0; i < 18; i++) {
       const u = 0.08 + hash01(i + 40) * 0.7
-      const p = pointOnPath(u, (hash01(i) > 0.5 ? 1 : -1) * (2.1 + hash01(i + 2) * 1.4))
-      if (distToPath(p.x, p.z) < 1.15) continue
-      const bloom = new THREE.Mesh(shared.cobbleGeo, shared.flowerMats[i % shared.flowerMats.length]!)
-      bloom.position.set(p.x, 0.08, p.z)
-      bloom.scale.setScalar(0.22 + hash01(i + 9) * 0.12)
+      const p = pointOnPath(u, (hash01(i) > 0.5 ? 1 : -1) * (2.6 + hash01(i + 2) * 1.2))
+      if (distToPath(p.x, p.z) < 2.3) continue
+      const bloom = new THREE.Mesh(shared.dotGeo, shared.flowerMats[i % shared.flowerMats.length]!)
+      bloom.position.set(p.x, 0.06, p.z)
+      bloom.scale.setScalar(1.4 + hash01(i + 9) * 0.6)
       this.decorations.add(bloom)
     }
   }
@@ -923,9 +940,22 @@ function mushroom(s: number): THREE.Group {
   stem.position.y = 0.22 * s
   stem.scale.set(s, s, s)
   const cap = new THREE.Mesh(shared.capGeo, shared.capMat)
-  cap.position.y = 0.46 * s
-  cap.scale.set(1.35 * s, 0.72 * s, 1.35 * s)
+  cap.position.y = 0.4 * s
+  cap.scale.set(1.45 * s, 1.05 * s, 1.45 * s)
   g.add(stem, cap)
+  const dots: [number, number, number, number][] = [
+    [0.12, 0.52, 0.08, 1.1],
+    [-0.1, 0.5, 0.14, 0.9],
+    [0.02, 0.54, -0.16, 1.2],
+    [0.18, 0.48, -0.06, 0.8],
+    [-0.16, 0.49, -0.04, 0.75],
+  ]
+  for (const [x, y, z, ds] of dots) {
+    const dot = new THREE.Mesh(shared.dotGeo, shared.dotMat)
+    dot.position.set(x * s, y * s, z * s)
+    dot.scale.setScalar(ds * s)
+    g.add(dot)
+  }
   return g
 }
 
