@@ -5,7 +5,7 @@ import * as THREE from 'three'
 import { loadAnimalTemplates, playAnimalClip, setAnimalModelProvider } from './gltf-kit'
 import { createAnimalModel, tickAction } from './models'
 import { CUTOUT_SRC } from './art-cutout'
-import { CARTOON_RIG_PACK, LAND_BONE_NAMES, keepPawsOnPath } from './cartoon-rig'
+import { CARTOON_RIG_PACK, LAND_BONE_NAMES, facesHostCamera, keepPawsOnPath } from './cartoon-rig'
 import type { AnimalId } from '../types'
 
 const PUBLIC = resolve(process.cwd(), 'public')
@@ -118,6 +118,7 @@ describe('rigged cartoon lion/deer/tiger', () => {
     const portrait = lion.getObjectByName('portrait') as THREE.Mesh
     expect(body.visible).toBe(false)
     expect(portrait.visible).toBe(true)
+    expect(facesHostCamera(lion)).toBe(false)
     const mixer = lion.userData.mixer as THREE.AnimationMixer
     const actions = lion.userData.actions as Record<string, THREE.AnimationAction>
     for (const pose of ['walk', 'sit', 'drink', 'rest'] as const) {

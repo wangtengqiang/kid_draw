@@ -617,8 +617,8 @@ export function isCartoonRig(obj: THREE.Object3D | undefined | null): boolean {
 }
 
 export function facesHostCamera(obj: THREE.Object3D | undefined | null): boolean {
-  const pack = obj?.userData.pack
-  return pack === CARTOON_RIG_PACK || pack === 'art-cutout'
+  // 森林里的卡通剪纸按走路/喝水转向，不再跟着镜头转。
+  return obj?.userData.pack === 'art-cutout'
 }
 
 /** 坐下/睡觉也不把爪子埋进石径：量剪纸底边，抬根节点。 */

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   CREEK_POINTS,
+  CREEK_CLEAR,
   FOREST_CAMERA_PULL,
+  LAND_WORLD_SCALE,
   GROUND_RADIUS,
   LAND_BEATS,
   LAND_CYCLE,
@@ -14,7 +16,13 @@ import {
   actorPhase,
   autoActorAction,
   autoLandAction,
+  distToCreek,
   distToPath,
+  drinkStand,
+  keepOffCreek,
+  landYaw,
+  pinLandScale,
+  onCreekWater,
   offsetRing,
   pointInRing,
   pointOnPath,
@@ -95,9 +103,59 @@ describe('illustrated forest path', () => {
     expect(near.some((s) => s.x > 0)).toBe(true)
   })
 
-  it('puts the drink stand on the creek bank, outside the ocean', () => {
+  it('puts the drink stand on the creek bank, never on the blue water', () => {
     expect(pointInRing(SHORE_DRINK.x, SHORE_DRINK.z, smoothCoast())).toBe(false)
-    expect(distToPath(SHORE_DRINK.x, SHORE_DRINK.z)).toBeGreaterThan(1)
+    expect(onCreekWater(SHORE_DRINK.x, SHORE_DRINK.z)).toBe(false)
+    expect(distToCreek(SHORE_DRINK.x, SHORE_DRINK.z)).toBeGreaterThanOrEqual(CREEK_CLEAR)
+    expect(distToPath(SHORE_DRINK.x, SHORE_DRINK.z)).toBeLessThan(2.4)
+    for (let i = 0; i < 3; i++) {
+      const stand = drinkStand(i)
+      expect(onCreekWater(stand.x, stand.z)).toBe(false)
+      expect(distToCreek(stand.x, stand.z)).toBeGreaterThanOrEqual(CREEK_CLEAR - 1e-6)
+    }
+  })
+
+  it('keeps walk, sit and sleep feet on the stone path, not in the stream', () => {
+    for (const u of [0.08, 0.22, 0.42, 0.6, 0.8]) {
+      for (const lane of [-1, 0, 1]) {
+        const p = pointOnPath(u, lane)
+        const feet = keepOffCreek(p.x, p.z)
+        expect(onCreekWater(feet.x, feet.z)).toBe(false)
+        expect(distToPath(feet.x, feet.z)).toBeLessThan(1.2)
+      }
+    }
+    const sit = keepOffCreek(...([pointOnPath(0.42, 0.35).x, pointOnPath(0.42, 0.35).z] as const))
+    expect(onCreekWater(sit.x, sit.z)).toBe(false)
+  })
+
+  it('faces drink toward the creek and walk along the path, not at the camera', () => {
+    const walk = landYaw('walk', pointOnPath(0.2, 0).heading, 0)
+    const walkL = landYaw('walk', pointOnPath(0.2, 0).heading, -1)
+    const drink = drinkStand(0).heading
+    const sit = landYaw('sit', pointOnPath(0.4, 0).heading, 0)
+    expect(Math.abs(drink - walk)).toBeGreaterThan(0.25)
+    expect(Math.abs(sit - drink)).toBeGreaterThan(0.8)
+    expect(Math.abs(walkL - walk)).toBeGreaterThan(0.2)
+    expect(Math.abs(Math.sin(drink))).toBeGreaterThan(0.45)
+    expect(Math.abs(Math.sin(drink))).toBeLessThan(0.9)
+    expect(Math.abs(Math.sin(walk))).toBeGreaterThan(0.3)
+    expect(Math.abs(Math.sin(walk))).toBeLessThan(0.9)
+    expect(CREEK_CLEAR).toBeGreaterThan(1.7)
+  })
+
+  it('keeps land pets at a constant world scale so distance shrinks height', () => {
+    expect(LAND_WORLD_SCALE).toBe(1.12)
+    const stub = { scale: { x: 0, y: 0, z: 0, setScalar(n: number) { this.x = this.y = this.z = n } } }
+    pinLandScale(stub as unknown as import('three').Object3D)
+    expect(stub.scale.x).toBe(LAND_WORLD_SCALE)
+    expect(stub.scale.y).toBe(LAND_WORLD_SCALE)
+    const near = pointOnPath(0.05, 0)
+    const far = pointOnPath(0.86, 0)
+    expect(far.z).toBeLessThan(near.z - 10)
+    const nearFeet = keepOffCreek(near.x, near.z)
+    const farFeet = keepOffCreek(far.x, far.z)
+    expect(onCreekWater(nearFeet.x, nearFeet.z)).toBe(false)
+    expect(onCreekWater(farFeet.x, farFeet.z)).toBe(false)
   })
 })
 

@@ -16,8 +16,7 @@ import {
   paintGrassGround,
   paintWater,
 } from './forest-art'
-import { billboardY } from './art-cutout'
-import { facesHostCamera, keepPawsOnPath } from './cartoon-rig'
+import { keepPawsOnPath } from './cartoon-rig'
 
 interface Actor {
   id: string
@@ -104,7 +103,6 @@ export const MUSHROOM_SPOTS: { x: number; z: number; s: number }[] = [
  * 喝水站在小溪边。
  */
 export const OCEAN = { x: 18.4, z: -1.2, rx: 2.15, rz: 3.4 }
-export const SHORE_DRINK = { x: 2.72, z: 1.35 }
 export const GROUND_RADIUS = 46
 export const TREE_INSTANCE_CAP = 96
 /** 默认镜头拉远一倍：动物、树、蘑菇、石径在画面里都大约一半大。 */
@@ -173,6 +171,7 @@ const shared = {
 const _dummy = new THREE.Object3D()
 let waterTex: THREE.CanvasTexture | null = null
 let _path: THREE.CatmullRomCurve3 | null = null
+let _creek: THREE.CatmullRomCurve3 | null = null
 
 function hash01(n: number): number {
   const x = Math.sin(n * 127.1 + 311.7) * 43758.5453123
@@ -239,6 +238,100 @@ export function distToPath(x: number, z: number): number {
   for (const p of pts) d = Math.min(d, Math.hypot(x - p.x, z - p.z))
   return d
 }
+
+export function creekCurve(): THREE.CatmullRomCurve3 {
+  if (_creek) return _creek
+  _creek = new THREE.CatmullRomCurve3(
+    CREEK_POINTS.map(([x, z]) => new THREE.Vector3(x, 0.03, z)),
+    false,
+    'catmullrom',
+    0.4,
+  )
+  return _creek
+}
+
+/** 溪心到岸的最小距离：Tube 半径 0.42，再留整只剪纸宽度。水不是地面。 */
+export const CREEK_CLEAR = 1.92
+
+/** 陆地动物固定世界身高。不按镜头距离放大，远处自然变矮。 */
+export const LAND_WORLD_SCALE = 1.12
+
+export function pinLandScale(group: THREE.Object3D): void {
+  group.scale.setScalar(LAND_WORLD_SCALE)
+}
+
+export function distToCreek(x: number, z: number): number {
+  const pts = creekCurve().getSpacedPoints(24)
+  let d = Infinity
+  for (const p of pts) d = Math.min(d, Math.hypot(x - p.x, z - p.z))
+  return d
+}
+
+export function onCreekWater(x: number, z: number): boolean {
+  return distToCreek(x, z) < CREEK_CLEAR
+}
+
+/** 脚在水上就往石径推，蓝条不是路。 */
+export function keepOffCreek(x: number, z: number): { x: number; z: number } {
+  const creekPts = creekCurve().getSpacedPoints(24)
+  let creek = creekPts[0]!
+  let cd = Infinity
+  for (const p of creekPts) {
+    const d = Math.hypot(x - p.x, z - p.z)
+    if (d < cd) {
+      cd = d
+      creek = p
+    }
+  }
+  if (cd >= CREEK_CLEAR) return { x, z }
+  const pathPts = pathCurve().getSpacedPoints(28)
+  let nearest = pathPts[0]!
+  let best = Infinity
+  for (const p of pathPts) {
+    const d = Math.hypot(x - p.x, z - p.z)
+    if (d < best) {
+      best = d
+      nearest = p
+    }
+  }
+  const dx = nearest.x - creek.x
+  const dz = nearest.z - creek.z
+  const len = Math.hypot(dx, dz) || 1
+  return {
+    x: creek.x + (dx / len) * CREEK_CLEAR,
+    z: creek.z + (dz / len) * CREEK_CLEAR,
+  }
+}
+
+function yawToward(fromX: number, fromZ: number, toX: number, toZ: number): number {
+  return Math.atan2(toX - fromX, toZ - fromZ)
+}
+
+/**
+ * 剪纸是薄片：正对镜头大家头朝一块，侧对镜头又变成一条线。
+ * 夹在 3/4，走路沿路、喝水朝溪、坐下回头，头朝向能分开。
+ */
+export function landYaw(action: 'walk' | 'drink' | 'sit' | 'rest', desired: number, lane = 0): number {
+  if (action === 'drink') return 0.82
+  if (action === 'sit' || action === 'rest') return -0.78
+  const spread = lane < 0 ? -0.62 : lane > 0 ? 0.72 : 0.38
+  void desired
+  return spread
+}
+
+/** 喝水站在石径靠溪一侧，脸朝溪，爪子踩石头/草，不踩蓝条。 */
+export function drinkStand(slot = 0): { x: number; z: number; heading: number } {
+  const along = pointOnPath(0.18 + slot * 0.13, 0.85)
+  const feet = keepOffCreek(along.x, along.z)
+  const water = creekCurve().getPointAt(Math.min(0.78, Math.max(0.12, 0.2 + slot * 0.16)))
+  return {
+    x: feet.x,
+    z: feet.z,
+    heading: landYaw('drink', yawToward(feet.x, feet.z, water.x, water.z), slot),
+  }
+}
+
+export const SHORE_DRINK = drinkStand(0)
 
 export function smoothCoast(ring: [number, number][] = WATER_RING, count = 40): [number, number][] {
   const curve = new THREE.CatmullRomCurve3(
@@ -349,12 +442,18 @@ export class HostWorld {
         __kidDrawPoseLineup?: () => boolean
         __kidDrawPoseClose?: (kind: AnimalId) => boolean
         __kidDrawPoseAction?: (action: WorldAction, kind?: AnimalId) => boolean
+        __kidDrawPoseActionClose?: (action: WorldAction, kind?: AnimalId) => boolean
+        __kidDrawPoseSpread?: () => boolean
+        __kidDrawPosePerspective?: () => boolean
       }
       w.__kidDrawFrameHost = () => this.frameFirstAnimal()
       w.__kidDrawFramePath = () => this.framePathVista()
       w.__kidDrawPoseLineup = () => this.poseLineup()
       w.__kidDrawPoseClose = (kind) => this.poseClose(kind)
       w.__kidDrawPoseAction = (action, kind) => this.poseAction(action, kind)
+      w.__kidDrawPoseActionClose = (action, kind) => this.poseActionClose(action, kind)
+      w.__kidDrawPoseSpread = () => this.poseSpreadFacings()
+      w.__kidDrawPosePerspective = () => this.posePerspective()
     }
     const grass = new THREE.CanvasTexture(paintGrassGround())
     grass.wrapS = grass.wrapT = THREE.RepeatWrapping
@@ -416,7 +515,8 @@ export class HostWorld {
         return
       }
       const group = createAnimalModel(item.animalId, item.regionColors, item.thumb || undefined)
-      group.scale.setScalar(isMarine(item.animalId) ? 1.0 : 1.12)
+      if (isMarine(item.animalId)) group.scale.setScalar(1)
+      else pinLandScale(group)
       const marine = isMarine(item.animalId)
       const actor: Actor = {
         id: item.id,
@@ -496,13 +596,15 @@ export class HostWorld {
     order.forEach((actor, i) => {
       const slot = slots[Math.min(i, slots.length - 1)]!
       actor.frozen = true
-      actor.group.position.set(slot[0], 0.02, slot[1])
-      actor.group.rotation.y = 0
+      pinLandScale(actor.group)
+      const feet = keepOffCreek(slot[0], slot[1])
+      actor.group.position.set(feet.x, 0.02, feet.z)
+      const along = pointOnPath(0.18 + i * 0.22, 0)
+      actor.group.rotation.y = landYaw('walk', along.heading, i - 1)
       actor.group.userData._animT = undefined
       tickAction(actor.group, 'walk', 0.35)
       this.snapClip(actor.group, 0.35)
       keepPawsOnPath(actor.group)
-      if (facesHostCamera(actor.group)) billboardY(actor.group, this.camera)
     })
     this.orbit.target.set(0.05, 0.62, -0.4)
     this.camera.position.set(0.18, 2.85, 12.4)
@@ -514,34 +616,35 @@ export class HostWorld {
     const land = [...this.actors.values()].filter((a) => !a.marine)
     const chosen = kind ? land.filter((a) => a.animalId === kind) : land
     if (!chosen.length) return false
-    const slots: [number, number][] = [
-      [-1.35, 3.35],
-      [0.12, 0.55],
-      [1.05, -2.15],
-    ]
+    const alongUs = [0.14, 0.4, 0.78]
     chosen.forEach((actor, i) => {
       actor.frozen = true
+      actor.group.visible = true
+      pinLandScale(actor.group)
       if (action === 'drink') {
-        actor.group.position.set(SHORE_DRINK.x - 1.7 + i * 1.15, 0.02, SHORE_DRINK.z - 0.15 + i * 0.2)
+        const stand = drinkStand(i)
+        actor.group.position.set(stand.x, 0.02, stand.z)
+        actor.group.rotation.y = stand.heading
       } else {
-        const slot = slots[Math.min(i, slots.length - 1)]!
-        const back = action === 'rest' ? -0.45 : action === 'sit' ? -0.2 : 0
-        actor.group.position.set(slot[0], 0.02, slot[1] + back)
+        const along = pointOnPath(alongUs[Math.min(i, alongUs.length - 1)]!, i - 1)
+        const feet = keepOffCreek(along.x, along.z)
+        actor.group.position.set(feet.x, 0.02, feet.z)
+        const pose = action === 'rest' ? 'rest' : action === 'sit' ? 'sit' : 'walk'
+        actor.group.rotation.y = landYaw(pose, along.heading, i - 1)
       }
-      actor.group.rotation.y = 0
       actor.group.userData._animT = undefined
       const sample = action === 'walk' ? 0.28 : 0.8
       tickAction(actor.group, action, sample)
       this.snapClip(actor.group, sample)
       keepPawsOnPath(actor.group)
-      if (facesHostCamera(actor.group)) billboardY(actor.group, this.camera)
     })
     if (action === 'drink') {
-      this.orbit.target.set(SHORE_DRINK.x - 0.5, 0.55, SHORE_DRINK.z)
-      this.camera.position.set(SHORE_DRINK.x - 0.35, 2.7, SHORE_DRINK.z + 11.6)
+      const look = drinkStand(1)
+      this.orbit.target.set(look.x, 0.52, look.z)
+      this.camera.position.set(-0.35, 2.7, look.z + 8.6)
     } else {
-      this.orbit.target.set(0.05, 0.55, -0.2)
-      this.camera.position.set(0.18, 2.7, 11.6)
+      this.orbit.target.set(0.12, 0.55, -1.6)
+      this.camera.position.set(0.38, 2.62, 12.2)
     }
     this.syncOrbitFromCamera()
     return true
@@ -560,6 +663,96 @@ export class HostWorld {
       target.y + 1.05 * FOREST_CAMERA_PULL,
       target.z + 4.6 * FOREST_CAMERA_PULL,
     )
+    this.syncOrbitFromCamera()
+    return true
+  }
+
+  /**
+   * 截图用：定住一只陆地动物的 walk/sit/drink/sleep，镜头拉近到能看清脚掌，
+   * 不经过 poseLineup（那会把姿势打回走路）。
+   */
+  poseActionClose(action: WorldAction, kind: AnimalId = 'lion'): boolean {
+    const actor = [...this.actors.values()].find((a) => a.animalId === kind && !a.marine)
+    if (!actor) return false
+    for (const other of this.actors.values()) {
+      other.frozen = true
+      other.group.visible = other === actor
+    }
+    pinLandScale(actor.group)
+    const stand = action === 'drink' ? drinkStand(0) : null
+    const along = pointOnPath(0.22, 0)
+    const onPath = stand
+      ? { x: stand.x, z: stand.z }
+      : keepOffCreek(0.1, 2.55)
+    actor.group.position.set(onPath.x, 0.02, onPath.z)
+    actor.group.rotation.y = stand
+      ? stand.heading
+      : landYaw(action === 'sit' || action === 'rest' ? 'sit' : 'walk', along.heading, 0)
+    actor.group.userData._animT = undefined
+    const sample = action === 'walk' ? 0.32 : 0.9
+    tickAction(actor.group, action, sample)
+    this.snapClip(actor.group, sample)
+    keepPawsOnPath(actor.group)
+    const portrait = actor.group.getObjectByName('portrait')
+    const target = new THREE.Vector3()
+    if (portrait) {
+      actor.group.updateMatrixWorld(true)
+      const box = new THREE.Box3().setFromObject(portrait)
+      box.getCenter(target)
+      target.y = Math.max(0.42, box.min.y + (box.max.y - box.min.y) * 0.42)
+    } else {
+      actor.group.getWorldPosition(target)
+      target.y += 0.55
+    }
+    this.orbit.target.copy(target)
+    this.camera.position.set(target.x + 1.15, 1.28, target.z + 3.05)
+    this.syncOrbitFromCamera()
+    keepPawsOnPath(actor.group)
+    return true
+  }
+
+  /** 狮走路、鹿坐下回头、虎喝水：三只朝向不同，脚不踩溪。 */
+  poseSpreadFacings(): boolean {
+    if (!this.poseAction('walk')) return false
+    this.poseAction('sit', 'deer')
+    this.poseAction('drink', 'tiger')
+    this.orbit.target.set(0.55, 0.52, 0.8)
+    this.camera.position.set(-0.15, 2.45, 9.6)
+    this.syncOrbitFromCamera()
+    return true
+  }
+
+  /** 近处一只大、远处一只小：同一世界身高，透视自己缩。 */
+  posePerspective(): boolean {
+    const land = [...this.actors.values()].filter((a) => !a.marine)
+    if (!land.length) return false
+    const byKind = (id: AnimalId) => land.find((a) => a.animalId === id)
+    const near = byKind('lion') || land[0]!
+    const far = byKind('tiger') || land.at(-1)!
+    const mid = byKind('deer')
+    const place = (actor: Actor, u: number, lane: number, yawLane: number) => {
+      actor.frozen = true
+      actor.group.visible = true
+      pinLandScale(actor.group)
+      const along = pointOnPath(u, lane)
+      const feet = keepOffCreek(along.x, along.z)
+      actor.group.position.set(feet.x, 0.02, feet.z)
+      actor.group.rotation.y = landYaw('walk', along.heading, yawLane)
+      actor.group.userData._animT = undefined
+      tickAction(actor.group, 'walk', 0.28)
+      this.snapClip(actor.group, 0.28)
+      keepPawsOnPath(actor.group)
+    }
+    for (const actor of this.actors.values()) {
+      actor.frozen = true
+      if (!actor.marine && actor !== near && actor !== far && actor !== mid) actor.group.visible = false
+    }
+    place(near, 0.05, 0, 0)
+    if (mid && mid !== near && mid !== far) place(mid, 0.38, -0.8, -1)
+    if (far !== near) place(far, 0.86, 0.35, 1)
+    const look = pointOnPath(0.48, 0)
+    this.orbit.target.set(look.x, 0.48, look.z)
+    this.camera.position.set(0.55, 2.55, 11.4)
     this.syncOrbitFromCamera()
     return true
   }
@@ -625,8 +818,8 @@ export class HostWorld {
   }
 
   private placeActor(actor: Actor, t: number, dt: number): void {
+    if (!actor.marine) pinLandScale(actor.group)
     if (actor.frozen) {
-      if (facesHostCamera(actor.group)) billboardY(actor.group, this.camera)
       return
     }
     const step = Math.min(dt, 0.05)
@@ -646,38 +839,41 @@ export class HostWorld {
     }
 
     const action = autoLandAction(t, actor.phase)
-    const facing = facesHostCamera(actor.group)
     if (action === 'drink') {
-      actor.group.position.set(SHORE_DRINK.x, 0.02, SHORE_DRINK.z + actor.lane * 0.7)
-      actor.group.rotation.y = Math.PI / 2
+      const stand = drinkStand(Math.max(0, actor.lane + 1))
+      actor.group.position.set(stand.x, 0.02, stand.z)
+      actor.group.rotation.y = stand.heading
       tickAction(actor.group, 'drink', t)
-      if (facing) billboardY(actor.group, this.camera)
+      keepPawsOnPath(actor.group)
       return
     }
     if (action === 'rest') {
-      const p = pointOnPath(0.28, -3.2)
-      actor.group.position.set(p.x, 0.02, p.z)
-      actor.group.rotation.y = p.heading
+      const p = pointOnPath(0.28, actor.lane * 0.35)
+      const feet = keepOffCreek(p.x, p.z)
+      actor.group.position.set(feet.x, 0.02, feet.z)
+      actor.group.rotation.y = landYaw('rest', p.heading, actor.lane)
       tickAction(actor.group, 'rest', t)
-      if (facing) billboardY(actor.group, this.camera)
+      keepPawsOnPath(actor.group)
       return
     }
     if (action === 'sit') {
-      const p = pointOnPath(0.42, 2.8)
-      actor.group.position.set(p.x, 0, p.z)
-      actor.group.rotation.y = p.heading + Math.PI
+      const p = pointOnPath(0.42, actor.lane * 0.35)
+      const feet = keepOffCreek(p.x, p.z)
+      actor.group.position.set(feet.x, 0, feet.z)
+      actor.group.rotation.y = landYaw('sit', p.heading, actor.lane)
       tickAction(actor.group, 'sit', t)
-      if (facing) billboardY(actor.group, this.camera)
+      keepPawsOnPath(actor.group)
       return
     }
 
     actor.angle += actor.speed * step
     if (actor.angle > 0.92) actor.angle = 0.06
     const p = pointOnPath(actor.angle, actor.lane)
-    actor.group.position.set(p.x, 0.02, p.z)
-    actor.group.rotation.y = p.heading
+    const feet = keepOffCreek(p.x, p.z)
+    actor.group.position.set(feet.x, 0.02, feet.z)
+    actor.group.rotation.y = landYaw('walk', p.heading, actor.lane)
     tickAction(actor.group, 'walk', t + actor.angle)
-    if (facing) billboardY(actor.group, this.camera)
+    keepPawsOnPath(actor.group)
   }
 
   private addLight(l: THREE.Light): void {
@@ -759,12 +955,7 @@ export class HostWorld {
   }
 
   private addCreek(): void {
-    const curve = new THREE.CatmullRomCurve3(
-      CREEK_POINTS.map(([x, z]) => new THREE.Vector3(x, 0.03, z)),
-      false,
-      'catmullrom',
-      0.4,
-    )
+    const curve = creekCurve()
     const water = new THREE.Mesh(
       new THREE.TubeGeometry(curve, 18, 0.42, 6, false),
       new THREE.MeshLambertMaterial({ color: '#5eb8d0', map: waterMap() }),
