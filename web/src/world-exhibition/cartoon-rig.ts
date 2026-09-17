@@ -299,6 +299,34 @@ function bone(name: string, world: THREE.Vector3, parent?: THREE.Bone): THREE.Bo
   return b
 }
 
+function fillTransparentCoat(tex: THREE.Texture, hex: string): THREE.Texture {
+  const img = tex.image as { width?: number; height?: number; naturalWidth?: number; naturalHeight?: number } | undefined
+  const w = img?.width || img?.naturalWidth || 0
+  const h = img?.height || img?.naturalHeight || 0
+  if (w < 4 || h < 4 || typeof document === 'undefined') return tex
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext('2d')
+  if (!ctx || typeof ctx.drawImage !== 'function') return tex
+  const c = new THREE.Color(hex)
+  ctx.fillStyle = `rgb(${Math.round(c.r * 255)},${Math.round(c.g * 255)},${Math.round(c.b * 255)})`
+  ctx.fillRect(0, 0, w, h)
+  try {
+    ctx.drawImage(img as CanvasImageSource, 0, 0, w, h)
+  } catch {
+    return tex
+  }
+  const out = new THREE.CanvasTexture(canvas)
+  out.colorSpace = THREE.SRGBColorSpace
+  out.minFilter = THREE.LinearFilter
+  out.magFilter = THREE.LinearFilter
+  out.generateMipmaps = false
+  out.premultiplyAlpha = false
+  out.needsUpdate = true
+  return out
+}
+
 function dummy(name: string, hex: string, rx: number, ry: number, rz: number): THREE.Mesh {
   const mesh = new THREE.Mesh(
     superellipsoid(rx, ry, rz, 2.2),
@@ -367,6 +395,8 @@ function skin(geo: THREE.BufferGeometry, bones: THREE.Bone[], bind: Bind): void 
   const dist = new Float32Array(bones.length)
   for (let i = 0; i < pos.count; i++) {
     tmp.fromBufferAttribute(pos, i)
+    const toHead = tmp.distanceTo(bind.head)
+    const toPaw = tmp.y
     for (let b = 0; b < bones.length; b++) {
       let d = tmp.distanceTo(world[b]!)
       const name = bones[b]!.name
@@ -374,6 +404,12 @@ function skin(geo: THREE.BufferGeometry, bones: THREE.Bone[], bind: Bind): void 
       if (name === 'head' && tmp.z > bind.neck.z) d *= 0.55
       if (name === 'hips' && tmp.z < bind.spine.z) d *= 0.7
       if (name === 'tail' && tmp.z < bind.hips.z - 0.12) d *= 0.4
+      if (toHead < 0.34) {
+        if (name === 'head') d *= 0.12
+        else if (name === 'neck') d *= 0.7
+        else d *= 2.4
+      }
+      if (toPaw < 0.14 && name.endsWith('-low')) d *= 0.4
       dist[b] = d
     }
     const order = dist.map((_, idx) => idx).sort((a, b) => dist[a]! - dist[b]!)
@@ -414,7 +450,7 @@ function clipsFor(bind: Bind): THREE.AnimationClip[] {
     qtrack('leg-front-right-low', walkT, lowB),
     qtrack('leg-back-left-low', walkT, lowB),
     qtrack('leg-back-right-low', walkT, lowA),
-    qtrack('head', walkT, [REST, quat(Y, 0.08), REST, quat(Y, -0.08), REST]),
+    qtrack('head', walkT, [REST, quat(Y, 0.04), REST, quat(Y, -0.04), REST]),
     qtrack('tail', walkT, [REST, quat(Y, 0.4), REST, quat(Y, -0.4), REST]),
     qtrack('spine', walkT, [REST, quat(Y, 0.06), REST, quat(Y, -0.06), REST]),
     new THREE.VectorKeyframeTrack(
@@ -543,8 +579,9 @@ export function buildCartoonRig(id: AnimalId, map: THREE.Texture): THREE.Group {
   projectArtUVs(geo)
   skin(geo, bones, bind)
 
+  const coat = fillTransparentCoat(map, bind.coat)
   const mat = new THREE.MeshLambertMaterial({
-    map,
+    map: coat,
     color: '#ffffff',
   })
   mat.name = 'coat'
@@ -560,9 +597,13 @@ export function buildCartoonRig(id: AnimalId, map: THREE.Texture): THREE.Group {
   body.normalizeSkinWeights()
   root.add(body)
 
-  map.colorSpace = THREE.SRGBColorSpace
-  map.needsUpdate = true
-  root.userData.spriteMap = map
+  head.traverse((obj) => {
+    if (obj.userData.keepFace) obj.visible = false
+  })
+
+  coat.colorSpace = THREE.SRGBColorSpace
+  coat.needsUpdate = true
+  root.userData.spriteMap = coat
   root.userData.rigClips = clipsFor(bind)
   root.userData.pack = CARTOON_RIG_PACK
   return root
