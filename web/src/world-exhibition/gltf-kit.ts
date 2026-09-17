@@ -10,7 +10,7 @@ import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js'
 import type { AnimalId } from '../types'
 import { ANIMAL_IDS, isMarine } from '../types'
 import { ART_CUTOUT_PACK } from './art-cutout'
-import { CARTOON_RIG_PACK, buildCartoonRig, loadCoatTexture } from './cartoon-rig'
+import { CARTOON_RIG_PACK, buildCartoonRig, loadCoatTexture, attachViewTextures } from './cartoon-rig'
 
 type AnimalTemplate = {
   scene: THREE.Group
@@ -124,6 +124,7 @@ export async function loadAnimalTemplates(): Promise<void> {
         if (!isMarine(id)) {
           const map = await loadCoatTexture(id)
           const scene = buildCartoonRig(id, map)
+          await attachViewTextures(scene, id)
           templates.set(id, {
             scene,
             animations: (scene.userData.rigClips as THREE.AnimationClip[]) || [],
@@ -298,6 +299,8 @@ export function instanceAnimal(animal: AnimalId, painted: Record<string, string>
   const inner = cloned as THREE.Group
   const spriteMap = tpl.scene.userData.spriteMap as THREE.Texture | undefined
   if (spriteMap) inner.userData.spriteMap = spriteMap
+  inner.userData.viewMaps = tpl.scene.userData.viewMaps
+  inner.userData.spriteH = tpl.scene.userData.spriteH
   inner.userData.pack = packOf(animal, tpl)
   const bodyTint = painted.body || painted.shell || '#ffffff'
   inner.traverse((obj) => {
@@ -333,6 +336,8 @@ export function instanceAnimal(animal: AnimalId, painted: Record<string, string>
     tpl.pack === CARTOON_RIG_PACK ? 'cartoon-rig' : tpl.pack === ART_CUTOUT_PACK ? 'art-cutout' : 'gltf'
   root.userData.pack = packOf(animal, tpl)
   root.userData.spriteMap = inner.userData.spriteMap
+  root.userData.viewMaps = inner.userData.viewMaps
+  root.userData.spriteH = inner.userData.spriteH
   root.userData.marine = isMarine(animal)
   root.userData.legs = isMarine(animal) ? [] : collectLegs(root)
   root.userData.eyes = EYE_ALIASES.map((n) => named(root, [n])).filter((o): o is THREE.Object3D => Boolean(o))

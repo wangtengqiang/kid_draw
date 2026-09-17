@@ -16,7 +16,7 @@ import {
   paintGrassGround,
   paintWater,
 } from './forest-art'
-import { keepPawsOnPath } from './cartoon-rig'
+import { applyLandView, keepPawsOnPath } from './cartoon-rig'
 
 interface Actor {
   id: string
@@ -600,11 +600,7 @@ export class HostWorld {
       const feet = keepOffCreek(slot[0], slot[1])
       actor.group.position.set(feet.x, 0.02, feet.z)
       const along = pointOnPath(0.18 + i * 0.22, 0)
-      actor.group.rotation.y = landYaw('walk', along.heading, i - 1)
-      actor.group.userData._animT = undefined
-      tickAction(actor.group, 'walk', 0.35)
-      this.snapClip(actor.group, 0.35)
-      keepPawsOnPath(actor.group)
+      this.settleLand(actor, 'walk', landYaw('walk', along.heading, i - 1), 0.35)
     })
     this.orbit.target.set(0.05, 0.62, -0.4)
     this.camera.position.set(0.18, 2.85, 12.4)
@@ -617,6 +613,7 @@ export class HostWorld {
     const chosen = kind ? land.filter((a) => a.animalId === kind) : land
     if (!chosen.length) return false
     const alongUs = [0.14, 0.4, 0.78]
+    const walkHeadings = [0, 0.85, 1.55]
     chosen.forEach((actor, i) => {
       actor.frozen = true
       actor.group.visible = true
@@ -624,19 +621,18 @@ export class HostWorld {
       if (action === 'drink') {
         const stand = drinkStand(i)
         actor.group.position.set(stand.x, 0.02, stand.z)
-        actor.group.rotation.y = stand.heading
+        this.settleLand(actor, 'drink', stand.heading, 0.8)
       } else {
         const along = pointOnPath(alongUs[Math.min(i, alongUs.length - 1)]!, i - 1)
         const feet = keepOffCreek(along.x, along.z)
         actor.group.position.set(feet.x, 0.02, feet.z)
         const pose = action === 'rest' ? 'rest' : action === 'sit' ? 'sit' : 'walk'
-        actor.group.rotation.y = landYaw(pose, along.heading, i - 1)
+        const heading =
+          pose === 'walk'
+            ? walkHeadings[Math.min(i, walkHeadings.length - 1)]!
+            : landYaw(pose, along.heading, i - 1)
+        this.settleLand(actor, pose, heading, pose === 'walk' ? 0.28 : 0.8)
       }
-      actor.group.userData._animT = undefined
-      const sample = action === 'walk' ? 0.28 : 0.8
-      tickAction(actor.group, action, sample)
-      this.snapClip(actor.group, sample)
-      keepPawsOnPath(actor.group)
     })
     if (action === 'drink') {
       const look = drinkStand(1)
@@ -685,14 +681,10 @@ export class HostWorld {
       ? { x: stand.x, z: stand.z }
       : keepOffCreek(0.1, 2.55)
     actor.group.position.set(onPath.x, 0.02, onPath.z)
-    actor.group.rotation.y = stand
+    const heading = stand
       ? stand.heading
       : landYaw(action === 'sit' || action === 'rest' ? 'sit' : 'walk', along.heading, 0)
-    actor.group.userData._animT = undefined
-    const sample = action === 'walk' ? 0.32 : 0.9
-    tickAction(actor.group, action, sample)
-    this.snapClip(actor.group, sample)
-    keepPawsOnPath(actor.group)
+    this.settleLand(actor, action === 'rest' ? 'rest' : action, heading, action === 'walk' ? 0.32 : 0.9)
     const portrait = actor.group.getObjectByName('portrait')
     const target = new THREE.Vector3()
     if (portrait) {
@@ -707,6 +699,12 @@ export class HostWorld {
     this.orbit.target.copy(target)
     this.camera.position.set(target.x + 1.15, 1.28, target.z + 3.05)
     this.syncOrbitFromCamera()
+    applyLandView(
+      actor.group,
+      this.camera,
+      (actor.group.userData.landAction as WorldAction) || action,
+      (actor.group.userData.heading as number) || 0,
+    )
     keepPawsOnPath(actor.group)
     return true
   }
@@ -730,31 +728,38 @@ export class HostWorld {
     const near = byKind('lion') || land[0]!
     const far = byKind('tiger') || land.at(-1)!
     const mid = byKind('deer')
-    const place = (actor: Actor, u: number, lane: number, yawLane: number) => {
+    const place = (actor: Actor, u: number, lane: number, heading: number) => {
       actor.frozen = true
       actor.group.visible = true
       pinLandScale(actor.group)
       const along = pointOnPath(u, lane)
       const feet = keepOffCreek(along.x, along.z)
       actor.group.position.set(feet.x, 0.02, feet.z)
-      actor.group.rotation.y = landYaw('walk', along.heading, yawLane)
-      actor.group.userData._animT = undefined
-      tickAction(actor.group, 'walk', 0.28)
-      this.snapClip(actor.group, 0.28)
-      keepPawsOnPath(actor.group)
+      this.settleLand(actor, 'walk', heading, 0.28)
     }
     for (const actor of this.actors.values()) {
       actor.frozen = true
       if (!actor.marine && actor !== near && actor !== far && actor !== mid) actor.group.visible = false
     }
     place(near, 0.05, 0, 0)
-    if (mid && mid !== near && mid !== far) place(mid, 0.38, -0.8, -1)
-    if (far !== near) place(far, 0.86, 0.35, 1)
+    if (mid && mid !== near && mid !== far) place(mid, 0.38, -0.8, 0.85)
+    if (far !== near) place(far, 0.86, 0.35, 1.55)
     const look = pointOnPath(0.48, 0)
     this.orbit.target.set(look.x, 0.48, look.z)
     this.camera.position.set(0.55, 2.55, 11.4)
     this.syncOrbitFromCamera()
     return true
+  }
+
+  private settleLand(actor: Actor, action: WorldAction, heading: number, sample: number): void {
+    actor.group.rotation.y = 0
+    actor.group.userData.heading = heading
+    actor.group.userData.landAction = action
+    actor.group.userData._animT = undefined
+    tickAction(actor.group, action, sample)
+    this.snapClip(actor.group, sample)
+    applyLandView(actor.group, this.camera, action, heading)
+    keepPawsOnPath(actor.group)
   }
 
   private syncOrbitFromCamera(): void {
@@ -820,6 +825,12 @@ export class HostWorld {
   private placeActor(actor: Actor, t: number, dt: number): void {
     if (!actor.marine) pinLandScale(actor.group)
     if (actor.frozen) {
+      if (!actor.marine) {
+        const action = (actor.group.userData.landAction as WorldAction) || 'walk'
+        const heading = (actor.group.userData.heading as number) || 0
+        applyLandView(actor.group, this.camera, action, heading)
+        keepPawsOnPath(actor.group)
+      }
       return
     }
     const step = Math.min(dt, 0.05)
@@ -842,8 +853,9 @@ export class HostWorld {
     if (action === 'drink') {
       const stand = drinkStand(Math.max(0, actor.lane + 1))
       actor.group.position.set(stand.x, 0.02, stand.z)
-      actor.group.rotation.y = stand.heading
+      actor.group.rotation.y = 0
       tickAction(actor.group, 'drink', t)
+      applyLandView(actor.group, this.camera, 'drink', stand.heading)
       keepPawsOnPath(actor.group)
       return
     }
@@ -851,8 +863,9 @@ export class HostWorld {
       const p = pointOnPath(0.28, actor.lane * 0.35)
       const feet = keepOffCreek(p.x, p.z)
       actor.group.position.set(feet.x, 0.02, feet.z)
-      actor.group.rotation.y = landYaw('rest', p.heading, actor.lane)
+      actor.group.rotation.y = 0
       tickAction(actor.group, 'rest', t)
+      applyLandView(actor.group, this.camera, 'rest', landYaw('rest', p.heading, actor.lane))
       keepPawsOnPath(actor.group)
       return
     }
@@ -860,8 +873,9 @@ export class HostWorld {
       const p = pointOnPath(0.42, actor.lane * 0.35)
       const feet = keepOffCreek(p.x, p.z)
       actor.group.position.set(feet.x, 0, feet.z)
-      actor.group.rotation.y = landYaw('sit', p.heading, actor.lane)
+      actor.group.rotation.y = 0
       tickAction(actor.group, 'sit', t)
+      applyLandView(actor.group, this.camera, 'sit', landYaw('sit', p.heading, actor.lane))
       keepPawsOnPath(actor.group)
       return
     }
@@ -871,8 +885,9 @@ export class HostWorld {
     const p = pointOnPath(actor.angle, actor.lane)
     const feet = keepOffCreek(p.x, p.z)
     actor.group.position.set(feet.x, 0.02, feet.z)
-    actor.group.rotation.y = landYaw('walk', p.heading, actor.lane)
+    actor.group.rotation.y = 0
     tickAction(actor.group, 'walk', t + actor.angle)
+    applyLandView(actor.group, this.camera, 'walk', landYaw('walk', p.heading, actor.lane))
     keepPawsOnPath(actor.group)
   }
 

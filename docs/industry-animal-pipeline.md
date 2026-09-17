@@ -121,7 +121,15 @@
 
 ## 当前默认
 
-- 狮 / 鹿 / 虎 ← 本仓库卡通网格 + 真骨骼（`cartoon-rig.ts`），皮毛是 `gen-land-animals-sheet.png` 抠出来的图；walk / sit / drink / sleep 是同一只身体在变形，不是四张剪纸。
+- 狮 / 鹿 / 虎 ← 生成角色图 2.5D：走路换正面 / 3/4 / 侧面（狮从 `gen-lion-turnaround.png` 切片），坐下 / 喝水 / 睡觉换动作图。剪纸立着对着镜头，**不把一张正面 PNG 在 3D 里 yaw 扁**。
+
+## 头和身子怎么换方向
+
+手机截图里狮被拧成卡片（歪歪扁扁），是因为把**一张正面 PNG 绕竖直轴转**。业界不这么做。
+
+1. **真 3D** — 转的是网格（竖直轴 yaw），或播一段转身。头可以单独 look-at 脖子骨，身子跟走路朝向。本项目还没有陆地 `.glb` 绑定，**不要用转卡片冒充**。参考：[Three.js Animation system](https://threejs.org/manual/en/animation-system.html)、[Unity Mecanim](https://docs.unity3d.com/Manual/AnimationSection.html)。
+2. **2.5D（现在交付）** — 画好正面 / 3/4 / 侧面（可左右镜像）。朝向 = 换哪张图。精灵始终立着，可 Y-billboard 正对镜头，所以透视只缩小远近身高，不把身子压扁。Don't Starve、Paper Mario、多数微信 Spine 宠物都是这一路。狮用 `gen-lion-turnaround.png`；鹿 / 虎用站立 3/4 + `gen-poses-*` 动作图。代码：`pickLandView` / `applyLandView`，根节点 `rotation.y = 0`。
+3. **分层纸娃娃** — 身子朝向 + 头叠加，头转角要夹住，不能在正面身子上拧 180°。本回合不做。
 - 鱼 ← Kenney Cube Pets（CC0）。
 - 海豚 / 海龟 ← Gobkit Whale / Seal（CC0）。
 - 运行时：`GLTFLoader` + `AnimationMixer`。孩子涂色是画板原图像素，贴在皮毛 UV 上。

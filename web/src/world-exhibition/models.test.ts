@@ -5,7 +5,7 @@ import * as THREE from 'three'
 import { loadAnimalTemplates, playAnimalClip, setAnimalModelProvider } from './gltf-kit'
 import { createAnimalModel, tickAction } from './models'
 import { CUTOUT_SRC } from './art-cutout'
-import { CARTOON_RIG_PACK, LAND_BONE_NAMES, facesHostCamera, keepPawsOnPath } from './cartoon-rig'
+import { CARTOON_RIG_PACK, LAND_BONE_NAMES, VIEW_SRC, applyLandView, facesHostCamera, keepPawsOnPath, pickLandView } from './cartoon-rig'
 import type { AnimalId } from '../types'
 
 const PUBLIC = resolve(process.cwd(), 'public')
@@ -76,6 +76,9 @@ describe('rigged cartoon lion/deer/tiger', () => {
       expect((portrait.material as THREE.MeshLambertMaterial).map).toBeTruthy()
       expect(CUTOUT_SRC[kind]).toMatch(/\/models\/cutouts\/.+\.png/)
       expect(existsSync(resolve(PUBLIC, `models/cutouts/${kind}.png`))).toBe(true)
+      expect(existsSync(resolve(PUBLIC, VIEW_SRC[kind].drink.replace(/^\//, '')))).toBe(true)
+      expect(existsSync(resolve(PUBLIC, VIEW_SRC[kind].sit.replace(/^\//, '')))).toBe(true)
+      expect(existsSync(resolve(PUBLIC, VIEW_SRC[kind].threeQuarter.replace(/^\//, '')))).toBe(true)
       const png = readFileSync(resolve(PUBLIC, `models/cutouts/${kind}.png`))
       expect([...png.subarray(0, 8)]).toEqual([137, 80, 78, 71, 13, 10, 26, 10])
       const names: string[] = []
@@ -109,6 +112,29 @@ describe('rigged cartoon lion/deer/tiger', () => {
     expect((lion.userData.activeClip as THREE.AnimationAction).getClip().name).toBe('drink')
     tickAction(lion, 'rest', 2.4)
     expect((lion.userData.activeClip as THREE.AnimationAction).getClip().name).toBe('sleep')
+  })
+
+  it('swaps front, three-quarter and side sprites instead of yawing the cutout', async () => {
+    await loadShipped()
+    expect(pickLandView('walk', 0, 0).view).toBe('front')
+    expect(pickLandView('walk', 0.85, 0).view).toBe('threeQuarter')
+    expect(pickLandView('walk', 1.55, 0).view).toBe('side')
+    expect(pickLandView('drink', 0.82, 0).view).toBe('drink')
+    expect(pickLandView('sit', -0.78, 0).view).toBe('sit')
+    const lion = createAnimalModel('lion', { body: '#ffffff' })
+    lion.position.set(0, 0, 0)
+    lion.rotation.y = 0.82
+    const camera = new THREE.PerspectiveCamera(42, 1, 0.3, 100)
+    camera.position.set(0.4, 2.2, 8)
+    const picked = applyLandView(lion, camera, 'walk', 0)
+    expect(picked.view).toBe('front')
+    expect(lion.rotation.y).toBe(0)
+    const portrait = lion.getObjectByName('portrait') as THREE.Mesh
+    expect(Math.abs(portrait.rotation.x)).toBeLessThan(0.01)
+    expect(Math.abs(portrait.rotation.z)).toBeLessThan(0.01)
+    expect(Math.abs(portrait.rotation.y)).toBeGreaterThan(0.01)
+    expect(existsSync(resolve(PUBLIC, 'models/cutouts/lion-front.png'))).toBe(true)
+    expect(existsSync(resolve(PUBLIC, 'models/cutouts/lion-side.png'))).toBe(true)
   })
 
   it('keeps generated paws on the path and does not cover the cutout with a hull', async () => {

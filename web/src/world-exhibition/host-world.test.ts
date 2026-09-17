@@ -28,6 +28,7 @@ import {
   pointOnPath,
   smoothCoast,
 } from './host-world'
+import { pickLandView } from './cartoon-rig'
 
 describe('organic coast', () => {
   it('is a wavy polygon, not a rectangle', () => {
@@ -141,6 +142,14 @@ describe('illustrated forest path', () => {
     expect(Math.abs(Math.sin(walk))).toBeGreaterThan(0.3)
     expect(Math.abs(Math.sin(walk))).toBeLessThan(0.9)
     expect(CREEK_CLEAR).toBeGreaterThan(1.7)
+  })
+
+  it('picks front, three-quarter and side art instead of yawing a card', () => {
+    expect(pickLandView('walk', 0).view).toBe('front')
+    expect(pickLandView('walk', 0.85).view).toBe('threeQuarter')
+    expect(pickLandView('walk', 1.55).view).toBe('side')
+    expect(pickLandView('drink', 0.82).view).toBe('drink')
+    expect(pickLandView('sit', -0.78).view).not.toBe(pickLandView('walk', 0.85).view)
   })
 
   it('keeps land pets at a constant world scale so distance shrinks height', () => {

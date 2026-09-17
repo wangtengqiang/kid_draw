@@ -5,8 +5,42 @@
  */
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
-import type { AnimalId } from '../types'
+import type { AnimalId, WorldAction } from '../types'
 import { CUTOUT_SRC } from './art-cutout'
+
+export type LandView = 'front' | 'threeQuarter' | 'side' | 'back' | 'drink' | 'sit' | 'sleep'
+
+type LandId = 'lion' | 'deer' | 'tiger'
+
+export const VIEW_SRC: Record<LandId, Record<LandView, string>> = {
+  lion: {
+    front: '/models/cutouts/lion-front.png',
+    threeQuarter: '/models/cutouts/lion-three-quarter.png',
+    side: '/models/cutouts/lion-side.png',
+    back: '/models/cutouts/lion-back.png',
+    drink: '/models/cutouts/lion-drink.png',
+    sit: '/models/cutouts/lion-sit.png',
+    sleep: '/models/cutouts/lion-sleep.png',
+  },
+  deer: {
+    front: '/models/cutouts/deer.png',
+    threeQuarter: '/models/cutouts/deer.png',
+    side: '/models/cutouts/deer.png',
+    back: '/models/cutouts/deer.png',
+    drink: '/models/cutouts/deer-drink.png',
+    sit: '/models/cutouts/deer-sit.png',
+    sleep: '/models/cutouts/deer-sleep.png',
+  },
+  tiger: {
+    front: '/models/cutouts/tiger.png',
+    threeQuarter: '/models/cutouts/tiger.png',
+    side: '/models/cutouts/tiger.png',
+    back: '/models/cutouts/tiger.png',
+    drink: '/models/cutouts/tiger-drink.png',
+    sit: '/models/cutouts/tiger-sit.png',
+    sleep: '/models/cutouts/tiger-sleep.png',
+  },
+}
 
 export const CARTOON_RIG_PACK = 'cartoon-rig'
 
@@ -26,8 +60,6 @@ export const LAND_BONE_NAMES = [
 const X = new THREE.Vector3(1, 0, 0)
 const Y = new THREE.Vector3(0, 1, 0)
 const REST: number[] = [0, 0, 0, 1]
-
-type LandId = 'lion' | 'deer' | 'tiger'
 
 type Bind = {
   hips: THREE.Vector3
@@ -350,8 +382,8 @@ function makePortrait(id: LandId, bind: Bind, map: THREE.Texture): THREE.Mesh {
   const mat = new THREE.MeshLambertMaterial({
     map,
     color: '#ffffff',
-    alphaTest: 0.22,
-    side: THREE.DoubleSide,
+    alphaTest: 0.38,
+    side: THREE.FrontSide,
     transparent: false,
     depthWrite: true,
     polygonOffset: true,
@@ -363,8 +395,9 @@ function makePortrait(id: LandId, bind: Bind, map: THREE.Texture): THREE.Mesh {
   mesh.name = 'portrait'
   mesh.userData.portrait = true
   mesh.userData.cutout = true
+  mesh.userData.baseY = p.h * 0.5
   mesh.renderOrder = 2
-  mesh.position.set(0, p.y, p.z)
+  mesh.position.set(0, p.h * 0.5, 0)
   mesh.castShadow = false
   mesh.receiveShadow = false
   mesh.frustumCulled = false
@@ -547,7 +580,7 @@ export function buildCartoonRig(id: AnimalId, map: THREE.Texture): THREE.Group {
   bone('leg-back-right-low', v(bind.br.x, bind.br.y - bind.legLen * 0.5, bind.br.z), br)
   addFace(head, kind)
   const portrait = makePortrait(kind, bind, map)
-  hips.add(portrait)
+  root.add(portrait)
   if (kind === 'lion') {
     const mane = dummy('mane', bind.mane, 0.02, 0.02, 0.02)
     mane.visible = false
@@ -585,14 +618,13 @@ export function buildCartoonRig(id: AnimalId, map: THREE.Texture): THREE.Group {
   map.colorSpace = THREE.SRGBColorSpace
   map.needsUpdate = true
   root.userData.spriteMap = map
+  root.userData.spriteH = bind.portrait.h
   root.userData.rigClips = clipsFor(bind)
   root.userData.pack = CARTOON_RIG_PACK
   return root
 }
 
-export async function loadCoatTexture(id: AnimalId): Promise<THREE.Texture> {
-  const url = CUTOUT_SRC[id as LandId]
-  if (!url) throw new Error(`没有皮毛贴图：${id}`)
+function loadPngTexture(url: string, fail: string): Promise<THREE.Texture> {
   return new Promise((resolve, reject) => {
     new THREE.TextureLoader().load(
       url,
@@ -607,9 +639,108 @@ export async function loadCoatTexture(id: AnimalId): Promise<THREE.Texture> {
         resolve(tex)
       },
       undefined,
-      () => reject(new Error(`无法加载皮毛 ${id}`)),
+      () => reject(new Error(fail)),
     )
   })
+}
+
+export async function loadCoatTexture(id: AnimalId): Promise<THREE.Texture> {
+  const kind = (id === 'deer' || id === 'tiger' || id === 'lion' ? id : 'lion') as LandId
+  const url = VIEW_SRC[kind].threeQuarter || CUTOUT_SRC[kind]
+  if (!url) throw new Error(`没有皮毛贴图：${id}`)
+  return loadPngTexture(url, `无法加载皮毛 ${id}`)
+}
+
+export async function attachViewTextures(root: THREE.Object3D, id: AnimalId): Promise<void> {
+  const kind = (id === 'deer' || id === 'tiger' || id === 'lion' ? id : 'lion') as LandId
+  const fallback = (root.userData.spriteMap as THREE.Texture | undefined) || null
+  const maps: Partial<Record<LandView, THREE.Texture>> = {}
+  await Promise.all(
+    (Object.keys(VIEW_SRC[kind]) as LandView[]).map(async (view) => {
+      const url = VIEW_SRC[kind][view]
+      try {
+        maps[view] = await loadPngTexture(url, `无法加载 ${url}`)
+      } catch {
+        if (fallback) maps[view] = fallback
+      }
+    }),
+  )
+  if (fallback && !maps.threeQuarter) maps.threeQuarter = fallback
+  root.userData.viewMaps = maps
+}
+
+export function wrapPi(a: number): number {
+  const tau = Math.PI * 2
+  let x = ((a % tau) + tau) % tau
+  if (x > Math.PI) x -= tau
+  return x
+}
+
+/** 正面 / 3/4 / 侧面换图，不把正面剪纸在 3D 里拧扁。 */
+export function pickLandView(
+  action: WorldAction | 'walk',
+  heading: number,
+  toCamera = 0,
+): { view: LandView; flip: boolean } {
+  const rel = wrapPi(heading - toCamera)
+  const flip = rel < 0
+  if (action === 'drink') return { view: 'drink', flip }
+  if (action === 'sit') return { view: 'sit', flip }
+  if (action === 'rest') return { view: 'sleep', flip }
+  const a = Math.abs(rel)
+  if (a < 0.5) return { view: 'front', flip }
+  if (a < 1.15) return { view: 'threeQuarter', flip }
+  return { view: 'side', flip }
+}
+
+function aspectOfMap(map: THREE.Texture | null | undefined, fallback = 0.85): number {
+  const img = map?.image as { width?: number; height?: number; naturalWidth?: number; naturalHeight?: number } | undefined
+  const w = img?.width || img?.naturalWidth || 0
+  const h = img?.height || img?.naturalHeight || 0
+  if (w > 2 && h > 2) return w / h
+  return fallback
+}
+
+const _viewCam = new THREE.Vector3()
+
+/**
+ * 2.5D 业界做法：剪纸平面只 Y-billboard（立着、不拧扁），朝向靠换 front/3/4/side。
+ * 根节点 rotation.y 保持 0，禁止把一张正面 PNG yaw 成卡片。
+ */
+export function applyLandView(
+  root: THREE.Object3D,
+  camera: THREE.Camera,
+  action: WorldAction | 'walk',
+  heading: number,
+): { view: LandView; flip: boolean } {
+  const portrait = root.getObjectByName('portrait') as THREE.Mesh | undefined
+  root.getWorldPosition(_viewCam)
+  const toCamera = Math.atan2(camera.position.x - _viewCam.x, camera.position.z - _viewCam.z)
+  const picked = pickLandView(action, heading, toCamera)
+  if (!portrait) return picked
+  const maps =
+    (root.userData.viewMaps as Partial<Record<LandView, THREE.Texture>> | undefined) ||
+    (portrait.parent?.userData.viewMaps as Partial<Record<LandView, THREE.Texture>> | undefined)
+  const map = maps?.[picked.view] || maps?.threeQuarter || (portrait.material as THREE.MeshLambertMaterial).map
+  const mat = portrait.material as THREE.MeshLambertMaterial
+  if (map && mat.map !== map) {
+    mat.map = map
+    mat.needsUpdate = true
+  }
+  const geo = portrait.geometry as THREE.PlaneGeometry
+  const pw = geo.parameters?.width || 1
+  const ph = geo.parameters?.height || 1
+  const h = (root.userData.spriteH as number | undefined) || ph
+  const aspect = aspectOfMap(map, pw / ph)
+  portrait.scale.set((picked.flip ? -1 : 1) * ((aspect * h) / pw), h / ph, 1)
+  root.getWorldPosition(_viewCam)
+  const yaw = Math.atan2(camera.position.x - _viewCam.x, camera.position.z - _viewCam.z)
+  portrait.rotation.set(0, yaw, 0)
+  root.rotation.y = 0
+  root.userData.heading = heading
+  root.userData.landAction = action
+  root.userData.landView = picked.view
+  return picked
 }
 
 export function isCartoonRig(obj: THREE.Object3D | undefined | null): boolean {
@@ -617,25 +748,22 @@ export function isCartoonRig(obj: THREE.Object3D | undefined | null): boolean {
 }
 
 export function facesHostCamera(obj: THREE.Object3D | undefined | null): boolean {
-  // 森林里的卡通剪纸按走路/喝水转向，不再跟着镜头转。
+  // 整只动物不跟着镜头转；只有剪纸平面 billboard，用换图表达朝向。
   return obj?.userData.pack === 'art-cutout'
 }
 
-/** 坐下/睡觉也不把爪子埋进石径：量剪纸底边，抬根节点。 */
+/** 坐下/睡觉也不把爪子埋进石径：量剪纸底边，抬剪纸。 */
 export function keepPawsOnPath(root: THREE.Object3D): void {
   if (root.userData.pack !== CARTOON_RIG_PACK) return
   const portrait = root.getObjectByName('portrait') as THREE.Mesh | undefined
   if (!portrait || !portrait.visible) return
-  const lift = (root.userData.pawLift as THREE.Object3D | undefined) || root.children[0]
-  if (!lift) return
-  root.userData.pawLift = lift
-  if (typeof root.userData.pawBaseY !== 'number') root.userData.pawBaseY = lift.position.y
-  lift.position.y = root.userData.pawBaseY as number
+  if (typeof portrait.userData.baseY !== 'number') portrait.userData.baseY = portrait.position.y
+  portrait.position.y = portrait.userData.baseY as number
   root.updateMatrixWorld(true)
   const box = new THREE.Box3().setFromObject(portrait)
   if (!Number.isFinite(box.min.y)) return
   const floor = root.position.y
   const pad = 0.03
-  if (box.min.y < floor + pad) lift.position.y += floor + pad - box.min.y
+  if (box.min.y < floor + pad) portrait.position.y += floor + pad - box.min.y
   root.updateMatrixWorld(true)
 }
