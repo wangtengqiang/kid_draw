@@ -7,11 +7,12 @@ import type { AnimalId, WorldAction } from '../types'
 import { type Ring } from '../silhouettes'
 import { applyDrawingCoat, isBitmapCoat, type CoatSource } from './drawing-coat'
 import { instanceAnimal, playAnimalClip } from './gltf-kit'
+import { keepPawsOnPath } from './cartoon-rig'
 
 export { loadAnimalTemplates, setAnimalModelProvider, animalTemplatesReady } from './gltf-kit'
 
 function keepFace(obj: THREE.Object3D): boolean {
-  if (obj.userData.keepFace || obj.userData.portrait) return true
+  if (obj.userData.keepFace || obj.userData.portrait || obj.userData.ghost) return true
   const n = `${obj.name} ${obj.userData.region || ''}`.toLowerCase()
   return n.includes('eye') || n.includes('iris') || n.includes('pupil') || n.includes('shine') || n.includes('nose')
 }
@@ -167,7 +168,10 @@ export function tickAction(group: THREE.Group, action: WorldAction, t: number): 
   }
   const usedClip = Boolean(clips && playAnimalClip(group, clipFor(), dt))
 
-  if (group.userData.pack === 'art-cutout' || group.userData.pack === 'cartoon-rig') return
+  if (group.userData.pack === 'art-cutout' || group.userData.pack === 'cartoon-rig') {
+    if (group.userData.pack === 'cartoon-rig') keepPawsOnPath(group)
+    return
+  }
 
   if (marine) {
     const swim = action === 'swim' || action === 'walk'

@@ -5,7 +5,7 @@ import * as THREE from 'three'
 import { loadAnimalTemplates, playAnimalClip, setAnimalModelProvider } from './gltf-kit'
 import { createAnimalModel, tickAction } from './models'
 import { CUTOUT_SRC } from './art-cutout'
-import { CARTOON_RIG_PACK, LAND_BONE_NAMES } from './cartoon-rig'
+import { CARTOON_RIG_PACK, LAND_BONE_NAMES, keepPawsOnPath } from './cartoon-rig'
 import type { AnimalId } from '../types'
 
 const PUBLIC = resolve(process.cwd(), 'public')
@@ -59,6 +59,8 @@ describe('rigged cartoon lion/deer/tiger', () => {
       expect(body.geometry).not.toBeInstanceOf(THREE.CapsuleGeometry)
       expect(body.geometry).not.toBeInstanceOf(THREE.SphereGeometry)
       expect(body.userData.rigged).toBe(true)
+      expect(body.visible).toBe(false)
+      expect(body.userData.ghost).toBe(true)
       const boneNames = body.skeleton.bones.map((b) => b.name)
       for (const name of LAND_BONE_NAMES) expect(boneNames).toContain(name)
       expect(group.userData.clips).toEqual(
@@ -69,6 +71,7 @@ describe('rigged cartoon lion/deer/tiger', () => {
       expect(mat.map).toBeFalsy()
       const portrait = group.getObjectByName('portrait') as THREE.Mesh
       expect(portrait).toBeTruthy()
+      expect(portrait.visible).toBe(true)
       expect(portrait.geometry).toBeInstanceOf(THREE.PlaneGeometry)
       expect((portrait.material as THREE.MeshLambertMaterial).map).toBeTruthy()
       expect(CUTOUT_SRC[kind]).toMatch(/\/models\/cutouts\/.+\.png/)
@@ -106,6 +109,34 @@ describe('rigged cartoon lion/deer/tiger', () => {
     expect((lion.userData.activeClip as THREE.AnimationAction).getClip().name).toBe('drink')
     tickAction(lion, 'rest', 2.4)
     expect((lion.userData.activeClip as THREE.AnimationAction).getClip().name).toBe('sleep')
+  })
+
+  it('keeps generated paws on the path and does not cover the cutout with a hull', async () => {
+    await loadShipped()
+    const lion = createAnimalModel('lion', { body: '#ffffff' })
+    const body = lion.getObjectByName('body') as THREE.SkinnedMesh
+    const portrait = lion.getObjectByName('portrait') as THREE.Mesh
+    expect(body.visible).toBe(false)
+    expect(portrait.visible).toBe(true)
+    const mixer = lion.userData.mixer as THREE.AnimationMixer
+    const actions = lion.userData.actions as Record<string, THREE.AnimationAction>
+    for (const pose of ['walk', 'sit', 'drink', 'rest'] as const) {
+      tickAction(lion, pose, 0.8)
+      const active = lion.userData.activeClip as THREE.AnimationAction
+      for (const clip of Object.values(actions)) {
+        if (clip !== active) clip.stop()
+      }
+      active.enabled = true
+      active.setEffectiveWeight(1)
+      active.time = 0.8
+      mixer.update(0)
+      keepPawsOnPath(lion)
+      lion.updateMatrixWorld(true)
+      const box = new THREE.Box3().setFromObject(portrait)
+      expect(box.min.y).toBeGreaterThanOrEqual(-0.01)
+      expect(body.visible).toBe(false)
+      expect(portrait.visible).toBe(true)
+    }
   })
 
   it('kid coloring tints the coat and keeps eyes authored', async () => {

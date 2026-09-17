@@ -1,7 +1,7 @@
 /**
- * 陆地狮 / 鹿 / 虎：真骨骼 + 不涂抹的角色脸。
- * 站立剪纸贴在髋骨上当全身肖像（鬃毛轮廓还在）；身子/腿是分件蒙皮，不把 PNG
- * 糊在揉皱的体积上。不是圆球 CSG、不是向日葵幼崽、不是 Kenney 方块。
+ * 陆地狮 / 鹿 / 虎：真骨骼带动全身剪纸。可见的是生成角色图（含脚掌），
+ * 蒙皮体积只绑骨骼、不画出来，避免第二层身子盖住脸和爪子。
+ * 不是圆球 CSG、不是向日葵幼崽、不是 Kenney 方块。
  */
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
@@ -363,6 +363,7 @@ function makePortrait(id: LandId, bind: Bind, map: THREE.Texture): THREE.Mesh {
   mesh.name = 'portrait'
   mesh.userData.portrait = true
   mesh.userData.cutout = true
+  mesh.renderOrder = 2
   mesh.position.set(0, p.y, p.z)
   mesh.castShadow = false
   mesh.receiveShadow = false
@@ -455,7 +456,7 @@ function clipsFor(bind: Bind): THREE.AnimationClip[] {
   const sitT = [0, 0.35, 1.6]
   const sitHold = (name: string, q: number[]) => qtrack(name, sitT, [q, q, q])
   const sit = new THREE.AnimationClip('sit', 1.6, [
-    sitHold('hips', quat(X, 0.42)),
+    sitHold('hips', quat(X, 0.28)),
     sitHold('spine', quat(X, -0.28)),
     sitHold('chest', quat(X, -0.04)),
     sitHold('neck', quat(X, 0.18)),
@@ -467,7 +468,7 @@ function clipsFor(bind: Bind): THREE.AnimationClip[] {
     sitHold('leg-front-left', quat(X, 0.08)),
     sitHold('leg-front-right', quat(X, 0.08)),
     sitHold('tail', quat(X, 0.25)),
-    new THREE.VectorKeyframeTrack('hips.position', sitT, [...hipPos(hy * 0.5), ...hipPos(hy * 0.5), ...hipPos(hy * 0.5)]),
+    new THREE.VectorKeyframeTrack('hips.position', sitT, [...hipPos(hy * 0.92), ...hipPos(hy * 0.92), ...hipPos(hy * 0.92)]),
   ])
 
   const drinkT = [0, 0.3, 1.5]
@@ -480,13 +481,13 @@ function clipsFor(bind: Bind): THREE.AnimationClip[] {
     drinkHold('leg-front-left', quat(X, 0.28)),
     drinkHold('leg-front-right', quat(X, 0.28)),
     drinkHold('tail', quat(X, 0.12)),
-    new THREE.VectorKeyframeTrack('hips.position', drinkT, [...hipPos(hy * 0.88), ...hipPos(hy * 0.88), ...hipPos(hy * 0.88)]),
+    new THREE.VectorKeyframeTrack('hips.position', drinkT, [...hipPos(hy * 0.94), ...hipPos(hy * 0.94), ...hipPos(hy * 0.94)]),
   ])
 
   const sleepT = [0, 0.4, 2]
   const sleepHold = (name: string, q: number[]) => qtrack(name, sleepT, [q, q, q])
   const sleep = new THREE.AnimationClip('sleep', 2, [
-    sleepHold('hips', quat(X, 0.22)),
+    sleepHold('hips', quat(X, 0.16)),
     sleepHold('spine', quat(X, 0.08)),
     sleepHold('chest', quat(X, 0.04)),
     sleepHold('neck', quat(X, -0.1)),
@@ -500,7 +501,7 @@ function clipsFor(bind: Bind): THREE.AnimationClip[] {
     sleepHold('leg-back-left-low', quat(X, -0.98)),
     sleepHold('leg-back-right-low', quat(X, -0.98)),
     sleepHold('tail', quat(X, 0.85)),
-    new THREE.VectorKeyframeTrack('hips.position', sleepT, [...hipPos(hy * 0.46), ...hipPos(hy * 0.46), ...hipPos(hy * 0.46)]),
+    new THREE.VectorKeyframeTrack('hips.position', sleepT, [...hipPos(hy * 0.9), ...hipPos(hy * 0.9), ...hipPos(hy * 0.9)]),
   ])
 
   const idle = new THREE.AnimationClip('idle', 2.2, [
@@ -571,6 +572,8 @@ export function buildCartoonRig(id: AnimalId, map: THREE.Texture): THREE.Group {
   body.name = 'body'
   body.userData.rigged = true
   body.userData.region = 'body'
+  body.userData.ghost = true
+  body.visible = false
   body.castShadow = false
   body.receiveShadow = false
   body.frustumCulled = false
@@ -616,4 +619,23 @@ export function isCartoonRig(obj: THREE.Object3D | undefined | null): boolean {
 export function facesHostCamera(obj: THREE.Object3D | undefined | null): boolean {
   const pack = obj?.userData.pack
   return pack === CARTOON_RIG_PACK || pack === 'art-cutout'
+}
+
+/** 坐下/睡觉也不把爪子埋进石径：量剪纸底边，抬根节点。 */
+export function keepPawsOnPath(root: THREE.Object3D): void {
+  if (root.userData.pack !== CARTOON_RIG_PACK) return
+  const portrait = root.getObjectByName('portrait') as THREE.Mesh | undefined
+  if (!portrait || !portrait.visible) return
+  const lift = (root.userData.pawLift as THREE.Object3D | undefined) || root.children[0]
+  if (!lift) return
+  root.userData.pawLift = lift
+  if (typeof root.userData.pawBaseY !== 'number') root.userData.pawBaseY = lift.position.y
+  lift.position.y = root.userData.pawBaseY as number
+  root.updateMatrixWorld(true)
+  const box = new THREE.Box3().setFromObject(portrait)
+  if (!Number.isFinite(box.min.y)) return
+  const floor = root.position.y
+  const pad = 0.03
+  if (box.min.y < floor + pad) lift.position.y += floor + pad - box.min.y
+  root.updateMatrixWorld(true)
 }

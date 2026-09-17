@@ -17,7 +17,7 @@ import {
   paintWater,
 } from './forest-art'
 import { billboardY } from './art-cutout'
-import { facesHostCamera } from './cartoon-rig'
+import { facesHostCamera, keepPawsOnPath } from './cartoon-rig'
 
 interface Actor {
   id: string
@@ -501,6 +501,7 @@ export class HostWorld {
       actor.group.userData._animT = undefined
       tickAction(actor.group, 'walk', 0.35)
       this.snapClip(actor.group, 0.35)
+      keepPawsOnPath(actor.group)
       if (facesHostCamera(actor.group)) billboardY(actor.group, this.camera)
     })
     this.orbit.target.set(0.05, 0.62, -0.4)
@@ -532,6 +533,7 @@ export class HostWorld {
       const sample = action === 'walk' ? 0.28 : 0.8
       tickAction(actor.group, action, sample)
       this.snapClip(actor.group, sample)
+      keepPawsOnPath(actor.group)
       if (facesHostCamera(actor.group)) billboardY(actor.group, this.camera)
     })
     if (action === 'drink') {

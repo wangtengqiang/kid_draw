@@ -208,6 +208,21 @@ function opaqueLambert(src: THREE.Material, map: THREE.Texture | null, color: TH
   return mat
 }
 
+function boxFromCoat(obj: THREE.Object3D): THREE.Box3 {
+  const box = new THREE.Box3()
+  obj.updateMatrixWorld(true)
+  obj.traverse((node) => {
+    if (!(node instanceof THREE.Mesh) || !node.visible || node.userData.ghost) return
+    const geo = node.geometry
+    if (!geo) return
+    if (!geo.boundingBox) geo.computeBoundingBox()
+    const local = geo.boundingBox
+    if (!local || local.isEmpty()) return
+    box.union(local.clone().applyMatrix4(node.matrixWorld))
+  })
+  return box.isEmpty() ? new THREE.Box3().setFromObject(obj) : box
+}
+
 function paintMesh(obj: THREE.Mesh, bodyTint: string): void {
   if (obj.userData.rigged || (obj as THREE.SkinnedMesh).isSkinnedMesh) {
     const src = (Array.isArray(obj.material) ? obj.material[0] : obj.material) as THREE.MeshLambertMaterial
@@ -221,6 +236,7 @@ function paintMesh(obj: THREE.Mesh, bodyTint: string): void {
     obj.userData.region = 'body'
     obj.castShadow = false
     obj.receiveShadow = false
+    if (obj.userData.ghost) obj.visible = false
     return
   }
   if (obj.userData.cutout || obj.userData.portrait) {
@@ -294,11 +310,11 @@ export function instanceAnimal(animal: AnimalId, painted: Record<string, string>
 
   const targetH = isMarine(animal) ? 1.05 : 1.7
   orient.updateMatrixWorld(true)
-  const sized = new THREE.Box3().setFromObject(orient)
+  const sized = boxFromCoat(orient)
   const h = sized.max.y - sized.min.y
   if (h > 0.01) orient.scale.setScalar(targetH / h)
   orient.updateMatrixWorld(true)
-  const grounded = new THREE.Box3().setFromObject(orient)
+  const grounded = boxFromCoat(orient)
   if (Number.isFinite(grounded.min.y)) orient.position.y -= grounded.min.y
 
   const root = new THREE.Group()

@@ -53,10 +53,18 @@ describe('drawing coat is the raw bitmap', () => {
     )
     mesh.name = 'body'
     mesh.userData.rigged = true
-    root.add(mesh)
+    mesh.userData.ghost = true
+    const portrait = new THREE.Mesh(
+      new THREE.PlaneGeometry(1, 1),
+      new THREE.MeshLambertMaterial({ map: sprite, color: '#ffffff' }),
+    )
+    portrait.name = 'portrait'
+    portrait.userData.portrait = true
+    root.add(mesh, portrait)
     applyDrawingCoat(root, stripeTexture())
-    const mat = mesh.material as THREE.MeshLambertMaterial
-    expect(mat.map).toBe(sprite)
+    expect((mesh.material as THREE.MeshLambertMaterial).map).toBe(sprite)
+    expect((portrait.material as THREE.MeshLambertMaterial).map).toBe(sprite)
+    expect((portrait.material as THREE.MeshLambertMaterial).map).not.toBe(root.userData.drawing)
   })
 
   it('writes box UVs so the drawing covers the mesh', () => {

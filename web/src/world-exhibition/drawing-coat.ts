@@ -265,7 +265,7 @@ function multiplyCutoutCoat(root: THREE.Group, source: CoatSource): boolean {
   const cutout = root.userData.pack === 'art-cutout'
   const cartoon = root.userData.pack === 'cartoon-rig'
   root.traverse((obj) => {
-    if (!(obj instanceof THREE.Mesh) || keepFace(obj)) return
+    if (!(obj instanceof THREE.Mesh) || keepFace(obj) || obj.userData.ghost) return
     const isPortrait = obj.userData.portrait || obj.name === 'portrait'
     const rigged = obj.userData.rigged || (obj as THREE.SkinnedMesh).isSkinnedMesh || obj.name === 'body'
     if (cartoon && !isPortrait) return
