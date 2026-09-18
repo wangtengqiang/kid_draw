@@ -1,6 +1,8 @@
 /**
- * Lion this layer: authored cartoon glTF (volume + bones + walk).
- * Deer and tiger stay approved cutouts. No loft shards, Kenney cubes, or Mixamo.
+ * Layer 1 live forest: land lion/deer/tiger keep the approved cartoon cutouts.
+ * `lion.glb` is an authored volume attempt (see process/effect stills) and is
+ * not loaded over the forest — it was uglier than play-action-walk.png.
+ * Marine still glTF.
  */
 import * as THREE from 'three'
 import { AnimationUtils } from 'three'
@@ -98,45 +100,6 @@ function asArrayBuffer(data: ArrayBuffer | Uint8Array): ArrayBuffer {
   return copy.buffer as ArrayBuffer
 }
 
-function loadTexture(url: string, label: string): Promise<THREE.Texture> {
-  return new Promise((resolve, reject) => {
-    new THREE.TextureLoader().load(
-      url,
-      (tex) => {
-        tex.colorSpace = THREE.SRGBColorSpace
-        tex.premultiplyAlpha = false
-        tex.minFilter = THREE.LinearFilter
-        tex.magFilter = THREE.LinearFilter
-        tex.generateMipmaps = false
-        tex.needsUpdate = true
-        resolve(tex)
-      },
-      undefined,
-      () => reject(new Error(`无法加载${label}`)),
-    )
-  })
-}
-
-function stampLionFace(scene: THREE.Object3D, map: THREE.Texture): void {
-  scene.traverse((obj) => {
-    if (!(obj instanceof THREE.Mesh)) return
-    if (obj.name !== 'portrait' && obj.name !== 'face') return
-    const src = (Array.isArray(obj.material) ? obj.material[0] : obj.material) as THREE.MeshLambertMaterial
-    const copy = src.clone()
-    copy.map = map
-    copy.color = new THREE.Color('#ffffff')
-    copy.alphaTest = 0.22
-    copy.transparent = false
-    copy.depthWrite = true
-    copy.side = THREE.FrontSide
-    copy.vertexColors = false
-    obj.material = copy
-    obj.userData.keepFace = true
-    obj.userData.portrait = true
-    obj.visible = true
-  })
-}
-
 async function readModel(id: AnimalId): Promise<ArrayBuffer> {
   if (bufferProvider) return asArrayBuffer(await bufferProvider(id))
   const res = await fetch(`/models/${id}.glb`)
@@ -162,25 +125,6 @@ export async function loadAnimalTemplates(): Promise<void> {
     const loader = new GLTFLoader()
     await Promise.all(
       ANIMAL_IDS.map(async (id) => {
-        if (id === 'lion') {
-          const buf = await readModel(id)
-          const gltf = await loader.parseAsync(buf, '/models/')
-          const scene = gltf.scene
-          const faceMap = await loadTexture('/models/textures/lion-face.png', '狮子脸')
-          stampLionFace(scene, faceMap)
-          let skinned = false
-          scene.traverse((obj) => {
-            if ((obj as THREE.SkinnedMesh).isSkinnedMesh) skinned = true
-          })
-          templates.set(id, {
-            scene,
-            animations: clipsFor(id, gltf.animations || []),
-            skinned,
-            zForward: false,
-            pack: LAND_GLTF_PACK,
-          })
-          return
-        }
         if (!isMarine(id)) {
           const map = await loadCutoutTexture(id)
           const scene = buildArtCutout(id, map)
@@ -286,6 +230,7 @@ function boxFromCoat(obj: THREE.Object3D): THREE.Box3 {
 }
 
 function paintMesh(obj: THREE.Mesh, bodyTint: string): void {
+  if (obj.userData.boneMark) return
   if (obj.name === 'portrait' || obj.userData.portrait) {
     const src = (Array.isArray(obj.material) ? obj.material[0] : obj.material) as THREE.MeshLambertMaterial
     const copy = src.clone()
@@ -368,8 +313,7 @@ function paintMesh(obj: THREE.Mesh, bodyTint: string): void {
 
 function packOf(animal: AnimalId, tpl?: AnimalTemplate): string {
   if (tpl?.pack) return tpl.pack
-  if (animal === 'lion') return LAND_GLTF_PACK
-  if (animal === 'deer' || animal === 'tiger') return ART_CUTOUT_PACK
+  if (animal === 'lion' || animal === 'deer' || animal === 'tiger') return ART_CUTOUT_PACK
   if (animal === 'fish') return 'kenney-cube-pets'
   return 'gobkit'
 }
@@ -419,9 +363,7 @@ export function instanceAnimal(animal: AnimalId, painted: Record<string, string>
       ? 'cartoon-rig'
       : tpl.pack === ART_CUTOUT_PACK
         ? 'art-cutout'
-        : tpl.pack === LAND_GLTF_PACK
-          ? 'land-gltf'
-          : 'gltf'
+        : 'gltf'
   root.userData.pack = packOf(animal, tpl)
   root.userData.spriteMap = inner.userData.spriteMap
   root.userData.viewMaps = inner.userData.viewMaps

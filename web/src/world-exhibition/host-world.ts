@@ -751,20 +751,39 @@ export class HostWorld {
   }
 
   private showLionBones(group: THREE.Group, visible: boolean): void {
+    const stale: THREE.Object3D[] = []
+    group.traverse((obj) => {
+      if (obj.userData.boneMark) stale.push(obj)
+    })
+    for (const obj of stale) obj.removeFromParent()
     let helper = group.getObjectByName('lion-bones-overlay') as THREE.SkeletonHelper | undefined
-    if (visible && !helper) {
-      const body = group.getObjectByName('body') as THREE.SkinnedMesh | undefined
-      if (body && (body as THREE.SkinnedMesh).isSkinnedMesh) {
-        helper = new THREE.SkeletonHelper(body)
-        helper.name = 'lion-bones-overlay'
-        helper.frustumCulled = false
-        const mat = helper.material as THREE.LineBasicMaterial
-        mat.depthTest = false
-        mat.depthWrite = false
-        group.add(helper)
-      }
+    if (!visible) {
+      if (helper) helper.visible = false
+      return
     }
-    if (helper) helper.visible = visible
+    group.traverse((obj) => {
+      if (!(obj as THREE.Bone).isBone) return
+      const mark = new THREE.Mesh(
+        new THREE.SphereGeometry(0.045, 10, 8),
+        new THREE.MeshBasicMaterial({ color: '#7cff4a', depthTest: false, depthWrite: false }),
+      )
+      mark.name = `joint-${obj.name}`
+      mark.userData.boneMark = true
+      mark.renderOrder = 20
+      mark.frustumCulled = false
+      obj.add(mark)
+    })
+    const body = group.getObjectByName('body') as THREE.SkinnedMesh | undefined
+    if (!helper && body && (body as THREE.SkinnedMesh).isSkinnedMesh) {
+      helper = new THREE.SkeletonHelper(body)
+      helper.name = 'lion-bones-overlay'
+      helper.frustumCulled = false
+      const mat = helper.material as THREE.LineBasicMaterial
+      mat.depthTest = false
+      mat.depthWrite = false
+      group.add(helper)
+    }
+    if (helper) helper.visible = true
   }
 
   /** 狮走路、鹿坐下回头、虎喝水：三只朝向不同，脚不踩溪。 */

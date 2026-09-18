@@ -27,7 +27,7 @@ function glbJson(file: string): {
   }
 }
 
-describe('land: lion glTF, deer/tiger cutouts', () => {
+describe('land layer: approved cutouts; lion.glb kept off the forest', () => {
   afterEach(() => {
     setAnimalModelProvider(null)
   })
@@ -37,9 +37,9 @@ describe('land: lion glTF, deer/tiger cutouts', () => {
     await loadAnimalTemplates()
   }
 
-  it('keeps deer and tiger as approved cartoon cutouts', async () => {
+  it('puts the generated cartoon on screen for lion, deer, and tiger', async () => {
     await loadShipped()
-    for (const kind of ['deer', 'tiger'] as AnimalId[]) {
+    for (const kind of ['lion', 'deer', 'tiger'] as AnimalId[]) {
       const group = createAnimalModel(kind, { body: '#ffffff' })
       expect(group.userData.pack).toBe(ART_CUTOUT_PACK)
       const body = group.getObjectByName('body') as THREE.Mesh
@@ -48,41 +48,19 @@ describe('land: lion glTF, deer/tiger cutouts', () => {
     }
   })
 
-  it('loads a connected lion glTF with coat, neck bone, and walk — not a plane, cube, or fox', async () => {
+  it('keeps an authored lion.glb with neck bone and walk for review, without loading it', async () => {
+    const json = glbJson('models/lion.glb')
+    const names = (json.nodes || []).map((n) => n.name || '')
+    expect(names).toEqual(expect.arrayContaining(['neck', 'head', 'hips', 'leg-front-left', 'body']))
+    expect(names.join(' ')).not.toMatch(/fox|wolf/i)
     await loadShipped()
     const lion = createAnimalModel('lion', { body: '#ffffff' })
-    expect(lion.userData.pack).toBe(LAND_GLTF_PACK)
-    expect(lion.userData.source).toBe('land-gltf')
-    const body = lion.getObjectByName('body') as THREE.SkinnedMesh
-    expect(body).toBeInstanceOf(THREE.SkinnedMesh)
-    expect(body.geometry).not.toBeInstanceOf(THREE.PlaneGeometry)
-    expect(body.geometry).not.toBeInstanceOf(THREE.BoxGeometry)
-    const names: string[] = []
-    lion.traverse((o) => names.push(o.name))
-    expect(names).toEqual(expect.arrayContaining(['neck', 'head', 'hips', 'leg-front-left']))
-    expect(names.join(' ')).not.toMatch(/fox|wolf/i)
-    expect(lion.userData.clips).toEqual(expect.arrayContaining(['walk']))
-    expect(playAnimalClip(lion, 'walk', 0.016)).toBe(true)
-    lion.updateMatrixWorld(true)
-    const size = new THREE.Box3().setFromObject(lion).getSize(new THREE.Vector3())
-    expect(size.y).toBeGreaterThan(0.8)
-    expect(size.z).toBeGreaterThan(0.35)
-    const json = glbJson('models/lion.glb')
-    expect((json.nodes || []).some((n) => n.name === 'neck')).toBe(true)
+    expect(lion.userData.pack).toBe(ART_CUTOUT_PACK)
+    expect(lion.userData.pack).not.toBe(LAND_GLTF_PACK)
   })
 
-  it('yaws the lion mesh and still swaps deer/tiger views', async () => {
+  it('swaps deer/tiger views instead of yawing a front PNG', async () => {
     await loadShipped()
-    const lion = createAnimalModel('lion', { body: '#ffffff' })
-    lion.rotation.y = 1.1
-    lion.updateMatrixWorld(true)
-    const body = lion.getObjectByName('body') as THREE.Mesh
-    expect(body.visible).toBe(true)
-    const q = new THREE.Quaternion()
-    body.getWorldQuaternion(q)
-    const euler = new THREE.Euler().setFromQuaternion(q, 'YXZ')
-    expect(Math.abs(euler.y)).toBeGreaterThan(0.4)
-
     const deer = createAnimalModel('deer', { body: '#ffffff' })
     const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 40)
     camera.position.set(0, 1.2, 4)

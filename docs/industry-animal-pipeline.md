@@ -123,7 +123,7 @@
 
 ## 当前默认
 
-- 狮 ← **连体卡通 glTF**（`lion.glb`：体积网格 + 四足骨含脖子 + walk，脸是批准正面裁切）。鹿 / 虎仍是 `art-cutout`。狮子 yaw 模型；鹿 / 虎换图。不是 loft 碎木片、3/4 剪影饼干、Kenney 方块、Mixamo。孩子蜡笔叠乘到皮毛。
+- 狮 / 鹿 / 虎 ← **这一层先保住批准的卡通形象**（`art-cutout`）。`lion.glb` 是一份连体体积 + 四足骨 + walk 的试做（过程图 `process-lion-mesh/bones.png`，效果图 `effect-lion-glb.png`），比 `play-action-walk.png` 丑，所以不盖上森林。禁止再挤 3/4 剪影、loft 碎木片、Kenney 方块、Mixamo。孩子蜡笔叠乘到卡通皮毛。
 
 ## 头和身子怎么换方向
 

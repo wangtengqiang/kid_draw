@@ -1,15 +1,20 @@
 # 3D models — licenses
 
-Default **lion** this layer is an authored cartoon glTF (`lion.glb`:
-connected stuffed volume, neck bone, walk clip, approved face crop).
-**Deer / tiger** stay `art-cutout`. Not Kenney cubes, loft shards,
-Mixamo, PNG cookies, or 千图网. Kid crayon **multiplies** onto the coat.
+Default **lion / deer / tiger** this layer keep the approved generated
+cartoon on screen (`art-cutout` portraits from `cutouts/`). `lion.glb`
+is an authored stuffed-volume attempt (neck bone, walk, approved face
+crop) kept for review stills; it is **not** the visible forest default
+because it was uglier than `play-action-walk.png`. Kid crayon
+**multiplies** onto the cartoon coat. Not Kenney cubes, fox/wolf,
+sunflower heads, or 千图网.
 
-## Land lion glTF
+## Land lion glTF — review file, not the forest default
 
 - File: `lion.glb` from `web/scripts/author-lion-glb.mjs`
-- Face: `textures/lion-face.png` (crop of `cutouts/lion-front.png`)
-- Facing: yaw the model
+- Face crop: `textures/lion-face.png`
+- Process / effect stills: `preview-shots/process-lion-mesh.png`,
+  `process-lion-bones.png`, `effect-lion-glb.png`
+- Visible land pack: `art-cutout`
 - Deer / tiger: `art-cutout` (`cutouts/` generated cartoon)
 - Front snapshots: `snapshots/{lion,deer,tiger}.png`
 
