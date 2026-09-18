@@ -1,27 +1,17 @@
 # 3D models — licenses
 
-Default **lion / deer / tiger** are authored glTF quadrupeds
-(`web/scripts/author-land-gltf.mjs` → `lion.glb` / `deer.glb` / `tiger.glb`).
-Each file is one cartoon mesh with volume, UV, a quadruped skeleton
-including neck, and clips: walk / idle / sit / drink / sleep / turn.
-Kid crayon **multiplies** onto the coat albedo; eyes/nose stay authored.
-Not a PNG plate, Kenney cubes, fox/wolf, sphere cubs, sunflower-petal
-heads, or 千图网.
+Default **lion / deer / tiger** this layer keep the approved generated
+cartoon on screen (`art-cutout` portraits from `cutouts/`). Lofted
+superellipse `.glb` files remain in the folder for later layers but are
+**not** the visible forest default (they looked like wooden shards).
+Kid crayon **multiplies** onto the cartoon coat. Not Kenney cubes,
+fox/wolf, sphere cubs, sunflower heads, or 千图网.
 
-A full Blender cartoon rigger was not available this pass. These glTFs
-are lofted superellipse quadrupeds (BufferGeometry, not Sphere/Box CSG)
-that read as lion (neck ruff), deer (long neck + antlers), and tiger
-(stripes, no mane). Missing versus a studio Blender pack: blend shapes,
-authored turnaround textures inside the glb, and hand-keyed contact
-feet. The running forest still loads **meshes**, not sheared cards.
+## Land glTF — not the visible default this layer
 
-## Land glTF — lion, deer, tiger (this repo)
-
-- Files: `lion.glb` `deer.glb` `tiger.glb`
-- Author: `node scripts/author-land-gltf.mjs`
-- Runtime pack: `land-gltf` (`GLTFLoader` + `AnimationMixer`)
-- Coat PNGs from `web/scripts/extract-art-cutouts.py` multiply onto UV
-- Clips: `walk` / `idle` / `sit` / `drink` / `sleep` / `turn`
+- Files still present: `lion.glb` `deer.glb` `tiger.glb` (loft shards; do not load over the forest)
+- Visible land pack: `art-cutout` (`cutouts/` generated cartoon)
+- Facing / sit / drink / sleep: swap authored PNGs, do not yaw a front PNG
 - Front snapshots: `snapshots/{lion,deer,tiger}.png`
 
 ## Kenney Cube Pets 2.0 — fish only (CC0 1.0)

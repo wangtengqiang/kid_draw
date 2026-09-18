@@ -9,6 +9,7 @@ export {
   ensurePreviewRoom,
   ensureRoomForSend,
   getRoom,
+  hostSearch,
   isHostQuery,
   joinQuery,
   newRoomCode,

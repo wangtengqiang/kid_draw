@@ -6,8 +6,8 @@ import type { AnimalId } from '../types'
 import { applyDrawingCoat, refreshDrawingCoat, type CoatSource } from './drawing-coat'
 import { createAnimalModel, tickWalk, tintAnimal } from './models'
 import { OrbitZoom, PREVIEW_ORBIT } from './orbit-zoom'
-import { ART_CUTOUT_PACK, billboardY } from './art-cutout'
-import { CARTOON_RIG_PACK } from './cartoon-rig'
+import { ART_CUTOUT_PACK } from './art-cutout'
+import { applyLandView, CARTOON_RIG_PACK } from './cartoon-rig'
 import { LAND_GLTF_PACK } from './gltf-kit'
 
 export class PreviewStage {
@@ -89,15 +89,16 @@ export class PreviewStage {
     this.raf = requestAnimationFrame(this.loop)
     const t = this.clock.getElapsedTime()
     if (this.model) {
-      if (this.model.userData.pack === CARTOON_RIG_PACK || this.model.userData.pack === LAND_GLTF_PACK) {
+      if (this.model.userData.pack === ART_CUTOUT_PACK || this.model.userData.pack === CARTOON_RIG_PACK) {
+        if (!this.orbit.interacting) this.rot += 0.006
+        applyLandView(this.model, this.camera, 'walk', this.rot)
+        tickWalk(this.model, t, true)
+      } else if (this.model.userData.pack === LAND_GLTF_PACK) {
         if (!this.orbit.interacting) {
           this.rot += 0.006
           this.model.rotation.y = this.rot
         }
         tickWalk(this.model, t, true)
-      } else if (this.model.userData.pack === ART_CUTOUT_PACK) {
-        billboardY(this.model, this.camera)
-        tickWalk(this.model, t, false)
       } else if (!this.orbit.interacting) {
         this.rot += 0.006
         this.model.rotation.y = this.rot

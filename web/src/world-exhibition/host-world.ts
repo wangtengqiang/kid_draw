@@ -16,7 +16,8 @@ import {
   paintGrassGround,
   paintWater,
 } from './forest-art'
-import { keepPawsOnPath, wrapPi } from './cartoon-rig'
+import { applyLandView, CARTOON_RIG_PACK, keepPawsOnPath, wrapPi } from './cartoon-rig'
+import { ART_CUTOUT_PACK } from './art-cutout'
 
 interface Actor {
   id: string
@@ -425,7 +426,7 @@ export class HostWorld {
       antialias: false,
       alpha: false,
       powerPreference: 'low-power',
-      preserveDrawingBuffer: false,
+      preserveDrawingBuffer: true,
     })
     this.renderer.setClearColor('#8ec8f0', 1)
     this.renderer.setPixelRatio(1)
@@ -445,6 +446,7 @@ export class HostWorld {
         __kidDrawPoseSpread?: () => boolean
         __kidDrawPosePerspective?: () => boolean
         __kidDrawPoseOrbit?: () => boolean
+        __kidDrawCapturePng?: () => string
       }
       w.__kidDrawFrameHost = () => this.frameFirstAnimal()
       w.__kidDrawFramePath = () => this.framePathVista()
@@ -455,6 +457,7 @@ export class HostWorld {
       w.__kidDrawPoseSpread = () => this.poseSpreadFacings()
       w.__kidDrawPosePerspective = () => this.posePerspective()
       w.__kidDrawPoseOrbit = () => this.poseOrbit()
+      w.__kidDrawCapturePng = () => this.renderer.domElement.toDataURL('image/png')
     }
     const grass = new THREE.CanvasTexture(paintGrassGround())
     grass.wrapS = grass.wrapT = THREE.RepeatWrapping
@@ -606,6 +609,7 @@ export class HostWorld {
     this.orbit.target.set(0.05, 0.62, -0.4)
     this.camera.position.set(0.18, 2.85, 12.4)
     this.syncOrbitFromCamera()
+    this.reorientLand()
     return order.length > 0
   }
 
@@ -640,6 +644,7 @@ export class HostWorld {
       this.camera.position.set(0.38, 2.62, 12.2)
     }
     this.syncOrbitFromCamera()
+    this.reorientLand()
     return true
   }
 
@@ -657,6 +662,7 @@ export class HostWorld {
       target.z + 4.6 * FOREST_CAMERA_PULL,
     )
     this.syncOrbitFromCamera()
+    this.reorientLand()
     return true
   }
 
@@ -696,7 +702,7 @@ export class HostWorld {
     this.camera.position.set(target.x + 1.15, 1.28, target.z + 3.05)
     this.syncOrbitFromCamera()
     keepPawsOnPath(actor.group)
-    this.aimLandHead(actor.group)
+    this.orientLand(actor.group, action === 'rest' ? 'rest' : action, heading)
     return true
   }
 
@@ -708,6 +714,7 @@ export class HostWorld {
     this.orbit.target.set(0.55, 0.52, 0.8)
     this.camera.position.set(-0.15, 2.45, 9.6)
     this.syncOrbitFromCamera()
+    this.reorientLand()
     return true
   }
 
@@ -739,6 +746,7 @@ export class HostWorld {
     this.orbit.target.set(look.x, 0.48, look.z)
     this.camera.position.set(0.55, 2.55, 11.4)
     this.syncOrbitFromCamera()
+    this.reorientLand()
     return true
   }
 
@@ -765,19 +773,43 @@ export class HostWorld {
     this.orbit.target.set(look.x, 0.62, look.z)
     this.camera.position.set(look.x - 6.4, 2.35, look.z + 3.4)
     this.syncOrbitFromCamera()
-    for (const actor of lineup) this.aimLandHead(actor.group)
+    this.reorientLand()
     return true
   }
 
+  /**
+   * Layer 1: swap front/3-quarter/side/pose art. Do not yaw a front PNG into a card.
+   */
+  private orientLand(group: THREE.Group, action: WorldAction, heading: number): void {
+    group.userData.heading = heading
+    group.userData.landAction = action
+    if (group.userData.pack === ART_CUTOUT_PACK || group.userData.pack === CARTOON_RIG_PACK) {
+      applyLandView(group, this.camera, action, heading)
+      return
+    }
+    group.rotation.y = heading
+  }
+
+  private reorientLand(): void {
+    for (const actor of this.actors.values()) {
+      if (actor.marine || !actor.group.visible) continue
+      const action = (actor.group.userData.landAction as WorldAction) || 'walk'
+      const heading = (actor.group.userData.heading as number) || 0
+      this.orientLand(actor.group, action, heading)
+    }
+  }
+
   private settleLand(actor: Actor, action: WorldAction, heading: number, sample: number): void {
-    actor.group.rotation.y = heading
-    actor.group.userData.heading = heading
-    actor.group.userData.landAction = action
+    this.orientLand(actor.group, action, heading)
     actor.group.userData._animT = undefined
     tickAction(actor.group, action, sample)
     this.snapClip(actor.group, sample)
     keepPawsOnPath(actor.group)
-    this.aimLandHead(actor.group)
+    if (actor.group.userData.pack === ART_CUTOUT_PACK || actor.group.userData.pack === CARTOON_RIG_PACK) {
+      this.orientLand(actor.group, action, heading)
+    } else {
+      this.aimLandHead(actor.group)
+    }
   }
 
   /** 身子跟走路朝向；头可以靠脖子骨轻轻看镜头，夹住角度。 */
@@ -855,9 +887,10 @@ export class HostWorld {
     if (!actor.marine) pinLandScale(actor.group)
     if (actor.frozen) {
       if (!actor.marine) {
-        actor.group.rotation.y = (actor.group.userData.heading as number) || 0
+        const action = (actor.group.userData.landAction as WorldAction) || 'walk'
+        const heading = (actor.group.userData.heading as number) || 0
+        this.orientLand(actor.group, action, heading)
         keepPawsOnPath(actor.group)
-        this.aimLandHead(actor.group)
       }
       return
     }
@@ -881,11 +914,9 @@ export class HostWorld {
     if (action === 'drink') {
       const stand = drinkStand(Math.max(0, actor.lane + 1))
       actor.group.position.set(stand.x, 0.02, stand.z)
-      actor.group.rotation.y = stand.heading
-      actor.group.userData.heading = stand.heading
+      this.orientLand(actor.group, 'drink', stand.heading)
       tickAction(actor.group, 'drink', t)
       keepPawsOnPath(actor.group)
-      this.aimLandHead(actor.group)
       return
     }
     if (action === 'rest') {
@@ -893,11 +924,9 @@ export class HostWorld {
       const feet = keepOffCreek(p.x, p.z)
       actor.group.position.set(feet.x, 0.02, feet.z)
       const heading = landYaw('rest', p.heading, actor.lane)
-      actor.group.rotation.y = heading
-      actor.group.userData.heading = heading
+      this.orientLand(actor.group, 'rest', heading)
       tickAction(actor.group, 'rest', t)
       keepPawsOnPath(actor.group)
-      this.aimLandHead(actor.group)
       return
     }
     if (action === 'sit') {
@@ -905,11 +934,9 @@ export class HostWorld {
       const feet = keepOffCreek(p.x, p.z)
       actor.group.position.set(feet.x, 0, feet.z)
       const heading = landYaw('sit', p.heading, actor.lane)
-      actor.group.rotation.y = heading
-      actor.group.userData.heading = heading
+      this.orientLand(actor.group, 'sit', heading)
       tickAction(actor.group, 'sit', t)
       keepPawsOnPath(actor.group)
-      this.aimLandHead(actor.group)
       return
     }
 
@@ -919,11 +946,9 @@ export class HostWorld {
     const feet = keepOffCreek(p.x, p.z)
     actor.group.position.set(feet.x, 0.02, feet.z)
     const heading = landYaw('walk', p.heading, actor.lane)
-    actor.group.rotation.y = heading
-    actor.group.userData.heading = heading
+    this.orientLand(actor.group, 'walk', heading)
     tickAction(actor.group, 'walk', t + actor.angle)
     keepPawsOnPath(actor.group)
-    this.aimLandHead(actor.group)
   }
 
   private addLight(l: THREE.Light): void {

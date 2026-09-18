@@ -106,6 +106,7 @@ export function buildArtCutout(id: AnimalId, map: THREE.Texture): THREE.Group {
   body.name = 'body'
   body.position.set(0, bodyY, 0)
   body.userData.cutout = true
+  body.userData.portrait = true
   body.userData.region = 'body'
   body.castShadow = false
   body.receiveShadow = false
@@ -154,6 +155,8 @@ export function buildArtCutout(id: AnimalId, map: THREE.Texture): THREE.Group {
   root.add(tail)
 
   root.userData.cutoutClips = clipsFor(bodyY)
+  root.userData.spriteH = height
+  root.userData.pack = ART_CUTOUT_PACK
   return root
 }
 

@@ -1,6 +1,6 @@
 /**
- * 观展动物：陆地是 glTF 四足网格；海里仍是下载的 glTF。
- * 孩子的蜡笔叠乘到皮毛 albedo 上，不替换网格，也不捏胶囊身体。
+ * 观展动物：陆地这一层是批准的卡通剪纸（对照 play-action-walk.png）。
+ * 体积网格下一层再补。海里仍是下载的 glTF。
  */
 import * as THREE from 'three'
 import type { AnimalId, WorldAction } from '../types'

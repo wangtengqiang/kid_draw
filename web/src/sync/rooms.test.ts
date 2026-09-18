@@ -7,6 +7,7 @@ import {
   ensurePreviewRoom,
   ensureRoomForSend,
   getRoom,
+  hostSearch,
   newRoomCode,
   patchRoom,
   PREVIEW_ROOM_ID,
@@ -20,6 +21,11 @@ describe('room codes', () => {
 
   it('makes 4-digit codes', () => {
     expect(newRoomCode()).toMatch(/^\d{4}$/)
+  })
+
+  it('keeps demo=land when rewriting the host URL', () => {
+    expect(hostSearch('4820', '?host=1&demo=land')).toBe('?host=1&room=4820&demo=land')
+    expect(hostSearch('4820', '?host=1')).toBe('?host=1&room=4820')
   })
 })
 

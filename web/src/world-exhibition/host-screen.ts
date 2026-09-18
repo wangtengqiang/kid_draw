@@ -17,8 +17,8 @@ import {
   setTheme,
   touchHost,
 } from '../sync'
-import type { ThemeId } from '../types'
-import { ROOM_CAP, THEME_IDS, THEME_META } from '../types'
+import type { AnimalId, PlacedAnimal, ThemeId } from '../types'
+import { ANIMAL_META, ROOM_CAP, THEME_IDS, THEME_META } from '../types'
 import { HostWorld } from './host-world'
 
 export class HostScreen {
@@ -44,7 +44,15 @@ export class HostScreen {
   }
 
   show(roomId: string): void {
-    const room = getRoom(roomId) ?? createRoom(roomId)
+    let room = getRoom(roomId) ?? createRoom(roomId)
+    const demo = new URLSearchParams(location.search).get('demo')
+    if ((demo === 'land' || demo === '1') && room.animals.length === 0) {
+      patchRoom(roomId, {
+        animals: demoLandAnimals(),
+        animalsGen: (room.animalsGen || 0) + 1,
+      })
+      room = getRoom(roomId) ?? room
+    }
     this.root.innerHTML = `
       <div class="host-layout">
         <div class="world-pane">
@@ -176,4 +184,17 @@ function hostStatus(paused: boolean, count: number): string {
   if (paused) return '已暂停收画'
   if (count >= ROOM_CAP) return '满员啦，请先清场'
   return '正在收画'
+}
+
+function demoLandAnimals(): PlacedAnimal[] {
+  const now = Date.now()
+  return (['lion', 'deer', 'tiger'] as AnimalId[]).map((animalId, i) => ({
+    id: `demo-${animalId}`,
+    animalId,
+    creatorId: 'demo',
+    label: ANIMAL_META[animalId].name,
+    thumb: '',
+    regionColors: { body: '#ffffff' },
+    createdAt: now + i,
+  }))
 }

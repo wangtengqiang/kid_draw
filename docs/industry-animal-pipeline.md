@@ -55,7 +55,7 @@
 
 ## 候选取舍（这一轮又查了一遍）
 
-家长参考是站立、鬃毛蓬松、大眼睛的卡通狮。免费包里没有同时满足「像那张狮、真物种、可走路」的 glTF，圆球 CSG 四足也不像参考图。陆地狮/鹿/虎改为 **本仓库 glTF 四足**（`author-land-gltf.mjs`）：体积网格 + 脖子骨 + Walk/Sit/Drink/Sleep/Turn，孩子涂色叠乘到皮毛 UV。Kenney Cube Pets 只留给鱼。2.5D 剪纸 yaw **不再是陆地默认**（手机侧视会拧成卡片）。
+家长参考是站立、鬃毛蓬松、大眼睛的卡通狮。免费包里没有同时满足「像那张狮、真物种、可走路」的 glTF。陆地这一层**先保住批准卡通**（`art-cutout`），体积骨骼下一层再补，禁止再把 loft 碎片整包盖上。Kenney Cube Pets 只留给鱼。正面 PNG yaw **仍禁止**；朝向靠换图。
 
 | 候选 | URL | 结论 |
 | --- | --- | --- |
@@ -72,10 +72,10 @@
 | Mixamo | https://www.mixamo.com/ | **拒绝。** 人形库，要 Adobe 登录。 |
 | OGA Micket tiger、低模鹿 | https://opengameart.org/content/tiger · https://opengameart.org/content/deer-low-poly-rigged | **拒绝。** CC0 但是 0 A.D. 写实低模，不是幼崽卡通，还是 .blend/.zip。 |
 | Unity/CGTrader 卡通虎 | 付费资源店 | **拒绝。** 付费 API / 商店。 |
-| 粘土 / 胶囊 / icosphere 鬃毛 / 向日葵幼崽 / 圆球四足 | 本仓库旧 `author-animals.mjs` 与 `author-cartoon-cubs.mjs` | **拒绝。** 陆地改为本仓库 loft 四足 glTF，必须能一眼认出是狮/鹿/虎，而且是网格不是卡片。 |
-| 2.5D 剪纸 yaw（`pickLandView` / `applyLandView`） | 本仓库上一轮 `cartoon-rig.ts` 肖像平面 | **拒绝作为陆地默认。** 手机侧视（`user-phone-warp-still`）仍是拧扁的卡片。保留文件只作对照。 |
+| loft 超椭圆 glTF（`author-land-gltf.mjs`） | 本仓库上一轮 `lion.glb` | **拒绝作为可见默认。** 森林里像碎木片。文件留着，不加载。 |
+| 正面 PNG yaw | `user-phone-warp-still` | **拒绝。** 朝向靠换 front/3/4/side/姿势图。 |
 
-免登录 zip 里**没有**「又圆又像参考图、又是真老虎」的现成 glTF。虎和狮、鹿一样用本仓库 glTF 四足，不用狼、也不用 Kenney 方块虎。这一轮没能进 Blender 手绑一整套卡通，所以网格是 loft 超椭圆四足（有体积、有 UV、有脖子、有动作剪辑），不是写实 Quaternius、也不是剪纸。缺的是：工作室级 blend shape、打进 glb 的四面转面贴图、手 K 的踩地。森林已经 `GLTFLoader` 读网格。
+免登录 zip 里**没有**「又圆又像参考图、又是真老虎」的现成 glTF。上一轮 loft 超椭圆 glTF 在森林里像碎木片，**不许再整包替换上去**。现在按「慢慢补充模型」：屏幕上先是批准的生成卡通（对照 `play-action-walk.png` / `gen-lion-ingame-target.png`）。海里仍 `GLTFLoader` 读 glTF。
 
 ## 别人怎么用 GL 画动物
 
@@ -122,14 +122,14 @@
 
 ## 当前默认
 
-- 狮 / 鹿 / 虎 ← **land glTF**（`web/public/models/{lion,deer,tiger}.glb`）：体积卡通网格 + 四足骨骼（含脖子）+ walk/idle/sit/drink/sleep/turn。朝向 = 模型绕 Y，头可以靠脖子骨看镜头。孩子蜡笔叠乘到皮毛 UV。不是剪纸 yaw，不是 Kenney 方块，不是狐狸冒充狮子。
+- 狮 / 鹿 / 虎 ← **这一层先保住批准的卡通形象**（`art-cutout`：生成图在屏幕上）。Walk / sit / drink / sleep 靠换 front / 3/4 / side / 姿势图，**不把正面 PNG yaw 成卡片**，也不加载 loft 碎木片。体积下一层再补。孩子蜡笔叠乘到卡通皮毛。
 
 ## 头和身子怎么换方向
 
 手机截图里狮被拧成卡片（歪歪扁扁），是因为把**一张正面 PNG 绕竖直轴转**。业界不这么做。
 
-1. **真 3D（现在交付）** — 转的是网格（竖直轴 yaw），或播 `turn` 剪辑。头可以单独 look-at 脖子骨，身子跟走路朝向。代码：`group.rotation.y = heading` + `aimLandHead`（脖子）。参考：[Three.js Animation system](https://threejs.org/manual/en/animation-system.html)、[Unity Mecanim](https://docs.unity3d.com/Manual/AnimationSection.html)。
-2. **2.5D（上一轮，已退出陆地默认）** — 画好正面 / 3/4 / 侧面。朝向 = 换哪张图。手机侧视仍会把剪纸看成卡片，王腾强截图就是这个。`pickLandView` / `applyLandView` 留在 `cartoon-rig.ts` 只作对照。
+1. **真 3D（下一层）** — 转的是网格（竖直轴 yaw），等体积从侧视也能认出是那只卡通。
+2. **2.5D（这一层）** — 画好正面 / 3/4 / 侧面 / 姿势图。朝向 = 换哪张图。剪纸平面只 Y-billboard，**禁止把一张正面 PNG yaw 成卡片**。
 3. **分层纸娃娃** — 身子朝向 + 头叠加，头转角要夹住，不能在正面身子上拧 180°。本回合不做。
 - 鱼 ← Kenney Cube Pets（CC0）。
 - 海豚 / 海龟 ← Gobkit Whale / Seal（CC0）。

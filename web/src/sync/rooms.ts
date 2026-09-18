@@ -251,6 +251,17 @@ export function isHostQuery(): boolean {
   return q.get('host') === '1' || q.get('role') === 'host'
 }
 
+/** Keep `demo=land` when the host URL is rewritten with a room code. */
+export function hostSearch(roomId: string, search = ''): string {
+  const current = new URLSearchParams(search || (typeof location === 'undefined' ? '' : location.search))
+  const qs = new URLSearchParams()
+  qs.set('host', '1')
+  qs.set('room', roomId)
+  const demo = current.get('demo')
+  if (demo) qs.set('demo', demo)
+  return `?${qs.toString()}`
+}
+
 export function creatorJoinUrl(roomId: string): string {
   const url = new URL(window.location.href)
   url.search = `?join=${roomId}`

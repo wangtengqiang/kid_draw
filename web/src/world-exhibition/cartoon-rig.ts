@@ -703,6 +703,17 @@ function aspectOfMap(map: THREE.Texture | null | undefined, fallback = 0.85): nu
 
 const _viewCam = new THREE.Vector3()
 
+function findLandPortrait(root: THREE.Object3D): THREE.Mesh | undefined {
+  const named = root.getObjectByName('portrait')
+  if (named instanceof THREE.Mesh) return named
+  let hit: THREE.Mesh | undefined
+  root.traverse((obj) => {
+    if (hit || !(obj instanceof THREE.Mesh)) return
+    if (obj.userData.portrait || (obj.userData.cutout && obj.visible)) hit = obj
+  })
+  return hit
+}
+
 /**
  * 2.5D 业界做法：剪纸平面只 Y-billboard（立着、不拧扁），朝向靠换 front/3/4/side。
  * 根节点 rotation.y 保持 0，禁止把一张正面 PNG yaw 成卡片。
@@ -713,7 +724,7 @@ export function applyLandView(
   action: WorldAction | 'walk',
   heading: number,
 ): { view: LandView; flip: boolean } {
-  const portrait = root.getObjectByName('portrait') as THREE.Mesh | undefined
+  const portrait = findLandPortrait(root)
   root.getWorldPosition(_viewCam)
   const toCamera = Math.atan2(camera.position.x - _viewCam.x, camera.position.z - _viewCam.z)
   const picked = pickLandView(action, heading, toCamera)

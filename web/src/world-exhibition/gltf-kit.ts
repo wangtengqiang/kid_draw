@@ -1,8 +1,7 @@
 /**
- * Museum/LED stack: land lion/deer/tiger are authored glTF quadrupeds
- * (`/models/{id}.glb`) plus Kenney fish + Gobkit marine.
- * Land pets are one skinned cartoon mesh with volume — not a PNG plate,
- * Kenney cubes, or sphere cubs. Kid crayon multiplies onto the coat albedo.
+ * Layer 1: land lion/deer/tiger keep the approved generated cartoon cutouts
+ * (`play-action-walk.png`). No loft glTF over the forest. Marine still glTF.
+ * Volume/bones come in a later layer under this same art.
  */
 import * as THREE from 'three'
 import { AnimationUtils } from 'three'
@@ -10,8 +9,8 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js'
 import type { AnimalId } from '../types'
 import { ANIMAL_IDS, isMarine } from '../types'
-import { ART_CUTOUT_PACK } from './art-cutout'
-import { CARTOON_RIG_PACK } from './cartoon-rig'
+import { ART_CUTOUT_PACK, buildArtCutout, loadCutoutTexture } from './art-cutout'
+import { attachViewTextures, CARTOON_RIG_PACK } from './cartoon-rig'
 
 export const LAND_GLTF_PACK = 'land-gltf'
 
@@ -125,6 +124,19 @@ export async function loadAnimalTemplates(): Promise<void> {
     const loader = new GLTFLoader()
     await Promise.all(
       ANIMAL_IDS.map(async (id) => {
+        if (!isMarine(id)) {
+          const map = await loadCutoutTexture(id)
+          const scene = buildArtCutout(id, map)
+          await attachViewTextures(scene, id)
+          templates.set(id, {
+            scene,
+            animations: (scene.userData.cutoutClips as THREE.AnimationClip[]) || [],
+            skinned: false,
+            zForward: false,
+            pack: ART_CUTOUT_PACK,
+          })
+          return
+        }
         const buf = await readModel(id)
         const gltf = await loader.parseAsync(buf, '/models/')
         const scene = gltf.scene
@@ -132,30 +144,12 @@ export async function loadAnimalTemplates(): Promise<void> {
         scene.traverse((obj) => {
           if ((obj as THREE.SkinnedMesh).isSkinnedMesh) skinned = true
         })
-        if (!isMarine(id)) {
-          scene.userData.pack = LAND_GLTF_PACK
-          scene.traverse((obj) => {
-            if (!(obj instanceof THREE.Mesh)) return
-            if (obj.userData.keepFace) return
-            const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
-            for (const mat of mats) {
-              if (!('map' in mat)) continue
-              const lambert = mat as THREE.MeshLambertMaterial
-              lambert.map = null
-              lambert.vertexColors = true
-              lambert.side = THREE.DoubleSide
-              lambert.transparent = false
-              lambert.depthWrite = true
-              lambert.needsUpdate = true
-            }
-          })
-        }
         templates.set(id, {
           scene,
           animations: clipsFor(id, gltf.animations || []),
           skinned,
-          zForward: isMarine(id),
-          pack: isMarine(id) ? undefined : LAND_GLTF_PACK,
+          zForward: true,
+          pack: id === 'fish' ? 'kenney-cube-pets' : 'gobkit',
         })
       }),
     )
@@ -301,7 +295,7 @@ function paintMesh(obj: THREE.Mesh, bodyTint: string): void {
 
 function packOf(animal: AnimalId, tpl?: AnimalTemplate): string {
   if (tpl?.pack) return tpl.pack
-  if (animal === 'lion' || animal === 'deer' || animal === 'tiger') return LAND_GLTF_PACK
+  if (animal === 'lion' || animal === 'deer' || animal === 'tiger') return ART_CUTOUT_PACK
   if (animal === 'fish') return 'kenney-cube-pets'
   return 'gobkit'
 }

@@ -8,7 +8,7 @@ import type { ChildGo } from './child-creation'
 import { PaperColoring } from './paper-coloring'
 import type { PaperGo } from './paper-coloring'
 import { storage } from './storage'
-import { createRoom, ensurePreviewRoom, getRoom, isHostQuery, joinQuery, newRoomCode } from './sync'
+import { createRoom, ensurePreviewRoom, getRoom, hostSearch, isHostQuery, joinQuery, newRoomCode } from './sync'
 import { ROOM_CAP } from './types'
 import { WorldExhibition } from './world-exhibition'
 import type { ExhibitionGo } from './world-exhibition'
@@ -60,7 +60,7 @@ export class App {
     this.paper.dispose()
     this.screen = next
     if (next.name === 'host') {
-      history.replaceState({}, '', `${location.pathname}?host=1&room=${next.roomId}`)
+      history.replaceState({}, '', `${location.pathname}${hostSearch(next.roomId)}`)
     }
     this.render()
   }
@@ -115,7 +115,7 @@ export class App {
         hostAliveAt: Date.now(),
         cap: ROOM_CAP,
       })
-      history.replaceState({}, '', `${location.pathname}?host=1&room=${id}`)
+      history.replaceState({}, '', `${location.pathname}${hostSearch(id)}`)
       this.go({ name: 'host', roomId: id })
     })
     this.root.querySelector('[data-act="draw"]')?.addEventListener('click', () => {
