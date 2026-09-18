@@ -6,7 +6,7 @@ import { loadAnimalTemplates, playAnimalClip, setAnimalModelProvider } from './g
 import { createAnimalModel } from './models'
 import { applyLandView, pickLandView } from './cartoon-rig'
 import { ART_CUTOUT_PACK } from './art-cutout'
-import { LION_BONE_NAMES, LION_MESH_PACK } from './lion-volume'
+import { LION_BONE_NAMES, LION_MESH_PACK, showLionBones } from './lion-volume'
 import type { AnimalId } from '../types'
 
 const PUBLIC = resolve(process.cwd(), 'public')
@@ -65,8 +65,14 @@ describe('land layer 2: lion mesh, deer/tiger cutouts', () => {
     expect(pos.count).toBeGreaterThan(80)
     const uv = body.geometry.getAttribute('uv')
     expect(uv).toBeTruthy()
-    const mat = body.material as THREE.MeshLambertMaterial
-    expect(mat.map).toBeTruthy()
+    const mats = (Array.isArray(body.material) ? body.material : [body.material]) as THREE.MeshLambertMaterial[]
+    const coat = mats.find((m) => m.map)
+    const rim = mats.find((m) => m.name === 'rim' || m.userData.rim)
+    expect(coat?.map).toBeTruthy()
+    expect(rim).toBeTruthy()
+    expect(rim?.map).toBeFalsy()
+    expect(rim?.vertexColors).toBe(true)
+    expect(body.geometry.groups.length).toBeGreaterThanOrEqual(2)
     lion.updateMatrixWorld(true)
     const box = new THREE.Box3().setFromObject(lion)
     const size = box.getSize(new THREE.Vector3())
@@ -85,6 +91,14 @@ describe('land layer 2: lion mesh, deer/tiger cutouts', () => {
     expect(lion.userData.clips).toEqual(expect.arrayContaining(['walk', 'idle']))
     expect(playAnimalClip(lion, 'walk', 0.016)).toBe(true)
     expect((lion.userData.activeClip as THREE.AnimationAction).getClip().name).toBe('walk')
+    showLionBones(lion, true)
+    const helper = lion.getObjectByName('lion-bones-overlay')
+    expect(helper).toBeTruthy()
+    expect(helper?.visible).toBe(true)
+    const mark = lion.getObjectByName('joint-hips')
+    expect(mark?.visible).toBe(true)
+    showLionBones(lion, false)
+    expect(helper?.visible).toBe(false)
   })
 
   it('yaws the lion mesh instead of swapping a front PNG card', async () => {

@@ -135,11 +135,12 @@ export function projectBoxUVs(root: THREE.Object3D): void {
 
 function stampTexture(root: THREE.Object3D, tex: THREE.Texture): void {
   root.traverse((obj) => {
-    if (!(obj instanceof THREE.Mesh) || keepFace(obj)) return
+    if (!(obj instanceof THREE.Mesh) || keepFace(obj) || obj.userData.boneMark) return
     const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
     for (const mat of mats) {
       if (!('map' in mat)) continue
       const lambert = mat as THREE.MeshLambertMaterial
+      if (lambert.name === 'rim' || lambert.userData.rim) continue
       lambert.map = tex
       lambert.color.set('#ffffff')
       lambert.vertexColors = false
@@ -267,7 +268,7 @@ function multiplyCutoutCoat(root: THREE.Group, source: CoatSource): boolean {
   const lionMesh = root.userData.pack === 'lion-mesh'
   const land = root.userData.pack === 'land-gltf'
   root.traverse((obj) => {
-    if (!(obj instanceof THREE.Mesh) || keepFace(obj) || obj.userData.ghost) return
+    if (!(obj instanceof THREE.Mesh) || keepFace(obj) || obj.userData.ghost || obj.userData.boneMark) return
     const isPortrait = obj.userData.portrait || obj.name === 'portrait'
     const rigged = obj.userData.rigged || (obj as THREE.SkinnedMesh).isSkinnedMesh || obj.name === 'body'
     if (cartoon && !isPortrait) return
@@ -278,6 +279,7 @@ function multiplyCutoutCoat(root: THREE.Group, source: CoatSource): boolean {
     for (const mat of mats) {
       if (!('map' in mat)) continue
       const lambert = mat as THREE.MeshLambertMaterial
+      if (lambert.name === 'rim' || lambert.userData.rim) continue
       lambert.map = tex
       lambert.color.set('#ffffff')
       lambert.vertexColors = land
@@ -286,7 +288,10 @@ function multiplyCutoutCoat(root: THREE.Group, source: CoatSource): boolean {
         lambert.alphaTest = 0.28
         lambert.side = THREE.DoubleSide
       }
-      if (lionMesh) lambert.alphaTest = Math.max(lambert.alphaTest || 0, 0.34)
+      if (lionMesh) {
+        lambert.alphaTest = Math.max(lambert.alphaTest || 0, 0.28)
+        lambert.vertexColors = false
+      }
     }
   })
   return true

@@ -2,6 +2,10 @@
  * Lion only, industry order: connected mesh + approved cartoon coat,
  * then quadruped bones, then a walk clip. Not loft shards, Kenney, or Mixamo.
  * Deer and tiger stay art-cutout.
+ *
+ * Mesh is a straight silhouette prism: cartoon UVs on the caps, solid mane/coat
+ * on the rim. Inner rings stay full-size so the edge is a stuffed band, not
+ * stacked cardboard.
  */
 import * as THREE from 'three'
 import { LION_CONTOUR } from './lion-contour'
@@ -24,6 +28,7 @@ export const LION_BONE_NAMES = [
 const REST: number[] = [0, 0, 0, 1]
 const X = new THREE.Vector3(1, 0, 0)
 const Y = new THREE.Vector3(0, 1, 0)
+const Z = new THREE.Vector3(0, 0, 1)
 
 function quat(axis: THREE.Vector3, angle: number): number[] {
   const q = new THREE.Quaternion().setFromAxisAngle(axis, angle)
@@ -45,6 +50,19 @@ function dummy(name: string, hex: string): THREE.Mesh {
   return mesh
 }
 
+function jointMark(parent: THREE.Bone): void {
+  const mark = new THREE.Mesh(
+    new THREE.SphereGeometry(0.022, 10, 8),
+    new THREE.MeshBasicMaterial({ color: '#7cff4a', depthTest: false, depthWrite: false }),
+  )
+  mark.name = `joint-${parent.name}`
+  mark.userData.boneMark = true
+  mark.visible = false
+  mark.renderOrder = 8
+  mark.frustumCulled = false
+  parent.add(mark)
+}
+
 function resample(count = 72): THREE.Vector2[] {
   const pts = LION_CONTOUR.map(([x, y]) => new THREE.Vector3(x, y, 0))
   const curve = new THREE.CatmullRomCurve3(pts, true, 'catmullrom', 0.08)
@@ -64,22 +82,31 @@ function uvAt(x: number, y: number): [number, number] {
   return [best[2], best[3]]
 }
 
-function plumpMesh(halfW = 0.155, slices = 11): THREE.BufferGeometry {
+function rimColor(x: number, y: number): THREE.Color {
+  if (y > 0.6) return new THREE.Color('#c86a24')
+  if (x > 0.2 && y < 0.58) return new THREE.Color('#e0a040')
+  if (y < 0.17) return new THREE.Color('#d4923c')
+  if (y < 0.4 && Math.abs(x) < 0.09) return new THREE.Color('#ffe6b0')
+  return new THREE.Color('#f0b54a')
+}
+
+function plumpMesh(halfW = 0.12, slices = 6): THREE.BufferGeometry {
   const ring = resample(80)
   const n = ring.length
-  const cx = ring.reduce((s, p) => s + p.x, 0) / n
-  const cy = ring.reduce((s, p) => s + p.y, 0) / n
   const positions: number[] = []
   const uvs: number[] = []
+  const colors: number[] = []
+  const pushVert = (x: number, y: number, z: number) => {
+    const [u, v] = uvAt(x, y)
+    const c = rimColor(x, y)
+    positions.push(x, y, z)
+    uvs.push(u, v)
+    colors.push(c.r, c.g, c.b)
+  }
   for (let s = 0; s < slices; s++) {
-    const t = slices === 1 ? 0 : (s / (slices - 1)) * 2 - 1
-    const round = Math.sqrt(Math.max(0, 1 - t * t))
-    const pull = 0.1 * (1 - round)
-    for (const p of ring) {
-      positions.push(p.x + (cx - p.x) * pull, p.y + (cy - p.y) * pull, t * halfW * (0.35 + 0.65 * round))
-      const [u, v] = uvAt(p.x, p.y)
-      uvs.push(u, v)
-    }
+    const t = slices === 1 ? 0 : s / (slices - 1)
+    const z = (1 - 2 * t) * halfW
+    for (const p of ring) pushVert(p.x, p.y, z)
   }
   const indices: number[] = []
   for (let s = 0; s < slices - 1; s++) {
@@ -91,6 +118,7 @@ function plumpMesh(halfW = 0.155, slices = 11): THREE.BufferGeometry {
       indices.push(i0, i2, i1, i1, i2, i3)
     }
   }
+  const rimCount = indices.length
   const tris = THREE.ShapeUtils.triangulateShape(ring, [])
   const back = (slices - 1) * n
   for (const tri of tris) {
@@ -103,7 +131,11 @@ function plumpMesh(halfW = 0.155, slices = 11): THREE.BufferGeometry {
   const geo = new THREE.BufferGeometry()
   geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
   geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2))
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
   geo.setIndex(indices)
+  geo.clearGroups()
+  geo.addGroup(0, rimCount, 1)
+  geo.addGroup(rimCount, indices.length - rimCount, 0)
   geo.computeVertexNormals()
   return geo
 }
@@ -120,6 +152,7 @@ function bone(name: string, world: THREE.Vector3, parent?: THREE.Bone): THREE.Bo
   } else {
     b.position.copy(world)
   }
+  jointMark(b)
   return b
 }
 
@@ -131,13 +164,13 @@ function skin(geo: THREE.BufferGeometry, bones: THREE.Bone[]): void {
     b.updateWorldMatrix(true, false)
     return b.getWorldPosition(new THREE.Vector3())
   })
+  void world
   const indexOf = (name: string) => bones.findIndex((b) => b.name === name)
   const tmp = new THREE.Vector3()
   for (let i = 0; i < pos.count; i++) {
     tmp.fromBufferAttribute(pos, i)
     let primary = 'spine'
     if (tmp.y < 0.2) {
-      primary = tmp.x < 0 ? (tmp.z < 0 ? 'leg-front-left' : 'leg-front-right') : tmp.z < 0 ? 'leg-back-left' : 'leg-back-right'
       if (tmp.x < -0.02) primary = tmp.z <= 0 ? 'leg-front-left' : 'leg-front-right'
       else if (tmp.x > 0.08) primary = tmp.z <= 0 ? 'leg-back-left' : 'leg-back-right'
       else primary = tmp.x < 0.03 ? 'leg-front-left' : 'leg-back-left'
@@ -160,14 +193,15 @@ function skin(geo: THREE.BufferGeometry, bones: THREE.Bone[]): void {
 
 function clipsFor(): THREE.AnimationClip[] {
   const walkT = [0, 0.25, 0.5, 0.75, 1]
-  const A = [REST, quat(X, 0.22), REST, quat(X, -0.18), REST]
-  const B = [REST, quat(X, -0.18), REST, quat(X, 0.22), REST]
+  const A = [REST, quat(Z, 0.28), REST, quat(Z, -0.22), REST]
+  const B = [REST, quat(Z, -0.22), REST, quat(Z, 0.28), REST]
   const walk = new THREE.AnimationClip('walk', 1, [
     qtrack('leg-front-left', walkT, A),
     qtrack('leg-front-right', walkT, B),
     qtrack('leg-back-left', walkT, B),
     qtrack('leg-back-right', walkT, A),
     qtrack('tail', walkT, [REST, quat(Y, 0.18), REST, quat(Y, -0.18), REST]),
+    qtrack('head', walkT, [REST, quat(X, 0.05), REST, quat(X, -0.03), REST]),
     new THREE.VectorKeyframeTrack('hips.position', walkT, [0.06, 0.32, 0, 0.06, 0.35, 0, 0.06, 0.32, 0, 0.06, 0.35, 0, 0.06, 0.32, 0]),
   ])
   const idle = new THREE.AnimationClip('idle', 2.2, [
@@ -227,16 +261,28 @@ export function buildLionMesh(map: THREE.Texture): THREE.Group {
   skin(geo, bones)
   map.colorSpace = THREE.SRGBColorSpace
   map.needsUpdate = true
-  const mat = new THREE.MeshLambertMaterial({
+  const coat = new THREE.MeshLambertMaterial({
     map,
     color: '#ffffff',
-    alphaTest: 0.34,
+    vertexColors: false,
+    alphaTest: 0.28,
     side: THREE.FrontSide,
     transparent: false,
     depthWrite: true,
   })
-  mat.name = 'coat'
-  const body = new THREE.SkinnedMesh(geo, mat)
+  coat.name = 'coat'
+  const rim = new THREE.MeshLambertMaterial({
+    map: null,
+    color: '#ffffff',
+    vertexColors: true,
+    alphaTest: 0,
+    side: THREE.DoubleSide,
+    transparent: false,
+    depthWrite: true,
+  })
+  rim.name = 'rim'
+  rim.userData.rim = true
+  const body = new THREE.SkinnedMesh(geo, [coat, rim])
   body.name = 'body'
   body.userData.rigged = true
   body.userData.region = 'body'
@@ -277,4 +323,29 @@ export async function loadLionCoat(): Promise<THREE.Texture> {
 
 export function isLionMesh(obj: THREE.Object3D | undefined | null): boolean {
   return Boolean(obj && obj.userData.pack === LION_MESH_PACK)
+}
+
+export function isRimMaterial(mat: THREE.Material): boolean {
+  return mat.name === 'rim' || Boolean(mat.userData.rim)
+}
+
+/** Bind-pose overlay for the bones layer still. Hidden on mesh and walk. */
+export function showLionBones(root: THREE.Object3D, visible: boolean): void {
+  root.traverse((obj) => {
+    if (obj.userData.boneMark) obj.visible = visible
+  })
+  let helper = root.getObjectByName('lion-bones-overlay') as THREE.SkeletonHelper | undefined
+  if (visible && !helper) {
+    const body = root.getObjectByName('body') as THREE.SkinnedMesh | undefined
+    if (body && (body as THREE.SkinnedMesh).isSkinnedMesh) {
+      helper = new THREE.SkeletonHelper(body)
+      helper.name = 'lion-bones-overlay'
+      helper.frustumCulled = false
+      const mat = helper.material as THREE.LineBasicMaterial
+      mat.depthTest = false
+      mat.depthWrite = false
+      root.add(helper)
+    }
+  }
+  if (helper) helper.visible = visible
 }

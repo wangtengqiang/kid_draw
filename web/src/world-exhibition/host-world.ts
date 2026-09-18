@@ -18,7 +18,7 @@ import {
 } from './forest-art'
 import { applyLandView, CARTOON_RIG_PACK, keepPawsOnPath, wrapPi } from './cartoon-rig'
 import { ART_CUTOUT_PACK } from './art-cutout'
-import { LION_MESH_PACK } from './lion-volume'
+import { LION_MESH_PACK, showLionBones } from './lion-volume'
 
 interface Actor {
   id: string
@@ -728,6 +728,7 @@ export class HostWorld {
     }
     const sample = layer === 'walk' ? 0.34 : 0
     this.snapClip(actor.group, sample)
+    showLionBones(actor.group, layer === 'bones')
     keepPawsOnPath(actor.group)
     const target = new THREE.Vector3()
     actor.group.updateMatrixWorld(true)
