@@ -10,7 +10,7 @@ import type { AnimalId } from '../types'
 import { ANIMAL_IDS, isMarine } from '../types'
 import { ART_CUTOUT_PACK, buildArtCutout, loadCutoutTexture } from './art-cutout'
 import { attachViewTextures, CARTOON_RIG_PACK } from './cartoon-rig'
-import { buildLionMesh, isRimMaterial, LION_MESH_PACK, loadLionCoat } from './lion-volume'
+import { buildLionMesh, LION_MESH_PACK, loadLionCoat } from './lion-volume'
 
 export const LAND_GLTF_PACK = 'land-gltf'
 
@@ -241,38 +241,24 @@ function boxFromCoat(obj: THREE.Object3D): THREE.Box3 {
 }
 
 function paintMesh(obj: THREE.Mesh, bodyTint: string): void {
-  if (obj.userData.boneMark) return
   if (obj.userData.rigged || (obj as THREE.SkinnedMesh).isSkinnedMesh) {
-    const srcs = (Array.isArray(obj.material) ? obj.material : [obj.material]) as THREE.MeshLambertMaterial[]
-    const tint =
-      bodyTint && bodyTint !== '#ffffff' && bodyTint !== '#fffdf7' ? new THREE.Color(bodyTint) : new THREE.Color('#ffffff')
-    const next = srcs.map((src) => {
-      const copy = src.clone()
-      copy.transparent = false
-      copy.depthWrite = true
-      copy.color = tint
-      if (isRimMaterial(src)) {
-        copy.map = null
-        copy.vertexColors = true
-        copy.alphaTest = 0
-        copy.side = THREE.DoubleSide
-        copy.name = 'rim'
-        copy.userData.rim = true
-      } else {
-        copy.map = src.map
-        copy.vertexColors = false
-        copy.alphaTest = src.alphaTest || 0.28
-        copy.side = THREE.FrontSide
-        copy.name = src.name || 'coat'
-      }
-      return copy
-    })
-    obj.material = next.length === 1 ? next[0]! : next
+    const src = (Array.isArray(obj.material) ? obj.material[0] : obj.material) as THREE.MeshLambertMaterial
+    const copy = src.clone()
+    copy.map = src.map
+    copy.alphaTest = src.alphaTest || 0
+    copy.transparent = false
+    copy.depthWrite = true
+    copy.side = THREE.FrontSide
+    if (bodyTint && bodyTint !== '#ffffff' && bodyTint !== '#fffdf7') copy.color = new THREE.Color(bodyTint)
+    else copy.color = new THREE.Color('#ffffff')
+    obj.material = copy
     obj.userData.region = 'body'
     obj.castShadow = false
     obj.receiveShadow = false
     if (obj.userData.ghost) obj.visible = false
     else obj.visible = true
+    copy.vertexColors = Boolean(src.vertexColors) && !copy.map
+    if (!copy.map) copy.vertexColors = true
     return
   }
   if (obj.userData.cutout || obj.userData.portrait) {
