@@ -264,12 +264,14 @@ function multiplyCutoutCoat(root: THREE.Group, source: CoatSource): boolean {
   root.userData.coat = tex
   const cutout = root.userData.pack === 'art-cutout'
   const cartoon = root.userData.pack === 'cartoon-rig'
+  const lionMesh = root.userData.pack === 'lion-mesh'
   const land = root.userData.pack === 'land-gltf'
   root.traverse((obj) => {
     if (!(obj instanceof THREE.Mesh) || keepFace(obj) || obj.userData.ghost) return
     const isPortrait = obj.userData.portrait || obj.name === 'portrait'
     const rigged = obj.userData.rigged || (obj as THREE.SkinnedMesh).isSkinnedMesh || obj.name === 'body'
     if (cartoon && !isPortrait) return
+    if (lionMesh && !rigged && !isPortrait) return
     if (!cutout && !cartoon && !land && !rigged) return
     if (land && !rigged && !isPortrait) return
     const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
@@ -284,6 +286,7 @@ function multiplyCutoutCoat(root: THREE.Group, source: CoatSource): boolean {
         lambert.alphaTest = 0.28
         lambert.side = THREE.DoubleSide
       }
+      if (lionMesh) lambert.alphaTest = Math.max(lambert.alphaTest || 0, 0.34)
     }
   })
   return true
@@ -298,7 +301,7 @@ function applyArtCoat(root: THREE.Group, source: CoatSource): void {
 
 /** 把画板 / 拍照原图像素贴上身子。卡通网格只叠乘，绝不把角色图换成涂色纸。 */
 export function applyDrawingCoat(root: THREE.Group, source: CoatSource): void {
-  if (root.userData.pack === 'art-cutout' || root.userData.pack === 'cartoon-rig' || root.userData.pack === 'land-gltf') {
+  if (root.userData.pack === 'art-cutout' || root.userData.pack === 'cartoon-rig' || root.userData.pack === 'land-gltf' || root.userData.pack === 'lion-mesh') {
     applyArtCoat(root, source)
     return
   }

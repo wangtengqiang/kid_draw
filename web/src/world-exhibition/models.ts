@@ -1,6 +1,6 @@
 /**
- * 观展动物：陆地这一层是批准的卡通剪纸（对照 play-action-walk.png）。
- * 体积网格下一层再补。海里仍是下载的 glTF。
+ * 观展动物：鹿 / 虎仍是批准卡通剪纸；狮子这一层是连体网格 + 皮毛 + 骨骼 + 走路。
+ * 海里仍是下载的 glTF。
  */
 import * as THREE from 'three'
 import type { AnimalId, WorldAction } from '../types'
@@ -168,7 +168,7 @@ export function tickAction(group: THREE.Group, action: WorldAction, t: number): 
   }
   const usedClip = Boolean(clips && playAnimalClip(group, clipFor(), dt))
 
-  if (group.userData.pack === 'art-cutout' || group.userData.pack === 'cartoon-rig' || group.userData.pack === 'land-gltf') {
+  if (group.userData.pack === 'art-cutout' || group.userData.pack === 'cartoon-rig' || group.userData.pack === 'land-gltf' || group.userData.pack === 'lion-mesh') {
     if (group.userData.pack !== 'art-cutout') keepPawsOnPath(group)
     return
   }

@@ -1,7 +1,6 @@
 /**
- * Layer 1: land lion/deer/tiger keep the approved generated cartoon cutouts
- * (`play-action-walk.png`). No loft glTF over the forest. Marine still glTF.
- * Volume/bones come in a later layer under this same art.
+ * Lion this layer: connected cartoon volume + coat + bones + walk.
+ * Deer and tiger stay approved cutouts. No loft glTF over the forest.
  */
 import * as THREE from 'three'
 import { AnimationUtils } from 'three'
@@ -11,6 +10,7 @@ import type { AnimalId } from '../types'
 import { ANIMAL_IDS, isMarine } from '../types'
 import { ART_CUTOUT_PACK, buildArtCutout, loadCutoutTexture } from './art-cutout'
 import { attachViewTextures, CARTOON_RIG_PACK } from './cartoon-rig'
+import { buildLionMesh, LION_MESH_PACK, loadLionCoat } from './lion-volume'
 
 export const LAND_GLTF_PACK = 'land-gltf'
 
@@ -124,6 +124,18 @@ export async function loadAnimalTemplates(): Promise<void> {
     const loader = new GLTFLoader()
     await Promise.all(
       ANIMAL_IDS.map(async (id) => {
+        if (id === 'lion') {
+          const map = await loadLionCoat()
+          const scene = buildLionMesh(map)
+          templates.set(id, {
+            scene,
+            animations: (scene.userData.rigClips as THREE.AnimationClip[]) || [],
+            skinned: true,
+            zForward: false,
+            pack: LION_MESH_PACK,
+          })
+          return
+        }
         if (!isMarine(id)) {
           const map = await loadCutoutTexture(id)
           const scene = buildArtCutout(id, map)
@@ -233,9 +245,10 @@ function paintMesh(obj: THREE.Mesh, bodyTint: string): void {
     const src = (Array.isArray(obj.material) ? obj.material[0] : obj.material) as THREE.MeshLambertMaterial
     const copy = src.clone()
     copy.map = src.map
+    copy.alphaTest = src.alphaTest || 0
     copy.transparent = false
     copy.depthWrite = true
-    copy.side = THREE.DoubleSide
+    copy.side = THREE.FrontSide
     if (bodyTint && bodyTint !== '#ffffff' && bodyTint !== '#fffdf7') copy.color = new THREE.Color(bodyTint)
     else copy.color = new THREE.Color('#ffffff')
     obj.material = copy
@@ -295,7 +308,8 @@ function paintMesh(obj: THREE.Mesh, bodyTint: string): void {
 
 function packOf(animal: AnimalId, tpl?: AnimalTemplate): string {
   if (tpl?.pack) return tpl.pack
-  if (animal === 'lion' || animal === 'deer' || animal === 'tiger') return ART_CUTOUT_PACK
+  if (animal === 'lion') return LION_MESH_PACK
+  if (animal === 'deer' || animal === 'tiger') return ART_CUTOUT_PACK
   if (animal === 'fish') return 'kenney-cube-pets'
   return 'gobkit'
 }
@@ -345,7 +359,9 @@ export function instanceAnimal(animal: AnimalId, painted: Record<string, string>
       ? 'cartoon-rig'
       : tpl.pack === ART_CUTOUT_PACK
         ? 'art-cutout'
-        : 'gltf'
+        : tpl.pack === LION_MESH_PACK
+          ? 'lion-mesh'
+          : 'gltf'
   root.userData.pack = packOf(animal, tpl)
   root.userData.spriteMap = inner.userData.spriteMap
   root.userData.viewMaps = inner.userData.viewMaps

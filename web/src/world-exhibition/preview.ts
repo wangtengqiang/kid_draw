@@ -9,6 +9,7 @@ import { OrbitZoom, PREVIEW_ORBIT } from './orbit-zoom'
 import { ART_CUTOUT_PACK } from './art-cutout'
 import { applyLandView, CARTOON_RIG_PACK } from './cartoon-rig'
 import { LAND_GLTF_PACK } from './gltf-kit'
+import { LION_MESH_PACK } from './lion-volume'
 
 export class PreviewStage {
   readonly canvas: HTMLCanvasElement
@@ -93,7 +94,7 @@ export class PreviewStage {
         if (!this.orbit.interacting) this.rot += 0.006
         applyLandView(this.model, this.camera, 'walk', this.rot)
         tickWalk(this.model, t, true)
-      } else if (this.model.userData.pack === LAND_GLTF_PACK) {
+      } else if (this.model.userData.pack === LION_MESH_PACK || this.model.userData.pack === LAND_GLTF_PACK) {
         if (!this.orbit.interacting) {
           this.rot += 0.006
           this.model.rotation.y = this.rot
