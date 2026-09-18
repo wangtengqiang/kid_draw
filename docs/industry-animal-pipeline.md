@@ -123,7 +123,7 @@
 
 ## 当前默认
 
-- 狮 / 鹿 / 虎 ← **这一层先保住批准的卡通形象**（`art-cutout`：生成图在屏幕上）。Walk / sit / drink / sleep 靠换 front / 3/4 / side / 姿势图，**不把正面 PNG yaw 成卡片**，也不加载 loft 碎木片。狮子网格层试过剪影棱柱，比 `play-action-walk.png` 丑，已撤回；失败静帧在 `preview-shots/layer-{mesh,bones,walk}-lion.png`。体积下一层不能再挤 3/4 剪影。孩子蜡笔叠乘到卡通皮毛。
+- 狮 ← **连体卡通 glTF**（`lion.glb`：体积网格 + 四足骨含脖子 + walk，脸是批准正面裁切）。鹿 / 虎仍是 `art-cutout`。狮子 yaw 模型；鹿 / 虎换图。不是 loft 碎木片、3/4 剪影饼干、Kenney 方块、Mixamo。孩子蜡笔叠乘到皮毛。
 
 ## 头和身子怎么换方向
 

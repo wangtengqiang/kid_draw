@@ -54,9 +54,10 @@ npm run dev
 
 点 **打开世界**。森林对着 `gen-forest-empty` 搭：石头小路伸进林子，两侧是粗树干 + 圆树冠，近处有红蘑菇和蕨，右边一条小溪。不是米色平草坪，也不是把效果图糊成天空盒。捏合 / 滚轮可以拉近看动物、拉远看深处。侧栏可换 **森林 / 雪原 / 海底**。陆地动物会在石径上自己走、喝水、坐下、睡觉；海洋动物在东边海湾里游，不会走上小路。
 
-**3D 动物**（仅网页）陆地狮 / 鹿 / 虎这一层先保住批准的卡通剪纸（对照 `play-action-walk.png` / `gen-lion-ingame-target.png`）。朝向靠换 front / 3/4 / side / 姿势图，不把正面 PNG 拧扁，也不把 loft 碎木片盖上。体积和骨骼下一层再垫在这套画下面。海里仍是 Kenney 小鱼 + Gobkit 鲸/海豹：
+**3D 动物**（仅网页）狮子这一层是一份连体卡通 glTF（体积网格 + 四足骨含脖子 + walk，皮毛对 `gen-lion-ingame-target`）。鹿 / 虎仍是批准剪纸。狮子 yaw 模型；鹿 / 虎换图。不是 Kenney 方块、loft 碎木片、Mixamo、3/4 剪影饼干。
 
-- 狮 / 鹿 / 虎 — `art-cutout`：`cutouts/` 生成卡通（walk / sit / drink / sleep 换图）
+- 狮 — `lion.glb`：`scripts/author-lion-glb.mjs` 连体体积 + 批准脸贴图
+- 鹿 / 虎 — `art-cutout`：`cutouts/` 生成卡通
 - 鱼 — [Kenney Cube Pets 2.0](https://kenney.nl/assets/cube-pets)（[CC0](https://creativecommons.org/publicdomain/zero/1.0/)）
 - 海豚 / 海龟 — [Gobkit](https://gobkit.com/api/free) Whale / Seal（CC0）。
 

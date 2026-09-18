@@ -1,17 +1,16 @@
 # 3D models — licenses
 
-Default **lion / deer / tiger** this layer keep the approved generated
-cartoon on screen (`art-cutout` portraits from `cutouts/`). Lofted
-superellipse `.glb` files remain in the folder for later layers but are
-**not** the visible forest default (they looked like wooden shards).
-Kid crayon **multiplies** onto the cartoon coat. Not Kenney cubes,
-fox/wolf, sphere cubs, sunflower heads, or 千图网.
+Default **lion** this layer is an authored cartoon glTF (`lion.glb`:
+connected stuffed volume, neck bone, walk clip, approved face crop).
+**Deer / tiger** stay `art-cutout`. Not Kenney cubes, loft shards,
+Mixamo, PNG cookies, or 千图网. Kid crayon **multiplies** onto the coat.
 
-## Land glTF — not the visible default this layer
+## Land lion glTF
 
-- Files still present: `lion.glb` `deer.glb` `tiger.glb` (loft shards; do not load over the forest)
-- Visible land pack: `art-cutout` (`cutouts/` generated cartoon)
-- Facing / sit / drink / sleep: swap authored PNGs, do not yaw a front PNG
+- File: `lion.glb` from `web/scripts/author-lion-glb.mjs`
+- Face: `textures/lion-face.png` (crop of `cutouts/lion-front.png`)
+- Facing: yaw the model
+- Deer / tiger: `art-cutout` (`cutouts/` generated cartoon)
 - Front snapshots: `snapshots/{lion,deer,tiger}.png`
 
 ## Kenney Cube Pets 2.0 — fish only (CC0 1.0)

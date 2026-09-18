@@ -18,6 +18,7 @@ import {
 } from './forest-art'
 import { applyLandView, CARTOON_RIG_PACK, keepPawsOnPath, wrapPi } from './cartoon-rig'
 import { ART_CUTOUT_PACK } from './art-cutout'
+import { LAND_GLTF_PACK } from './gltf-kit'
 
 interface Actor {
   id: string
@@ -446,6 +447,7 @@ export class HostWorld {
         __kidDrawPoseSpread?: () => boolean
         __kidDrawPosePerspective?: () => boolean
         __kidDrawPoseOrbit?: () => boolean
+        __kidDrawPoseLionProcess?: (layer: 'mesh' | 'bones' | 'effect') => boolean
         __kidDrawCapturePng?: () => string
       }
       w.__kidDrawFrameHost = () => this.frameFirstAnimal()
@@ -457,6 +459,7 @@ export class HostWorld {
       w.__kidDrawPoseSpread = () => this.poseSpreadFacings()
       w.__kidDrawPosePerspective = () => this.posePerspective()
       w.__kidDrawPoseOrbit = () => this.poseOrbit()
+      w.__kidDrawPoseLionProcess = (layer) => this.poseLionProcess(layer)
       w.__kidDrawCapturePng = () => this.renderer.domElement.toDataURL('image/png')
     }
     const grass = new THREE.CanvasTexture(paintGrassGround())
@@ -705,8 +708,63 @@ export class HostWorld {
     this.camera.position.set(target.x + 1.15, 1.28, target.z + 3.05)
     this.syncOrbitFromCamera()
     keepPawsOnPath(actor.group)
-    this.orientLand(actor.group, action === 'rest' ? 'rest' : action, heading)
+    const pose = action === 'rest' ? 'rest' : action
+    const face =
+      actor.group.userData.pack === LAND_GLTF_PACK
+        ? Math.atan2(this.camera.position.x - target.x, this.camera.position.z - target.z)
+        : heading
+    this.orientLand(actor.group, pose, face)
     return true
+  }
+
+  /** Process stills: mesh / bones overlay / in-game effect of the lion glb. */
+  poseLionProcess(layer: 'mesh' | 'bones' | 'effect'): boolean {
+    if (!this.poseActionClose('walk', 'lion')) return false
+    const actor = [...this.actors.values()].find((a) => a.animalId === 'lion' && !a.marine)
+    if (!actor) return false
+    for (const other of this.actors.values()) {
+      other.frozen = true
+      other.group.visible = other === actor
+    }
+    const sample = layer === 'effect' ? 0.34 : 0
+    this.snapClip(actor.group, sample)
+    this.showLionBones(actor.group, layer === 'bones')
+    keepPawsOnPath(actor.group)
+    const target = new THREE.Vector3()
+    actor.group.updateMatrixWorld(true)
+    const box = new THREE.Box3().setFromObject(actor.group)
+    if (!box.isEmpty()) box.getCenter(target)
+    else actor.group.getWorldPosition(target)
+    const face = Math.atan2(this.camera.position.x - target.x, this.camera.position.z - target.z)
+    this.orientLand(actor.group, 'walk', face)
+    if (layer === 'effect') {
+      this.camera.position.set(target.x + 0.55, 1.35, target.z + 3.4)
+      this.orbit.target.set(target.x, Math.max(0.5, target.y * 0.9), target.z)
+      this.syncOrbitFromCamera()
+      this.orientLand(
+        actor.group,
+        'walk',
+        Math.atan2(this.camera.position.x - target.x, this.camera.position.z - target.z),
+      )
+    }
+    return true
+  }
+
+  private showLionBones(group: THREE.Group, visible: boolean): void {
+    let helper = group.getObjectByName('lion-bones-overlay') as THREE.SkeletonHelper | undefined
+    if (visible && !helper) {
+      const body = group.getObjectByName('body') as THREE.SkinnedMesh | undefined
+      if (body && (body as THREE.SkinnedMesh).isSkinnedMesh) {
+        helper = new THREE.SkeletonHelper(body)
+        helper.name = 'lion-bones-overlay'
+        helper.frustumCulled = false
+        const mat = helper.material as THREE.LineBasicMaterial
+        mat.depthTest = false
+        mat.depthWrite = false
+        group.add(helper)
+      }
+    }
+    if (helper) helper.visible = visible
   }
 
   /** 狮走路、鹿坐下回头、虎喝水：三只朝向不同，脚不踩溪。 */

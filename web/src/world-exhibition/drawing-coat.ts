@@ -11,7 +11,7 @@ function keepFace(obj: THREE.Object3D): boolean {
   const n = `${obj.name} ${obj.userData.region || ''} ${obj.parent?.name || ''}`.toLowerCase()
   const mats = obj instanceof THREE.Mesh ? (Array.isArray(obj.material) ? obj.material : [obj.material]) : []
   const matName = mats.map((m) => m.name || '').join(' ').toLowerCase()
-  return /eye|iris|pupil|shine|nose/.test(`${n} ${matName}`)
+  return /eye|iris|pupil|shine|nose|portrait/.test(`${n} ${matName}`)
 }
 
 export function isBitmapCoat(value: unknown): value is string {
