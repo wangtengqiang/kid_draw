@@ -73,6 +73,7 @@
 | OGA Micket tiger、低模鹿 | https://opengameart.org/content/tiger · https://opengameart.org/content/deer-low-poly-rigged | **拒绝。** CC0 但是 0 A.D. 写实低模，不是幼崽卡通，还是 .blend/.zip。 |
 | Unity/CGTrader 卡通虎 | 付费资源店 | **拒绝。** 付费 API / 商店。 |
 | loft 超椭圆 glTF（`author-land-gltf.mjs`） | 本仓库上一轮 `lion.glb` | **拒绝作为可见默认。** 森林里像碎木片。文件留着，不加载。 |
+| 3/4 剪影棱柱（`lion-volume.ts`） | 本回合狮子 mesh 层 | **拒绝并撤回。** 把 `lion-three-quarter.png` 轮廓挤厚：侧面贴图是叠纸板，固体鬃毛色是泡沫饼干圈。比 `play-action-walk.png` 丑。禁止再挤 3/4 剪影。 |
 | 正面 PNG yaw | `user-phone-warp-still` | **拒绝。** 朝向靠换 front/3/4/side/姿势图。 |
 
 免登录 zip 里**没有**「又圆又像参考图、又是真老虎」的现成 glTF。上一轮 loft 超椭圆 glTF 在森林里像碎木片，**不许再整包替换上去**。现在按「慢慢补充模型」：屏幕上先是批准的生成卡通（对照 `play-action-walk.png` / `gen-lion-ingame-target.png`）。海里仍 `GLTFLoader` 读 glTF。
@@ -122,7 +123,7 @@
 
 ## 当前默认
 
-- 狮 / 鹿 / 虎 ← **这一层先保住批准的卡通形象**（`art-cutout`：生成图在屏幕上）。Walk / sit / drink / sleep 靠换 front / 3/4 / side / 姿势图，**不把正面 PNG yaw 成卡片**，也不加载 loft 碎木片。体积下一层再补。孩子蜡笔叠乘到卡通皮毛。
+- 狮 / 鹿 / 虎 ← **这一层先保住批准的卡通形象**（`art-cutout`：生成图在屏幕上）。Walk / sit / drink / sleep 靠换 front / 3/4 / side / 姿势图，**不把正面 PNG yaw 成卡片**，也不加载 loft 碎木片。狮子网格层试过剪影棱柱，比 `play-action-walk.png` 丑，已撤回；失败静帧在 `preview-shots/layer-{mesh,bones,walk}-lion.png`。体积下一层不能再挤 3/4 剪影。孩子蜡笔叠乘到卡通皮毛。
 
 ## 头和身子怎么换方向
 
