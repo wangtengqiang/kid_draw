@@ -631,7 +631,10 @@ export class HostWorld {
         const feet = keepOffCreek(along.x, along.z)
         actor.group.position.set(feet.x, 0.02, feet.z)
         const pose = action === 'rest' ? 'rest' : action === 'sit' ? 'sit' : 'walk'
-        const heading = landYaw(pose, along.heading, i - 1)
+        const heading =
+          pose === 'walk'
+            ? wrapPi(along.heading + Math.PI)
+            : landYaw(pose, along.heading, i - 1)
         this.settleLand(actor, pose, heading, pose === 'walk' ? 0.28 : 0.8)
       }
     })
