@@ -6,7 +6,6 @@ import { loadAnimalTemplates, playAnimalClip, setAnimalModelProvider } from './g
 import { createAnimalModel } from './models'
 import { applyLandView, pickLandView } from './cartoon-rig'
 import { ART_CUTOUT_PACK } from './art-cutout'
-import { LION_BONE_NAMES, LION_MESH_PACK } from './lion-volume'
 import type { AnimalId } from '../types'
 
 const PUBLIC = resolve(process.cwd(), 'public')
@@ -28,7 +27,7 @@ function glbJson(file: string): {
   }
 }
 
-describe('land layer 2: lion mesh, deer/tiger cutouts', () => {
+describe('land layer 1: approved cartoon cutouts', () => {
   afterEach(() => {
     setAnimalModelProvider(null)
   })
@@ -38,76 +37,55 @@ describe('land layer 2: lion mesh, deer/tiger cutouts', () => {
     await loadAnimalTemplates()
   }
 
-  it('keeps deer and tiger as approved cartoon cutouts', async () => {
+  it('puts the generated cartoon on screen and does not load loft glTF', async () => {
     await loadShipped()
-    for (const kind of ['deer', 'tiger'] as AnimalId[]) {
+    for (const kind of ['lion', 'deer', 'tiger'] as AnimalId[]) {
       const group = createAnimalModel(kind, { body: '#ffffff' })
       expect(group.userData.pack).toBe(ART_CUTOUT_PACK)
+      expect(group.userData.source).toBe('art-cutout')
+      expect(group.getObjectByName(`animal-${kind}`)).toBeTruthy()
       const body = group.getObjectByName('body') as THREE.Mesh
-      expect(body.geometry).toBeInstanceOf(THREE.PlaneGeometry)
+      expect(body).toBeTruthy()
       expect(body.visible).toBe(true)
+      expect(body.geometry).toBeInstanceOf(THREE.PlaneGeometry)
+      expect(body.userData.cutout).toBe(true)
+      expect(group.userData.pack).not.toBe('land-gltf')
+      expect(group.userData.pack).not.toBe('kenney-cube-pets')
+      expect(group.userData.pack).not.toBe('standing-quad')
+      let skinned = false
+      group.traverse((obj) => {
+        if ((obj as THREE.SkinnedMesh).isSkinnedMesh) skinned = true
+      })
+      expect(skinned).toBe(false)
     }
-  })
-
-  it('builds a connected lion volume with the cartoon coat, not a loft glTF or Kenney cube', async () => {
-    await loadShipped()
-    const lion = createAnimalModel('lion', { body: '#ffffff' })
-    expect(lion.userData.pack).toBe(LION_MESH_PACK)
-    expect(lion.userData.source).toBe('lion-mesh')
-    const body = lion.getObjectByName('body') as THREE.SkinnedMesh
-    expect(body).toBeInstanceOf(THREE.SkinnedMesh)
-    expect(body.visible).toBe(true)
-    expect(body.geometry).toBeInstanceOf(THREE.BufferGeometry)
-    expect(body.geometry).not.toBeInstanceOf(THREE.PlaneGeometry)
-    expect(body.geometry).not.toBeInstanceOf(THREE.BoxGeometry)
-    expect(body.geometry).not.toBeInstanceOf(THREE.SphereGeometry)
-    const pos = body.geometry.getAttribute('position')
-    expect(pos.count).toBeGreaterThan(80)
-    const uv = body.geometry.getAttribute('uv')
-    expect(uv).toBeTruthy()
-    const mat = body.material as THREE.MeshLambertMaterial
-    expect(mat.map).toBeTruthy()
-    lion.updateMatrixWorld(true)
-    const box = new THREE.Box3().setFromObject(lion)
-    const size = box.getSize(new THREE.Vector3())
-    expect(size.y).toBeGreaterThan(0.8)
-    expect(size.z).toBeGreaterThan(0.12)
-    expect(lion.userData.pack).not.toBe('land-gltf')
-    expect(lion.userData.pack).not.toBe('kenney-cube-pets')
-  })
-
-  it('binds quadruped bones and plays a walk clip on the lion only', async () => {
-    await loadShipped()
-    const lion = createAnimalModel('lion', { body: '#ffffff' })
-    const body = lion.getObjectByName('body') as THREE.SkinnedMesh
-    const names = body.skeleton.bones.map((b) => b.name)
-    for (const name of LION_BONE_NAMES) expect(names).toContain(name)
-    expect(lion.userData.clips).toEqual(expect.arrayContaining(['walk', 'idle']))
-    expect(playAnimalClip(lion, 'walk', 0.016)).toBe(true)
-    expect((lion.userData.activeClip as THREE.AnimationAction).getClip().name).toBe('walk')
-  })
-
-  it('yaws the lion mesh instead of swapping a front PNG card', async () => {
-    await loadShipped()
-    const lion = createAnimalModel('lion', { body: '#ffffff' })
-    lion.rotation.y = 1.1
-    lion.updateMatrixWorld(true)
-    const body = lion.getObjectByName('body') as THREE.Mesh
-    expect(body.visible).toBe(true)
-    const q = new THREE.Quaternion()
-    body.getWorldQuaternion(q)
-    const euler = new THREE.Euler().setFromQuaternion(q, 'YXZ')
-    expect(Math.abs(euler.y)).toBeGreaterThan(0.4)
-  })
-
-  it('still swaps deer/tiger views instead of yawing their cutouts', async () => {
-    await loadShipped()
     const deer = createAnimalModel('deer', { body: '#ffffff' })
+    deer.updateMatrixWorld(true)
+    const deerBox = new THREE.Box3().setFromObject(deer)
+    expect(deerBox.max.y - deerBox.min.y).toBeGreaterThan(0.8)
+  })
+
+  it('swaps front/3-quarter/side art instead of yawing a front PNG into a card', async () => {
+    await loadShipped()
+    const lion = createAnimalModel('lion', { body: '#ffffff' })
     const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 40)
     camera.position.set(0, 1.2, 4)
+    expect(pickLandView('walk', 0, 0).view).toBe('front')
     expect(pickLandView('walk', Math.PI / 2, 0).view).toBe('side')
-    applyLandView(deer, camera, 'walk', Math.PI / 2)
-    expect(deer.rotation.y).toBe(0)
+    expect(pickLandView('sit', 0, 0).view).toBe('sit')
+    expect(pickLandView('drink', 0, 0).view).toBe('drink')
+    expect(pickLandView('rest', 0, 0).view).toBe('sleep')
+    applyLandView(lion, camera, 'walk', Math.PI / 2)
+    expect(lion.rotation.y).toBe(0)
+    expect((lion.getObjectByName('body') as THREE.Mesh).visible).toBe(true)
+    expect(lion.userData.landView).toBe('side')
+  })
+
+  it('kid coloring does not recolor authored eyes', async () => {
+    await loadShipped()
+    const lion = createAnimalModel('lion', { body: '#e24b4b' })
+    const iris = lion.getObjectByName('irisL') as THREE.Mesh
+    expect((iris.material as THREE.MeshLambertMaterial).color.getHexString()).not.toBe('e24b4b')
+    expect((lion.getObjectByName('body') as THREE.Mesh).visible).toBe(true)
   })
 
   it('Gobkit whale/seal remain marine stand-ins', async () => {

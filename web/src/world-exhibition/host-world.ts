@@ -18,7 +18,6 @@ import {
 } from './forest-art'
 import { applyLandView, CARTOON_RIG_PACK, keepPawsOnPath, wrapPi } from './cartoon-rig'
 import { ART_CUTOUT_PACK } from './art-cutout'
-import { LION_MESH_PACK } from './lion-volume'
 
 interface Actor {
   id: string
@@ -447,7 +446,6 @@ export class HostWorld {
         __kidDrawPoseSpread?: () => boolean
         __kidDrawPosePerspective?: () => boolean
         __kidDrawPoseOrbit?: () => boolean
-        __kidDrawPoseLionLayer?: (layer: 'mesh' | 'bones' | 'walk') => boolean
         __kidDrawCapturePng?: () => string
       }
       w.__kidDrawFrameHost = () => this.frameFirstAnimal()
@@ -459,7 +457,6 @@ export class HostWorld {
       w.__kidDrawPoseSpread = () => this.poseSpreadFacings()
       w.__kidDrawPosePerspective = () => this.posePerspective()
       w.__kidDrawPoseOrbit = () => this.poseOrbit()
-      w.__kidDrawPoseLionLayer = (layer) => this.poseLionLayer(layer)
       w.__kidDrawCapturePng = () => this.renderer.domElement.toDataURL('image/png')
     }
     const grass = new THREE.CanvasTexture(paintGrassGround())
@@ -708,34 +705,7 @@ export class HostWorld {
     this.camera.position.set(target.x + 1.15, 1.28, target.z + 3.05)
     this.syncOrbitFromCamera()
     keepPawsOnPath(actor.group)
-    const pose = action === 'rest' ? 'rest' : action
-    const face =
-      actor.group.userData.pack === LION_MESH_PACK
-        ? Math.atan2(this.camera.position.x - target.x, this.camera.position.z - target.z)
-        : heading
-    this.orientLand(actor.group, pose, face)
-    return true
-  }
-
-  /** Industry stills: lion only, mesh / bind pose / walk. Deer and tiger hidden. */
-  poseLionLayer(layer: 'mesh' | 'bones' | 'walk'): boolean {
-    if (!this.poseActionClose('walk', 'lion')) return false
-    const actor = [...this.actors.values()].find((a) => a.animalId === 'lion' && !a.marine)
-    if (!actor) return false
-    for (const other of this.actors.values()) {
-      other.frozen = true
-      other.group.visible = other === actor
-    }
-    const sample = layer === 'walk' ? 0.34 : 0
-    this.snapClip(actor.group, sample)
-    keepPawsOnPath(actor.group)
-    const target = new THREE.Vector3()
-    actor.group.updateMatrixWorld(true)
-    const box = new THREE.Box3().setFromObject(actor.group)
-    if (!box.isEmpty()) box.getCenter(target)
-    else actor.group.getWorldPosition(target)
-    const face = Math.atan2(this.camera.position.x - target.x, this.camera.position.z - target.z)
-    this.orientLand(actor.group, 'walk', face)
+    this.orientLand(actor.group, action === 'rest' ? 'rest' : action, heading)
     return true
   }
 

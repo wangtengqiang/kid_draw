@@ -779,7 +779,7 @@ export function keepPawsOnPath(root: THREE.Object3D): void {
     root.updateMatrixWorld(true)
     return
   }
-  if (root.userData.pack !== 'land-gltf' && root.userData.pack !== 'lion-mesh') return
+  if (root.userData.pack !== 'land-gltf') return
   if (typeof root.userData.pawBaseY !== 'number') root.userData.pawBaseY = root.position.y
   root.position.y = root.userData.pawBaseY as number
   root.updateMatrixWorld(true)
