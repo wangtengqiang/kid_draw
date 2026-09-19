@@ -10,6 +10,11 @@ import type { AnimalId } from '../types'
 
 const PUBLIC = resolve(process.cwd(), 'public')
 
+function pngSize(file: string): { w: number; h: number } {
+  const buf = readFileSync(resolve(PUBLIC, file))
+  return { w: buf.readUInt32BE(16), h: buf.readUInt32BE(20) }
+}
+
 function bytesOf(file: string): ArrayBuffer {
   const buf = readFileSync(resolve(PUBLIC, file))
   return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer
@@ -67,6 +72,31 @@ describe('land layer: approved cutouts; lion.glb kept off the forest', () => {
     expect(pickLandView('walk', Math.PI / 2, 0).view).toBe('side')
     applyLandView(deer, camera, 'walk', Math.PI / 2)
     expect(deer.rotation.y).toBe(0)
+  })
+
+  it('pitches the sit cutout toward a steep camera so legs are not edge-on', async () => {
+    await loadShipped()
+    const lion = createAnimalModel('lion', { body: '#ffffff' })
+    const portrait = lion.getObjectByName('body') as THREE.Mesh
+    const steep = new THREE.PerspectiveCamera(42, 1, 0.1, 80)
+    steep.position.set(0.4, 9.6, 3.8)
+    applyLandView(lion, steep, 'sit', 0)
+    expect(lion.rotation.y).toBe(0)
+    expect(portrait.rotation.x).toBeLessThan(-0.35)
+    expect(portrait.rotation.x).toBeGreaterThan(-0.8)
+    const eye = new THREE.PerspectiveCamera(42, 1, 0.1, 80)
+    eye.position.set(0.38, 2.62, 12.2)
+    applyLandView(lion, eye, 'sit', 0)
+    expect(Math.abs(portrait.rotation.x)).toBeLessThan(0.22)
+  })
+
+  it('sit and sleep cutouts are tall enough to include a body, not just a mane', () => {
+    const sit = pngSize('models/cutouts/lion-sit.png')
+    const sleep = pngSize('models/cutouts/lion-sleep.png')
+    expect(sit.w).toBeGreaterThan(360)
+    expect(sit.h).toBeGreaterThan(500)
+    expect(sleep.w).toBeGreaterThan(350)
+    expect(sleep.h).toBeGreaterThan(300)
   })
 
   it('kid coloring does not recolor authored eyes on cutouts', async () => {

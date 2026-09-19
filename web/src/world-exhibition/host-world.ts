@@ -447,6 +447,7 @@ export class HostWorld {
         __kidDrawPoseSpread?: () => boolean
         __kidDrawPosePerspective?: () => boolean
         __kidDrawPoseOrbit?: () => boolean
+        __kidDrawPoseLookFront?: () => boolean
         __kidDrawPoseLionProcess?: (layer: 'mesh' | 'bones' | 'effect') => boolean
         __kidDrawCapturePng?: () => string
       }
@@ -459,6 +460,7 @@ export class HostWorld {
       w.__kidDrawPoseSpread = () => this.poseSpreadFacings()
       w.__kidDrawPosePerspective = () => this.posePerspective()
       w.__kidDrawPoseOrbit = () => this.poseOrbit()
+      w.__kidDrawPoseLookFront = () => this.poseLookFront()
       w.__kidDrawPoseLionProcess = (layer) => this.poseLionProcess(layer)
       w.__kidDrawCapturePng = () => this.renderer.domElement.toDataURL('image/png')
     }
@@ -852,6 +854,46 @@ export class HostWorld {
     const look = pointOnPath(0.28, 0)
     this.orbit.target.set(look.x, 0.62, look.z)
     this.camera.position.set(look.x - 6.4, 2.35, look.z + 3.4)
+    this.syncOrbitFromCamera()
+    this.reorientLand()
+    return true
+  }
+
+  /**
+   * 王腾强 top-down path shot: steep camera down the stones.
+   * Lion sits, deer sits, tiger sleeps — legs/paws/tail must stay opaque.
+   */
+  poseLookFront(): boolean {
+    const land = [...this.actors.values()].filter((a) => !a.marine)
+    if (!land.length) return false
+    const byKind = (id: AnimalId) => land.find((a) => a.animalId === id)
+    const place = (actor: Actor, u: number, lane: number, action: WorldAction) => {
+      actor.frozen = true
+      actor.group.visible = true
+      pinLandScale(actor.group)
+      const along = pointOnPath(u, lane)
+      const feet = keepOffCreek(along.x, along.z)
+      actor.group.position.set(feet.x, 0.02, feet.z)
+      const pose = action === 'rest' ? 'rest' : action === 'sit' ? 'sit' : 'walk'
+      const heading =
+        pose === 'walk'
+          ? wrapPi(along.heading + Math.PI)
+          : landYaw(pose, along.heading, lane)
+      this.settleLand(actor, pose, heading, pose === 'walk' ? 0.3 : 0.85)
+    }
+    const lion = byKind('lion')
+    const deer = byKind('deer')
+    const tiger = byKind('tiger')
+    if (lion) place(lion, 0.68, 0, 'sit')
+    if (deer) place(deer, 0.44, -0.12, 'sit')
+    if (tiger) place(tiger, 0.26, 0.18, 'rest')
+    for (const actor of this.actors.values()) {
+      if (actor.marine) continue
+      if (actor !== lion && actor !== deer && actor !== tiger) actor.group.visible = false
+    }
+    const look = pointOnPath(0.4, 0)
+    this.orbit.target.set(look.x, 0.18, look.z)
+    this.camera.position.set(look.x + 0.42, 9.6, look.z + 3.85)
     this.syncOrbitFromCamera()
     this.reorientLand()
     return true

@@ -715,8 +715,8 @@ function findLandPortrait(root: THREE.Object3D): THREE.Mesh | undefined {
 }
 
 /**
- * 2.5D 业界做法：剪纸平面只 Y-billboard（立着、不拧扁），朝向靠换 front/3/4/side。
- * 根节点 rotation.y 保持 0，禁止把一张正面 PNG yaw 成卡片。
+ * 2.5D：剪纸平面 Y-billboard（根节点 yaw 保持 0），朝向靠换 front/3/4/side。
+ * 俯视时略向镜头仰起，避免坐下/睡觉被拧成一张白肚皮。
  */
 export function applyLandView(
   root: THREE.Object3D,
@@ -746,7 +746,17 @@ export function applyLandView(
   portrait.scale.set((picked.flip ? -1 : 1) * ((aspect * h) / pw), h / ph, 1)
   root.getWorldPosition(_viewCam)
   const yaw = Math.atan2(camera.position.x - _viewCam.x, camera.position.z - _viewCam.z)
-  portrait.rotation.set(0, yaw, 0)
+  const dx = camera.position.x - _viewCam.x
+  const dy = camera.position.y - _viewCam.y
+  const dz = camera.position.z - _viewCam.z
+  const horiz = Math.hypot(dx, dz)
+  const elev = Math.atan2(Math.max(0, dy), Math.max(horiz, 1e-4))
+  // Steep host camera (minPhi ~14°) otherwise foreshortens the vertical card into a
+  // white oval. Pitch toward the camera so sit/sleep legs and tail stay on screen.
+  // Eye-level experience stills stay nearly upright (elev ~8° → pitch ~0).
+  const pitch = -Math.min(elev * 0.62, 0.72)
+  portrait.rotation.order = 'YXZ'
+  portrait.rotation.set(pitch, yaw, 0)
   root.rotation.y = 0
   root.userData.heading = heading
   root.userData.landAction = action
@@ -765,8 +775,8 @@ export function facesHostCamera(obj: THREE.Object3D | undefined | null): boolean
 
 /** 坐下/睡觉也不把爪子埋进石径：量网格底边，抬整只动物。 */
 export function keepPawsOnPath(root: THREE.Object3D): void {
-  if (root.userData.pack === CARTOON_RIG_PACK) {
-    const portrait = root.getObjectByName('portrait') as THREE.Mesh | undefined
+  if (root.userData.pack === CARTOON_RIG_PACK || root.userData.pack === 'art-cutout') {
+    const portrait = findLandPortrait(root)
     if (!portrait || !portrait.visible) return
     if (typeof portrait.userData.baseY !== 'number') portrait.userData.baseY = portrait.position.y
     portrait.position.y = portrait.userData.baseY as number

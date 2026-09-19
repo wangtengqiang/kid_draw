@@ -169,7 +169,7 @@ export function tickAction(group: THREE.Group, action: WorldAction, t: number): 
   const usedClip = Boolean(clips && playAnimalClip(group, clipFor(), dt))
 
   if (group.userData.pack === 'art-cutout' || group.userData.pack === 'cartoon-rig' || group.userData.pack === 'land-gltf') {
-    if (group.userData.pack !== 'art-cutout') keepPawsOnPath(group)
+    keepPawsOnPath(group)
     return
   }
 
