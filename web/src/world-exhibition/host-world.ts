@@ -884,16 +884,16 @@ export class HostWorld {
     const lion = byKind('lion')
     const deer = byKind('deer')
     const tiger = byKind('tiger')
-    if (lion) place(lion, 0.68, 0, 'sit')
-    if (deer) place(deer, 0.44, -0.12, 'sit')
-    if (tiger) place(tiger, 0.26, 0.18, 'rest')
+    if (lion) place(lion, 0.58, 0, 'sit')
+    if (deer) place(deer, 0.4, -0.08, 'sit')
+    if (tiger) place(tiger, 0.24, 0.12, 'rest')
     for (const actor of this.actors.values()) {
       if (actor.marine) continue
       if (actor !== lion && actor !== deer && actor !== tiger) actor.group.visible = false
     }
-    const look = pointOnPath(0.4, 0)
-    this.orbit.target.set(look.x, 0.18, look.z)
-    this.camera.position.set(look.x + 0.42, 9.6, look.z + 3.85)
+    const look = pointOnPath(0.38, 0)
+    this.orbit.target.set(look.x, 0.22, look.z)
+    this.camera.position.set(look.x + 0.28, 6.4, look.z + 9.2)
     this.syncOrbitFromCamera()
     this.reorientLand()
     return true
