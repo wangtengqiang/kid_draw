@@ -258,6 +258,21 @@ export const CREEK_CLEAR = 1.92
 /** 陆地动物固定世界身高。不按镜头距离放大，远处自然变矮。 */
 export const LAND_WORLD_SCALE = 1.12
 
+/** Sit/sleep further down the path so a steep camera + QR panel never clips a head. */
+export const PATH_WALK_MIN_U = 0.16
+export const PATH_WALK_MAX_U = 0.92
+export const PATH_SIT_U = 0.54
+export const PATH_REST_U = 0.4
+
+/** Steep look-front: nearest pet stays mid-path, camera pulled back. */
+export const LOOK_FRONT = {
+  lionU: 0.62,
+  deerU: 0.46,
+  tigerU: 0.32,
+  camY: 7.6,
+  camZ: 14.8,
+} as const
+
 export function pinLandScale(group: THREE.Object3D): void {
   group.scale.setScalar(LAND_WORLD_SCALE)
 }
@@ -884,16 +899,16 @@ export class HostWorld {
     const lion = byKind('lion')
     const deer = byKind('deer')
     const tiger = byKind('tiger')
-    if (lion) place(lion, 0.58, 0, 'sit')
-    if (deer) place(deer, 0.4, -0.08, 'sit')
-    if (tiger) place(tiger, 0.24, 0.12, 'rest')
+    if (lion) place(lion, LOOK_FRONT.lionU, 0, 'sit')
+    if (deer) place(deer, LOOK_FRONT.deerU, -0.08, 'sit')
+    if (tiger) place(tiger, LOOK_FRONT.tigerU, 0.12, 'rest')
     for (const actor of this.actors.values()) {
       if (actor.marine) continue
       if (actor !== lion && actor !== deer && actor !== tiger) actor.group.visible = false
     }
-    const look = pointOnPath(0.38, 0)
-    this.orbit.target.set(look.x, 0.22, look.z)
-    this.camera.position.set(look.x + 0.28, 6.4, look.z + 9.2)
+    const look = pointOnPath((LOOK_FRONT.tigerU + LOOK_FRONT.lionU) / 2, 0)
+    this.orbit.target.set(look.x, 0.32, look.z)
+    this.camera.position.set(look.x + 0.22, LOOK_FRONT.camY, look.z + LOOK_FRONT.camZ)
     this.syncOrbitFromCamera()
     this.reorientLand()
     return true
@@ -1042,7 +1057,7 @@ export class HostWorld {
       return
     }
     if (action === 'rest') {
-      const p = pointOnPath(0.28, actor.lane * 0.35)
+      const p = pointOnPath(PATH_REST_U, actor.lane * 0.35)
       const feet = keepOffCreek(p.x, p.z)
       actor.group.position.set(feet.x, 0.02, feet.z)
       const heading = landYaw('rest', p.heading, actor.lane)
@@ -1052,7 +1067,7 @@ export class HostWorld {
       return
     }
     if (action === 'sit') {
-      const p = pointOnPath(0.42, actor.lane * 0.35)
+      const p = pointOnPath(PATH_SIT_U, actor.lane * 0.35)
       const feet = keepOffCreek(p.x, p.z)
       actor.group.position.set(feet.x, 0, feet.z)
       const heading = landYaw('sit', p.heading, actor.lane)
@@ -1063,7 +1078,7 @@ export class HostWorld {
     }
 
     actor.angle += actor.speed * step
-    if (actor.angle > 0.92) actor.angle = 0.06
+    if (actor.angle > PATH_WALK_MAX_U) actor.angle = PATH_WALK_MIN_U
     const p = pointOnPath(actor.angle, actor.lane)
     const feet = keepOffCreek(p.x, p.z)
     actor.group.position.set(feet.x, 0.02, feet.z)

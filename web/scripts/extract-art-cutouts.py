@@ -261,10 +261,36 @@ def connected_parts(im: Image.Image, n: int) -> list[Image.Image]:
 def save(im: Image.Image, name: str):
     OUT.mkdir(parents=True, exist_ok=True)
     MINI.mkdir(parents=True, exist_ok=True)
+    im = pad_headroom(im, 28)
     path = OUT / f"{name}.png"
     im.save(path, "PNG")
     im.save(MINI / f"{name}.png", "PNG")
     print(f"wrote {path} {im.size}")
+
+
+def pad_headroom(im: Image.Image, pad=28) -> Image.Image:
+    """Keep a transparent margin so mane/ears/nose are not flush with the texture edge."""
+    px = im.load()
+    w, h = im.size
+    minx, miny, maxx, maxy = w, h, 0, 0
+    for y in range(h):
+        for x in range(w):
+            if px[x, y][3] > 12:
+                minx = min(minx, x)
+                miny = min(miny, y)
+                maxx = max(maxx, x)
+                maxy = max(maxy, y)
+    if maxx <= minx:
+        return im
+    left = max(0, pad - minx)
+    top = max(0, pad - miny)
+    right = max(0, pad - (w - 1 - maxx))
+    bottom = max(0, pad - (h - 1 - maxy))
+    if left == top == right == bottom == 0:
+        return im
+    out = Image.new("RGBA", (w + left + right, h + top + bottom), (0, 0, 0, 0))
+    out.paste(im, (left, top), im)
+    return out
 
 
 # Lion sit box is wide enough for the curling tail (old 430 cut it off).
@@ -278,7 +304,7 @@ POSE_BOXES = {
     "sleep": {
         "lion": (4, 48, 502, 700),
         "deer": (548, 50, 800, 680),
-        "tiger": (872, 40, 1276, 712),
+        "tiger": (838, 40, 1276, 712),
     },
 }
 

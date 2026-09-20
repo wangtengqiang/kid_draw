@@ -4,6 +4,10 @@ import {
   CREEK_CLEAR,
   FOREST_CAMERA_PULL,
   LAND_WORLD_SCALE,
+  LOOK_FRONT,
+  PATH_REST_U,
+  PATH_SIT_U,
+  PATH_WALK_MIN_U,
   GROUND_RADIUS,
   LAND_BEATS,
   LAND_CYCLE,
@@ -149,6 +153,19 @@ describe('illustrated forest path', () => {
     expect(drink).not.toBeCloseTo(walk, 1)
     const sit = landYaw('sit', along.heading, 0)
     expect(Math.abs(sit - walk)).toBeGreaterThan(1)
+  })
+
+  it('keeps sit and sleep further down the path so heads clear the QR panel', () => {
+    expect(PATH_REST_U).toBeGreaterThanOrEqual(0.36)
+    expect(PATH_SIT_U).toBeGreaterThan(PATH_REST_U)
+    expect(PATH_WALK_MIN_U).toBeGreaterThanOrEqual(0.14)
+    expect(LOOK_FRONT.tigerU).toBeGreaterThanOrEqual(0.3)
+    expect(LOOK_FRONT.deerU).toBeGreaterThan(LOOK_FRONT.tigerU)
+    expect(LOOK_FRONT.lionU).toBeGreaterThan(LOOK_FRONT.deerU)
+    expect(LOOK_FRONT.camZ).toBeGreaterThan(12)
+    const near = pointOnPath(LOOK_FRONT.tigerU, 0)
+    expect(LOOK_FRONT.camZ).toBeGreaterThan(12)
+    expect(near.z).toBeLessThan(pointOnPath(PATH_WALK_MIN_U, 0).z)
   })
 
   it('keeps land pets at a constant world scale so distance shrinks height', () => {
