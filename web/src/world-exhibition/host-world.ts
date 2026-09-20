@@ -463,6 +463,7 @@ export class HostWorld {
         __kidDrawPosePerspective?: () => boolean
         __kidDrawPoseOrbit?: () => boolean
         __kidDrawPoseLookFront?: () => boolean
+        __kidDrawPoseFace?: (side: 'left' | 'right') => boolean
         __kidDrawPoseLionProcess?: (layer: 'mesh' | 'bones' | 'effect') => boolean
         __kidDrawCapturePng?: () => string
       }
@@ -476,6 +477,7 @@ export class HostWorld {
       w.__kidDrawPosePerspective = () => this.posePerspective()
       w.__kidDrawPoseOrbit = () => this.poseOrbit()
       w.__kidDrawPoseLookFront = () => this.poseLookFront()
+      w.__kidDrawPoseFace = (side) => this.poseFace(side)
       w.__kidDrawPoseLionProcess = (layer) => this.poseLionProcess(layer)
       w.__kidDrawCapturePng = () => this.renderer.domElement.toDataURL('image/png')
     }
@@ -911,6 +913,18 @@ export class HostWorld {
     this.camera.position.set(look.x + 0.22, LOOK_FRONT.camY, look.z + LOOK_FRONT.camZ)
     this.syncOrbitFromCamera()
     this.reorientLand()
+    return true
+  }
+
+  /** Same path lineup as look-front, sit/sleep cutouts flipped left or right. */
+  poseFace(side: 'left' | 'right'): boolean {
+    if (!this.poseLookFront()) return false
+    const heading = side === 'left' ? 1.05 : -1.05
+    for (const actor of this.actors.values()) {
+      if (actor.marine || !actor.group.visible) continue
+      const action = (actor.group.userData.landAction as WorldAction) || 'sit'
+      this.orientLand(actor.group, action, heading)
+    }
     return true
   }
 
